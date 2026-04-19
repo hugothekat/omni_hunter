@@ -6,67 +6,68 @@ from datetime import datetime
 from core.utils import C, session
 
 class GoliathGraphExporter:
-    """Trawler loot-mappen og bygger en netværksgraf (Nodes & Edges) til Maltego/Gephi"""
+    """Samler alt loot data og genererer en Maltego/Gephi venlig CSV-fil."""
     def __init__(self):
         self.loot_dir = session["loot_folder"]
-        self.nodes = set()
-        self.edges = [] # Format: (Source, Target, Relation)
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        self.csv_file = f"GRAPH_EXPORT_{self.timestamp}.csv"
 
     def generate(self):
-        print(f"\n{C.CYAN}[*] Starter Graph-Analyse af Sagsmappe...{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[28] Visual Graph Exporter (Maltego / Link Analyse)\n{'='*60}{C.RESET}")
         files = list(Path(self.loot_dir).glob("*.json"))
         
+        if not files:
+            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet i {self.loot_dir}.{C.RESET}")
+            return
+
+        print(f"{C.YELLOW}[*] Støvsuger {len(files)} bevisfiler for relationer (Nodes & Edges)...{C.RESET}")
+        
+        # Liste til vores netværks-links: [Kilde, Forbindelse_Type, Mål]
+        edges = []
+        target_name = session.get('name', 'Hovedmål')
+
         for file in files:
             try:
                 data = json.loads(file.read_text(encoding='utf-8'))
                 
-                # Regler for at bygge grafen
-                # Eksempel: Modul 03 (Breach) - Forbinder Email med Paste-links
-                if "Email" in data and "Paste_Sites" in data:
-                    email = data["Email"]
-                    self.nodes.add(email)
-                    for site in data["Paste_Sites"]:
-                        self.nodes.add(site)
-                        self.edges.append((email, site, "Optraeder_i_Leak"))
-
-                # Eksempel: Modul 01 (Directory) - Forbinder Navn med Telefon og Adresse
-                if "Identitet" in data:
-                    navn = data["Identitet"]
-                    self.nodes.add(navn)
-                    for tlf in data.get("Telefonnumre", []):
-                        self.nodes.add(tlf)
-                        self.edges.append((navn, tlf, "Ejer_Telefon"))
-                    if "Ejendom" in data and "Vej" in data["Ejendom"]:
-                        adresse = f"{data['Ejendom']['Vej']}, {data['Ejendom'].get('By', '')}"
-                        self.nodes.add(adresse)
-                        self.edges.append((navn, adresse, "Bor_paa_Adresse"))
-
-                # Eksempel: Modul 16 (TITAN) - Forbinder Filer med fundne CPR/Emails
-                if "Case_Intelligence" in data:
-                    intel = data["Case_Intelligence"]
-                    for tlf in intel.get("Physical_Leads", {}).get("Adresser", []):
-                        self.nodes.add(tlf)
-                    for cpr in intel.get("ID_Documents", {}).get("CPR_Numre", []):
-                        self.nodes.add(cpr)
-                        self.edges.append(("TITAN_Dump", cpr, "Indeholder_CPR"))
-
-            except Exception:
-                continue
-
-        self._export_to_csv()
-
-    def _export_to_csv(self):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-        edges_path = f"{self.loot_dir}/GRAPH_EDGES_{timestamp}.csv"
-        
-        with open(edges_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Source", "Target", "Label"])
-            # Sikrer at vi kun eksporterer unikke edges
-            for edge in list(set(self.edges)):
-                writer.writerow([edge[0], edge[1], edge[2]])
+                # Hvis vi finder Email-mønstre
+                if "Email" in data:
+                    edges.append([target_name, "Har Email", data["Email"]])
+                    # Hvis emailen var med i datalæk
+                    if "Lækager" in data or "Free_Breach_Hits" in data:
+                        leaks = data.get("Lækager", []) + data.get("Free_Breach_Hits", [])
+                        for leak in leaks:
+                            edges.append([data["Email"], "Lækket I", leak])
                 
-        print(f"{C.GREEN}[✓] Netværksgraf eksporteret! Klar til Maltego/Gephi.{C.RESET}")
-        print(f"    -> Link-fil: {edges_path}")
-        print(f"    -> Total Nodes (Entiteter): {len(self.nodes)}")
-        print(f"    -> Total Edges (Forbindelser): {len(set(self.edges))}")
+                # Hvis vi finder Telefonnumre (Fra Krak)
+                if "Telefonnumre" in data:
+                    for tlf in data["Telefonnumre"]:
+                        edges.append([target_name, "Har Telefon", tlf])
+                        
+                # Fra TITAN mass-scan
+                if "Intelligence" in data:
+                    intel = data["Intelligence"]
+                    for e in intel.get("Emails", []): edges.append(["TITAN Mappe", "Indeholder Email", e])
+                    for k in intel.get("Krypto", []): edges.append(["TITAN Mappe", "Indeholder Wallet", k])
+
+            except Exception: continue
+
+        # Skriv til CSV
+        self._write_csv(edges)
+
+    def _write_csv(self, edges):
+        # Fjern dubletter
+        unique_edges = []
+        for edge in edges:
+            if edge not in unique_edges:
+                unique_edges.append(edge)
+
+        file_path = os.path.join(self.loot_dir, self.csv_file)
+        with open(file_path, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Source", "Relation", "Target"]) # Maltego format headers
+            writer.writerows(unique_edges)
+
+        print(f"{C.GREEN}[✓] Data-netværk eksporteret succesfuldt!{C.RESET}")
+        print(f"{C.CYAN}    -> Fil klar til import i Maltego/Gephi: {file_path}{C.RESET}")
+        print(f"{C.YELLOW}    (Dette kortlægger {len(unique_edges)} forbindelser visuelt!){C.RESET}")

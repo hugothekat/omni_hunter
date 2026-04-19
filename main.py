@@ -52,6 +52,7 @@ def main():
         print(f"{C.CYAN}[23]{C.RESET} Global Username Matrix         {C.CYAN}[24]{C.RESET} OPSEC Sanitizer")
         print(f"{C.CYAN}[25]{C.RESET} Wayback Machine                {C.CYAN}[26]{C.RESET} VirusTotal Threat Intel")
         print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
+        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport)      {C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
         
         print(f"{C.CYAN}{'-' * 70}{C.RESET}")
         print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
@@ -162,10 +163,13 @@ def main():
                 import json
                 print(f"\n{C.GREEN}[✓] AI Resultat:\n{json.dumps(res, indent=4, ensure_ascii=False)}{C.RESET}")
             elif choice == "28":
-                from modules.mod_28_graph import GoliathGraphExporter
-                GoliathGraphExporter().generate()
-            elif choice == "14":  # Tilføj valg 14 til menuen (Generer Rapport)
-                AutomatedCaseReporter().generate()
+             from modules.mod_28_graph import GoliathGraphExporter
+             GoliathGraphExporter().generate()
+            elif choice == "29":
+             from modules.mod_29_kml import GoogleEarthExporter
+             GoogleEarthExporter().generate()
+            elif choice == "14":
+             AutomatedCaseReporter().generate()
             else:
                 print(f"{C.YELLOW}[!] Modul {choice} er tomt pt. eller findes ikke.{C.RESET}")
         except Exception as e:
