@@ -3,6 +3,9 @@ import os
 import sys
 import shutil
 import argparse
+import json  # Vigtigt til reporteren
+from pathlib import Path  # Vigtigt til reporteren
+from datetime import datetime  # Vigtigt til reporteren
 from core.utils import C, session, get_input
 from core.browser import get_stealth_driver
 from core.logger import logger
@@ -51,6 +54,7 @@ def main():
         print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
         
         print(f"{C.CYAN}{'-' * 70}{C.RESET}")
+        print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
         print(f"{C.RED}[15]{C.RESET} Afslut Session")
         print(f"{C.CYAN}{'='*70}{C.RESET}")
         
@@ -160,10 +164,82 @@ def main():
             elif choice == "28":
                 from modules.mod_28_graph import GoliathGraphExporter
                 GoliathGraphExporter().generate()
+            elif choice == "14":  # Tilføj valg 14 til menuen (Generer Rapport)
+                AutomatedCaseReporter().generate()
             else:
                 print(f"{C.YELLOW}[!] Modul {choice} er tomt pt. eller findes ikke.{C.RESET}")
         except Exception as e:
             print(f"\n{C.RED}[!] Fejl i modul: {str(e)}{C.RESET}")
+
+class AutomatedCaseReporter:
+    """Genererer et professionelt interaktivt HTML Dashboard over alle beviser"""
+    def __init__(self):
+        self.loot_dir = session["loot_folder"]
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        self.report_file = f"FINAL_REPORT_{self.timestamp}.html"
+
+    def generate(self):
+        files = list(Path(self.loot_dir).glob("*.json"))
+        
+        all_cpr, all_bank, all_emails = set(), set(), set()
+        
+        # Ekstraherer data
+        for file in files:
+            try:
+                data = json.loads(file.read_text(encoding='utf-8'))
+                # Fra TITAN
+                if "Intelligence" in data:
+                    intel = data["Intelligence"]
+                    all_cpr.update(intel.get("CPR", []))
+                    all_bank.update(intel.get("Bank_Accounts", []))
+                    all_emails.update(intel.get("Emails", []))
+                # Fra Modul 3
+                if "HIBP_Breaches" in data or "Lækager" in data:
+                    all_emails.add(data.get("Email", ""))
+            except Exception: continue
+
+        # Bygger HTML strukturen
+        html_content = f"""
+        <html>
+        <head>
+            <title>OSINT MISSION REPORT</title>
+            <style>
+                body {{ font-family: 'Courier New', Courier, monospace; background-color: #0d1117; color: #c9d1d9; margin: 40px; }}
+                h1 {{ color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }}
+                h2 {{ color: #ff7b72; margin-top: 30px; }}
+                .box {{ background-color: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 6px; margin-bottom: 20px; }}
+                .badge {{ background-color: #238636; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }}
+                ul {{ list-style-type: square; }}
+                li {{ margin-bottom: 8px; }}
+            </style>
+        </head>
+        <body>
+            <h1>OMNI-HUNTER // INTELLIGENCE DASHBOARD</h1>
+            <p><strong>Genereret:</strong> {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}</p>
+            <p><strong>Mål/Sag:</strong> {session.get('name', 'Ukendt')}</p>
+            
+            <div class="box">
+                <h2>🚨 KRITISKE IDENTIFIKATORER</h2>
+                <p><strong>CPR Numre <span class="badge">{len(all_cpr)}</span></strong></p>
+                <ul>{''.join([f"<li>{c}</li>" for c in all_cpr]) if all_cpr else "<li>Ingen fundet</li>"}</ul>
+                
+                <p><strong>Bankkonti <span class="badge">{len(all_bank)}</span></strong></p>
+                <ul>{''.join([f"<li>{b}</li>" for b in all_bank]) if all_bank else "<li>Ingen fundet</li>"}</ul>
+                
+                <p><strong>Email Adresser <span class="badge">{len(all_emails)}</span></strong></p>
+                <ul>{''.join([f"<li>{e}</li>" for e in all_emails]) if all_emails else "<li>Ingen fundet</li>"}</ul>
+            </div>
+            
+            <div class="box">
+                <h2>📁 RÅ BEVIS-FILER I SAGSMAPPEN</h2>
+                <ul>{''.join([f"<li>{f.name}</li>" for f in files])}</ul>
+            </div>
+        </body>
+        </html>
+        """
+
+        Path(self.report_file).write_text(html_content, encoding='utf-8')
+        print(f"\n{C.GREEN}[✓✓✓] MISSION DASHBOARD GENERERET! Åbn denne fil i din browser: {self.report_file}{C.RESET}")
 
 if __name__ == "__main__":
     args = setup_cli()

@@ -6,8 +6,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
+import os
+import json
+import re
 from core.utils import C, session
+from core.network import omni_dork_search
 
 def get_stealth_driver():
     """Undetected Chromedriver der bypasser Cloudflare og bot-beskyttelse"""
@@ -66,3 +69,28 @@ def safe_driver_action(driver, action_func, timeout=10, action_name=""):
         return action_func(driver)
     except (TimeoutException, NoSuchElementException, Exception):
         return None
+
+def human_typing(element, text):
+    """Simulerer menneskelig skrivehastighed med mikropauser"""
+    for char in text:
+        element.send_keys(char)
+        # Tilføj en lille tilfældig pause mellem 0.05 og 0.2 sekunder
+        time.sleep(random.uniform(0.05, 0.2))
+
+def human_scroll(driver):
+    """Simulerer at en rigtig person læser siden ved at scrolle ujævnt"""
+    total_height = driver.execute_script("return document.body.scrollHeight")
+    current_position = 0
+    
+    while current_position < total_height:
+        # Scroll et tilfældigt antal pixels ned
+        scroll_step = random.randint(150, 400)
+        current_position += scroll_step
+        driver.execute_script(f"window.scrollTo(0, {current_position});")
+        # Vent som om vi kigger på indholdet
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # 10% chance for at vi "fortryder" og scroller lidt op igen
+        if random.random() < 0.10:
+            driver.execute_script(f"window.scrollBy(0, -{random.randint(50, 150)});")
+            time.sleep(random.uniform(0.3, 0.8))
