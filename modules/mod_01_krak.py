@@ -29,16 +29,29 @@ class DirectoryIntelligenceHunter:
         }
 
     def run(self, driver):
+        # --- 1. FIX CIRCULAR IMPORT & IMPORTS ---
+        import sys
+        import time
+        from core.browser import zap_cookies 
+        
+        # --- 10% STATUS ---
+        sys.stdout.write(f"\r{C.YELLOW}[*] Starter Krak-analyse... 10%{C.RESET}"); sys.stdout.flush()
+
         print(f"\n{C.CYAN}{'='*60}\n[01] Personregister-efterretning (Krak + DinGeo)\n{'='*60}{C.RESET}")
         
         # Kraks nye søge-URL
         query = f"{self.name} {self.city}".strip().replace(" ", "+").lower()
         krak_url = f"https://www.krak.dk/{query}/personer"
         
+        # --- 25% STATUS ---
+        sys.stdout.write(f"\r{C.YELLOW}[*] Forbinder til Krak... 25%{C.RESET}"); sys.stdout.flush()
         print(f"{C.YELLOW}[*] Forbinder til Krak: {krak_url}{C.RESET}")
         
         if safe_get_with_retry(driver, krak_url):
             zap_cookies(driver)
+            
+            # --- 50% STATUS ---
+            sys.stdout.write(f"\r{C.YELLOW}[*] Siden indlæst, venter på React... 50%{C.RESET}"); sys.stdout.flush()
             time.sleep(4) # Giver React tid til at loade DOM'en
             
             # Tjek for bot-blokering
@@ -49,16 +62,17 @@ class DirectoryIntelligenceHunter:
             try:
                 # 1. Prøv at læse direkte fra søgesiden først
                 if not self._extract_profile_data(driver):
+                    # --- 75% STATUS ---
+                    sys.stdout.write(f"\r{C.YELLOW}[*] Leder efter profil-links... 75%{C.RESET}"); sys.stdout.flush()
                     print(f"{C.YELLOW}[*] Data ikke åben på forsiden. Leder efter profil-links...{C.RESET}")
                     
-                    # 2. Aggressiv Link-Finder (Opdateret til Kraks nye struktur)
+                    # 2. Aggressiv Link-Finder (DIN LOGIK BEVARET)
                     links = driver.find_elements(By.TAG_NAME, "a")
                     first_name = self.name.split()[0].lower()
                     unique_links = []
                     
                     for link in links:
                         href = link.get_attribute("href")
-                        # Sikrer at vi kun fanger person-profiler, der indeholder fornavnet
                         if href and "/person/" in href and "/personer" not in href:
                             if first_name in href.lower() and href not in unique_links:
                                 unique_links.append(href)
@@ -67,7 +81,6 @@ class DirectoryIntelligenceHunter:
                     if len(unique_links) > 1:
                         print(f"\n{C.YELLOW}[!] Fandt {len(unique_links)} mulige matches på Krak:{C.RESET}")
                         for i, link in enumerate(unique_links):
-                            # Forsøger at pynte på linket til display
                             display_name = link.split('/')[-1].replace('-', ' ').replace('+', ' ').title()
                             print(f"{C.CYAN}[{i+1}]{C.RESET} Mulig profil -> {display_name}")
                         
@@ -78,6 +91,8 @@ class DirectoryIntelligenceHunter:
                         target_url = unique_links[0]
                 
                     if target_url:
+                        # --- 90% STATUS ---
+                        sys.stdout.write(f"\r{C.YELLOW}[*] Ekstraherer data fra profil... 90%{C.RESET}"); sys.stdout.flush()
                         print(f"{C.GREEN}\n    ✓ Graver dybere i valgt profil: {target_url}{C.RESET}")
                         driver.get(target_url)
                         time.sleep(3)
@@ -89,6 +104,8 @@ class DirectoryIntelligenceHunter:
             except Exception as e:
                 print(f"{C.RED}    [!] Fejl under Krak-søgning: {e}{C.RESET}")
         
+        # --- 100% STATUS ---
+        sys.stdout.write(f"\r{C.GREEN}[✓] Krak opslag 100% færdig.           \n{C.RESET}")
         self.save()
         return self.data
 

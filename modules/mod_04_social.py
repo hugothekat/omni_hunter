@@ -64,6 +64,14 @@ class SocialMediaProfiler:
         # Scanner i bidder af 4 sites af gangen for at undgå at søgemaskinen blokerer os
         chunk_size = 4
         for i in range(0, len(all_platforms), chunk_size):
+            # --- PROGRESS INDICATOR START ---
+            import sys
+            total_chunks = (len(all_platforms) + chunk_size - 1) // chunk_size
+            current_chunk = (i // chunk_size) + 1
+            pct = int((current_chunk / total_chunks) * 100)
+            sys.stdout.write(f"\r{C.CYAN}    [*] Skanner platform matrix... {pct}% ({all_platforms[i]})      {C.RESET}")
+            sys.stdout.flush()
+            # --- PROGRESS INDICATOR END ---
             chunk = all_platforms[i:i+chunk_size]
             sites_query = " OR ".join([f"site:{site}" for site in chunk])
             dork = f'({sites_query}) "{self.username}"'

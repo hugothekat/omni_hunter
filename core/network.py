@@ -12,9 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
 from core.utils import C, session
-from core.browser import zap_cookies  # Vi opretter denne i næste trin!
 
 def load_config():
     config_path = "config.json"
@@ -93,6 +91,7 @@ def extract_duckduckgo_links(driver, max_links=5):
     return links
 
 def omni_dork_search(driver, query, max_links=5):
+    from core.browser import zap_cookies
     links = []
     ddg_url = f"https://duckduckgo.com/html/?q={urllib.parse.quote(query)}"
     if safe_get_with_retry(driver, ddg_url, max_retries=1):

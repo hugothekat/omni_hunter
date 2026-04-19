@@ -52,7 +52,7 @@ def main():
         print(f"{C.CYAN}[23]{C.RESET} Global Username Matrix         {C.CYAN}[24]{C.RESET} OPSEC Sanitizer")
         print(f"{C.CYAN}[25]{C.RESET} Wayback Machine                {C.CYAN}[26]{C.RESET} VirusTotal Threat Intel")
         print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
-        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport)      {C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
+        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport")
         
         print(f"{C.CYAN}{'-' * 70}{C.RESET}")
         print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")

@@ -10,7 +10,6 @@ import os
 import json
 import re
 from core.utils import C, session
-from core.network import omni_dork_search
 
 def get_stealth_driver():
     """Undetected Chromedriver der bypasser Cloudflare og bot-beskyttelse"""
