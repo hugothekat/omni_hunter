@@ -1,21 +1,23 @@
+# -*- coding: utf-8 -*-
 import json
 import os
 import hashlib
 import subprocess
 import requests
 import sys
+import re
 from datetime import datetime
 from pathlib import Path
 
 # Henter fra Core
-from core.utils import C, session
+from core.utils import C, session, REGEX_EMAIL
 from core.network import CONFIG
 
 class EmailTracker:
     def __init__(self, email):
-        self.email = email.strip()
+        self.email = email.strip().lower()
         self.api_key = CONFIG.get("api_keys", {}).get("hunter_io", "")
-        self.gravatar_hash = hashlib.md5(self.email.lower().encode()).hexdigest()
+        self.gravatar_hash = hashlib.md5(self.email.encode()).hexdigest()
         self.data = {
             "Email": self.email, 
             "Gravatar_Data": {}, 
@@ -26,9 +28,14 @@ class EmailTracker:
 
     def run(self, _=None):
         print(f"\n{C.CYAN}{'='*60}\n[09] E-mail Tracker (Hunter.io, Gravatar & Holehe)\n{'='*60}{C.RESET}")
+        
+        if not re.match(REGEX_EMAIL, self.email):
+            print(f"{C.RED}[!] Ugyldigt e-mail format angivet: {self.email}{C.RESET}")
+            return
+            
         print(f"Target Email: {self.email}\n")
         
-        # 1. Hunter.io Intelligence (Din originale stærke kode)
+        # 1. Hunter.io Intelligence
         self._check_hunter()
         
         # 2. Gravatar Tjek (Med Avatar Bevissikring)
@@ -53,51 +60,51 @@ class EmailTracker:
                 print(f"{C.DIM}    [-] Ingen Gravatar profil tilknyttet denne e-mail.{C.RESET}")
         except Exception: pass
 
-        # 3. Holehe Integration (Nu med Live % Progress Bar!)
+        # 3. Holehe Integration (Trådsikker Live % Progress Bar)
         print(f"\n{C.YELLOW}[*] Kører Holehe OSINT engine for at finde registrerede profiler...{C.RESET}")
         try:
-            # Vi bruger Popen i stedet for run() for at læse outputtet LIVE
             process = subprocess.Popen(
                 ['holehe', self.email, '--only-used'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True
+                text=True,
+                bufsize=1, 
+                universal_newlines=True
             )
             
             checked_lines = 0
-            estimated_total = 120 # Holehe checker ca. 120 sider
+            estimated_total = 120 
             
             for line in iter(process.stdout.readline, ''):
                 if not line: break
                 
                 checked_lines += 1
-                # Beregn procent (capper ved 99% til den er helt færdig)
                 pct = min(int((checked_lines / estimated_total) * 100), 99)
                 
-                # Skriv procenten over den samme linje dynamisk
                 sys.stdout.write(f"\r{C.CYAN}    [*] Analyserer platforme... {pct}% færdig {C.RESET}")
                 sys.stdout.flush()
 
                 if "[+]" in line:
-                    site = line.split("]")[1].strip().split(" ")[0].replace('\x1b[0m', '')
-                    # Slet procent-linjen, print hitten, og fortsæt
-                    sys.stdout.write("\r" + " " * 60 + "\r")
-                    print(f"{C.GREEN}    🔥 Registreret på: {C.CYAN}{site}{C.RESET}")
-                    self.data["Holehe_Hits"].append(site)
+                    try:
+                        site = line.split("]")[1].strip().split(" ")[0].replace('\x1b[0m', '')
+                        sys.stdout.write("\r" + " " * 60 + "\r")
+                        print(f"{C.GREEN}    🔥 Registreret på: {C.CYAN}{site}{C.RESET}")
+                        self.data["Holehe_Hits"].append(site)
+                    except IndexError: pass
                     
             process.wait()
-            # 100% besked når den er færdig
             sys.stdout.write("\r" + " " * 60 + "\r")
             print(f"{C.GREEN}    [✓] Holehe scanning 100% fuldført. Fandt {len(self.data['Holehe_Hits'])} profiler.{C.RESET}")
 
         except FileNotFoundError:
             sys.stdout.write("\r" + " " * 60 + "\r")
             print(f"{C.RED}    [!] 'holehe' er ikke installeret. Kør: pip install holehe{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved Holehe kørsel: {e}{C.RESET}")
 
         self.save()
 
     def _check_hunter(self):
-        """Bruger Hunter.io til Verification og Person Enrichment"""
         if not self.api_key:
             print(f"{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
             return
