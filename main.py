@@ -9,6 +9,7 @@ from datetime import datetime
 from core.utils import C, session, get_input
 from core.browser import get_stealth_driver
 from core.logger import logger
+from modules.mod_30_person_intel import PersonIntelligenceOrchestrator
 
 def check_dependencies():
     print(f"{C.CYAN}[*] Udfører system-tjek for OMNI-HUNTER v52.0...{C.RESET}")
@@ -35,6 +36,8 @@ def main():
         print(f"  {C.YELLOW}OSINT Final - Suite for OSINT{C.RESET}")
         print(f"  {C.RED}PETFE // Politi - Efterretningsværktøj{C.RESET}")
         print(f"{C.CYAN}{'='*70}{C.RESET}")
+        
+        print(f"  {C.GREEN}[00] TOTAL PERSON PIVOT (Full Identity Reconstruction){C.RESET}")
 
         print(f"{C.CYAN}[01]{C.RESET} Personregister (Krak)          {C.CYAN}[02]{C.RESET} Erhverv (CVR API)")
         print(f"{C.CYAN}[03]{C.RESET} Lækage-analyse (Breach)        {C.CYAN}[04]{C.RESET} Social Media Profiler")
@@ -64,7 +67,16 @@ def main():
 
         # --- DYNAMISK ROUTING MED INTELLIGENT BROWSER-STYRING ---
         try:
-            if choice == "01":
+            if choice == "00" or choice == "0":
+                navn = get_input("Målets fulde navn", "name")
+                print(f"{C.CYAN}[*] Starter GOLIATH PIVOT ENGINE...{C.RESET}")
+                driver = get_stealth_driver()
+                try:
+                    PersonIntelligenceOrchestrator(navn).run(driver)
+                finally:
+                    driver.quit()
+
+            elif choice == "01":
                 from modules.mod_01_krak import DirectoryIntelligenceHunter
                 navn = get_input("Navn", "name")
                 by = get_input("By", "city")

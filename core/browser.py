@@ -12,32 +12,31 @@ import re
 from core.utils import C, session
 
 def get_stealth_driver():
-    """Undetected Chromedriver der bypasser Cloudflare og bot-beskyttelse"""
+    """Undetected Chromedriver i HEADLESS mode (100% usynlig)"""
     from core.network import CONFIG 
     import undetected_chromedriver as uc
     
     options = uc.ChromeOptions()
     
-    # 🚨 FJERNET: options.add_argument("--headless=new") 
-    # Cloudflare dræber usynlige browsere. Vi kører den "Headed" nu.
+    # 🚨 AKTIVERET: Gør browseren totalt usynlig
+    options.add_argument("--headless=new") 
     
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     
-    # Ekstra Stealth: Skjuler at browseren er automatiseret
+    # Stealth indstillinger for at undgå detektering i headless mode
     options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument('--disable-popup-blocking')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36')
     
     if CONFIG.get("use_tor_proxy"):
         proxy = CONFIG["tor_proxy_url"]
         options.add_argument(f'--proxy-server={proxy}')
     
-    # Starter den faktiske browser, så CF tror vi er et menneske
-    driver = uc.Chrome(options=options, headless=False) 
+    driver = uc.Chrome(options=options) 
     
-    driver.implicitly_wait(3)
-    driver.set_page_load_timeout(20)
+    driver.implicitly_wait(5)
+    driver.set_page_load_timeout(30)
     return driver
 
 def zap_cookies(driver):
