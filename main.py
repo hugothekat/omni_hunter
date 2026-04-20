@@ -3,9 +3,9 @@ import os
 import sys
 import shutil
 import argparse
-import json  # Vigtigt til reporteren
-from pathlib import Path  # Vigtigt til reporteren
-from datetime import datetime  # Vigtigt til reporteren
+import json
+from pathlib import Path
+from datetime import datetime
 from core.utils import C, session, get_input
 from core.browser import get_stealth_driver
 from core.logger import logger
@@ -29,8 +29,6 @@ def setup_cli():
 def main():
     os.makedirs(session["loot_folder"], exist_ok=True)
     check_dependencies()
-    stealth_browser_instance = None
-    w = 35 
     
     while True:
         print(f"{C.CYAN}{'='*70}{C.RESET}")
@@ -38,7 +36,6 @@ def main():
         print(f"  {C.RED}PETFE // Politi - Efterretningsværktøj{C.RESET}")
         print(f"{C.CYAN}{'='*70}{C.RESET}")
 
-        # Menuen er nu perfekt linet op (Hardcoded spaces ignorerer farvekode-længder)
         print(f"{C.CYAN}[01]{C.RESET} Personregister (Krak)          {C.CYAN}[02]{C.RESET} Erhverv (CVR API)")
         print(f"{C.CYAN}[03]{C.RESET} Lækage-analyse (Breach)        {C.CYAN}[04]{C.RESET} Social Media Profiler")
         print(f"{C.CYAN}[05]{C.RESET} Offline DB (Ripgrep)           {C.CYAN}[06]{C.RESET} E-mail Mønstre")
@@ -52,74 +49,111 @@ def main():
         print(f"{C.CYAN}[23]{C.RESET} Global Username Matrix         {C.CYAN}[24]{C.RESET} OPSEC Sanitizer")
         print(f"{C.CYAN}[25]{C.RESET} Wayback Machine                {C.CYAN}[26]{C.RESET} VirusTotal Threat Intel")
         print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
-        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport")
+        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport)")
         
         print(f"{C.CYAN}{'-' * 70}{C.RESET}")
         print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
         print(f"{C.RED}[15]{C.RESET} Afslut Session")
         print(f"{C.CYAN}{'='*70}{C.RESET}")
         
-        choice = input(f"\n{C.YELLOW}Vælg Modul [01-28]: {C.RESET}").strip()
+        choice = input(f"\n{C.YELLOW}Vælg Modul [01-29]: {C.RESET}").strip()
         
         if choice == "15": 
             print(f"\n{C.RED}[*] Session afsluttet. God jagt.{C.RESET}")
-            if stealth_browser_instance:
-                try: stealth_browser_instance.quit()
-                except Exception: pass
             break
-            
-        driver = None
-        # Browser initialization
-        if choice in ["01", "03", "04", "06", "07", "12", "13", "16", "20", "22"]:
-            if stealth_browser_instance is None:
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
-                stealth_browser_instance = get_stealth_driver()
-            driver = stealth_browser_instance
 
-        # --- DYNAMISK ROUTING (LAZY IMPORTS) ---
+        # --- DYNAMISK ROUTING MED INTELLIGENT BROWSER-STYRING ---
         try:
             if choice == "01":
                 from modules.mod_01_krak import DirectoryIntelligenceHunter
-                DirectoryIntelligenceHunter(get_input("Navn", "name"), get_input("By", "city")).run(driver)
+                navn = get_input("Navn", "name")
+                by = get_input("By", "city")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: DirectoryIntelligenceHunter(navn, by).run(driver)
+                finally: driver.quit()
+
             elif choice == "02":
                 from modules.mod_02_business import BusinessIntelligenceAnalyst
-                BusinessIntelligenceAnalyst(get_input("Navn/Firma", "name")).run(None)
+                navn = get_input("Navn/Firma", "name")
+                BusinessIntelligenceAnalyst(navn).run(None)
+
             elif choice == "03":
                 from modules.mod_03_breach import BreachIntelligenceAnalyst
-                BreachIntelligenceAnalyst(get_input("Email", "email")).run(driver)
+                email = get_input("Email", "email")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: BreachIntelligenceAnalyst(email).run(driver)
+                finally: driver.quit()
+
             elif choice == "04":
                 from modules.mod_04_social import SocialMediaProfiler
-                SocialMediaProfiler(get_input("Brugernavn", "username")).run(driver)
+                username = get_input("Brugernavn", "username")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: SocialMediaProfiler(username).run(driver)
+                finally: driver.quit()
+
             elif choice == "05":
                 from modules.mod_05_offline import OfflineDatabaseAnalyzer
                 OfflineDatabaseAnalyzer(get_input("Søgeord", "db_target"), get_input("Sti til .txt", "db_path")).run()
+
             elif choice == "06":
                 from modules.mod_06_emailgen import EmailPatternGenerator
-                EmailPatternGenerator(get_input("Navn", "name")).run(driver)
+                navn = get_input("Navn", "name")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: EmailPatternGenerator(navn).run(driver)
+                finally: driver.quit()
+
             elif choice == "07":
                 from modules.mod_07_phone import PhoneIntelligenceHunter
-                PhoneIntelligenceHunter(get_input("Telefon (uden +45)", "phone")).run(driver)
+                phone = get_input("Telefon (uden +45)", "phone")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: PhoneIntelligenceHunter(phone).run(driver)
+                finally: driver.quit()
+
             elif choice == "08":
                 from modules.mod_08_darkweb import DarkWebIntelligence
                 DarkWebIntelligence(get_input("Søgeord", "dark_query")).run(None)
+
             elif choice == "09":
                 from modules.mod_09_emailtrack import EmailTracker
                 EmailTracker(get_input("Email", "email")).run(None)
+
             elif choice == "10":
                 from modules.mod_10_ip import IPNetworkAnalyzer
                 IPNetworkAnalyzer(get_input("IP Adresse", "ip")).run(None)
+
             elif choice == "11":
                 from modules.mod_11_forensics import DigitalForensicsExaminer
                 DigitalForensicsExaminer(get_input("Sti til billede/fil", "file_path")).run()
+
             elif choice == "12":
                 from modules.mod_12_revphone import ReversePhoneIntelligence
-                ReversePhoneIntelligence(get_input("Ukendt Telefon (uden +45)", "phone")).run(driver)
+                phone = get_input("Ukendt Telefon (uden +45)", "phone")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ReversePhoneIntelligence(phone).run(driver)
+                finally: driver.quit()
+
             elif choice == "13":
                 from modules.mod_13_revimage import ReverseImageIntelligence
-                ReverseImageIntelligence(get_input("Sti til billede", "image_path")).run(driver)
+                img_path = get_input("Sti til billede", "image_path")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ReverseImageIntelligence(img_path).run(driver)
+                finally: driver.quit()
+
             elif choice == "16":
                 from modules.mod_16_titan import AutoForensicMassScanner
-                AutoForensicMassScanner(get_input("Sti til Mappe (f.eks. /home/user/leaks)", "dump_folder")).run(driver)
+                folder = get_input("Sti til Mappe (f.eks. /home/user/leaks)", "dump_folder")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: AutoForensicMassScanner(folder).run(driver)
+                finally: driver.quit()
+
             elif choice == "17":
                 from modules.mod_17_sniper import GoliathSniperEngine
                 print(f"\n{C.YELLOW}--- GOLIATH SNIPER: KONFIGURATION ---{C.RESET}")
@@ -128,50 +162,72 @@ def main():
                 cpr = get_input("CPR (DDMMYY-XXXX)", "cpr") if input(f"{C.CYAN}Brug CPR? (j/n): {C.RESET}").lower() == 'j' else ""
                 clues = get_input("Clues (f.eks. hund, børn)", "clues")
                 GoliathSniperEngine(name, city, cpr, clues, session["loot_folder"]).generate()
+
             elif choice == "18":
                 from modules.mod_18_mailrip import GoliathMailRipper
                 print(f"\n{C.YELLOW}--- GOLIATH MAIL-RIPPER ---{C.RESET}")
                 GoliathMailRipper(get_input("Email", "email"), get_input("App Password", "password")).run()
+
             elif choice == "19":
                 from modules.mod_19_crypto import CryptoLedgerAnalyzer
                 CryptoLedgerAnalyzer(get_input("Krypto Adresse (BTC/ETH)", "crypto")).run(None)
+
             elif choice == "20":
                 from modules.mod_20_vehicle import VehicleIntelligence
-                VehicleIntelligence(get_input("Nummerplade (f.eks. AB12345)", "regnr")).run(driver)
+                regnr = get_input("Nummerplade (f.eks. AB12345)", "regnr")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: VehicleIntelligence(regnr).run(driver)
+                finally: driver.quit()
+
             elif choice == "21":
                 from modules.mod_21_bssid import BSSIDGeofencer
                 BSSIDGeofencer(get_input("MAC Adresse / BSSID (xx:xx:xx:xx:xx)", "bssid")).run(None)
+
             elif choice == "22":
                 from modules.mod_22_chatapp import ChatAppIntelligence
-                ChatAppIntelligence(get_input("Søgeord/Brugernavn", "chat_query")).run(driver)
+                chat_query = get_input("Søgeord/Brugernavn", "chat_query")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ChatAppIntelligence(chat_query).run(driver)
+                finally: driver.quit()
+
             elif choice == "23":
                 from modules.mod_23_matrix import UsernameMatrixAnalyzer
                 UsernameMatrixAnalyzer(get_input("Brugernavn", "username")).run(None)
+
             elif choice == "24":
                 from modules.mod_24_opsec import OpsecSanitizer
                 OpsecSanitizer(get_input("Sti til fil", "file_path")).run(None)
+
             elif choice == "25":
                 from modules.mod_25_wayback import WaybackMachineIntelligence
                 WaybackMachineIntelligence(get_input("URL", "url")).run(None)
+
             elif choice == "26":
                 from modules.mod_26_virustotal import VirusTotalAnalyzer
                 VirusTotalAnalyzer(get_input("IP eller Hash", "ip")).run(None)
+
             elif choice == "27":
                 from modules.mod_27_ai import TitanAIEnrichment
                 ai = TitanAIEnrichment()
                 res = ai.analyze_text(get_input("Tekst der skal analyseres", "ai_text"))
-                import json
                 print(f"\n{C.GREEN}[✓] AI Resultat:\n{json.dumps(res, indent=4, ensure_ascii=False)}{C.RESET}")
+
             elif choice == "28":
-             from modules.mod_28_graph import GoliathGraphExporter
-             GoliathGraphExporter().generate()
+                from modules.mod_28_graph import GoliathGraphExporter
+                GoliathGraphExporter().generate()
+
             elif choice == "29":
-             from modules.mod_29_kml import GoogleEarthExporter
-             GoogleEarthExporter().generate()
+                from modules.mod_29_kml import GoogleEarthExporter
+                GoogleEarthExporter().generate()
+
             elif choice == "14":
-             AutomatedCaseReporter().generate()
+                AutomatedCaseReporter().generate()
+
             else:
                 print(f"{C.YELLOW}[!] Modul {choice} er tomt pt. eller findes ikke.{C.RESET}")
+
         except Exception as e:
             print(f"\n{C.RED}[!] Fejl i modul: {str(e)}{C.RESET}")
 
@@ -184,25 +240,20 @@ class AutomatedCaseReporter:
 
     def generate(self):
         files = list(Path(self.loot_dir).glob("*.json"))
-        
         all_cpr, all_bank, all_emails = set(), set(), set()
         
-        # Ekstraherer data
         for file in files:
             try:
                 data = json.loads(file.read_text(encoding='utf-8'))
-                # Fra TITAN
                 if "Intelligence" in data:
                     intel = data["Intelligence"]
                     all_cpr.update(intel.get("CPR", []))
                     all_bank.update(intel.get("Bank_Accounts", []))
                     all_emails.update(intel.get("Emails", []))
-                # Fra Modul 3
-                if "HIBP_Breaches" in data or "Lækager" in data:
+                if "HIBP_Breaches" in data or "Data_Leaks" in data:
                     all_emails.add(data.get("Email", ""))
             except Exception: continue
 
-        # Bygger HTML strukturen
         html_content = f"""
         <html>
         <head>

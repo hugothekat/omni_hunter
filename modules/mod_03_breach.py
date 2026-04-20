@@ -1,9 +1,14 @@
+# -*- coding: utf-8 -*-
 import requests
 import json
 import os
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
+
 from core.utils import C, session
-from core.network import omni_dork_search, CONFIG
+from core.network import omni_dork_search
 
 class BreachIntelligenceAnalyst:
     def __init__(self, email):
@@ -11,66 +16,72 @@ class BreachIntelligenceAnalyst:
         self.data = {
             "Email": self.email, 
             "Paste_Sites": [], 
-            "HIBP_Breaches": [],
-            "Free_Breach_Hits": [],
+            "Data_Leaks": [],
             "Timestamp": datetime.now().isoformat()
         }
 
+    def _update_progress(self, pct, message):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
+
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[03] Lækage-analyse (Hybrid Engine)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[03] Breach Analyse (XposedOrNot & Fast Dorks)\n{'='*60}{C.RESET}")
         print(f"Target Email: {self.email}\n")
         
-        api_key = CONFIG.get("api_keys", {}).get("hibp_api_key", "")
+        self._update_progress(20, "Forbinder til gratis OSINT API")
         
-        if api_key:
-            self._run_hibp(api_key)
-        else:
-            print(f"{C.YELLOW}[*] Ingen HIBP nøgle fundet. Bruger gratis alternativ (BreachDirectory)...{C.RESET}")
-            self._run_free_check()
+        self._check_xposedornot()
         
-        # Dorking efter open pastes
-        print(f"\n{C.YELLOW}[*] Scanner Paste-sites via Dorks...{C.RESET}")
-        noise_filter = "-site:microsoft.com -site:wikihow.com"
-        for site in ["pastebin.com", "throwbin.io"]:
-            dork = f'site:{site} "{self.email}" {noise_filter}'
-            links = omni_dork_search(driver, dork, max_links=2)
+        self._update_progress(60, "Bygger massiv Paste-Dork")
+        print(f"\n{C.YELLOW}[*] Udforer High-Speed Dorking mod Paste-sites...{C.RESET}")
+        
+        sites = ["pastebin.com", "throwbin.io", "ghostbin.co", "rentry.co", "controlc.com", "justpaste.it"]
+        sites_query = " OR ".join([f"site:{site}" for site in sites])
+        dork = f'({sites_query}) "{self.email}"'
+        
+        self._update_progress(80, "Soger globalt via Selenium")
+        links = omni_dork_search(driver, dork, max_links=5)
+        
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        if links:
             for link in links:
-                print(f"{C.GREEN}    ✓ PASTE FUNDET: {link['url'][:80]}{C.RESET}")
+                print(f"{C.GREEN}    🔥 PASTE FUNDET: {link['url'][:80]}{C.RESET}")
                 if link["url"] not in self.data["Paste_Sites"]:
                     self.data["Paste_Sites"].append(link["url"])
+        else:
+            print(f"{C.DIM}    [-] Ingen Paste-laekager fundet via Google.{C.RESET}")
 
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"\n{C.GREEN}[✓] Breach-analyse 100% fuldfort.{C.RESET}")
         self.save()
 
-    def _run_hibp(self, api_key):
-        print(f"{C.YELLOW}[*] Slår op i HaveIBeenPwned API (Premium)...{C.RESET}")
-        headers = {"hibp-api-key": api_key, "user-agent": "OmniHunter-OSINT"}
+    def _check_xposedornot(self):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"{C.YELLOW}[*] Slaar op i globale Hacker-databaser (XposedOrNot API)...{C.RESET}")
+        
+        url = f"https://api.xposedornot.com/v1/check-email/{self.email}"
         try:
-            res = requests.get(f"https://haveibeenpwned.com/api/v3/breachedaccount/{self.email}?truncateResponse=false", headers=headers, timeout=10)
+            res = requests.get(url, timeout=10)
             if res.status_code == 200:
-                breaches = res.json()
-                print(f"{C.RED}    🔥 KRITISK: Emailen findes i {len(breaches)} datalæk!{C.RESET}")
-                for breach in breaches:
-                    b_name, data_classes = breach.get("Name"), breach.get("DataClasses", [])
-                    self.data["HIBP_Breaches"].append({"Leak_Name": b_name, "Leaked_Data": data_classes})
-                    if "Passwords" in data_classes:
-                        print(f"{C.RED}      -> {b_name} (Lækker PASSWORDS!){C.RESET}")
-                    else:
-                        print(f"{C.YELLOW}      -> {b_name} (Lækker: {', '.join(data_classes[:2])}){C.RESET}")
-            elif res.status_code == 404: print(f"{C.GREEN}    ✓ Ingen hits i HIBP.{C.RESET}")
-        except Exception as e: print(f"{C.RED}    [!] HIBP Fejl: {e}{C.RESET}")
-
-    def _run_free_check(self):
-        try:
-            res = requests.get(f"https://breachdirectory.org/api/report?email={self.email}", timeout=10).json()
-            if res.get("found", 0) > 0:
-                print(f"{C.RED}    🔥 FUNDET i {res['found']} lækkede databaser!{C.RESET}")
-                for source in res.get("sources", []):
-                    print(f"      -> {source}")
-                    self.data["Free_Breach_Hits"].append(source)
-            else: print(f"{C.GREEN}    ✓ Ingen hits i BreachDirectory.{C.RESET}")
-        except Exception: pass
+                data = res.json()
+                breaches = data.get("breaches", [])
+                if breaches:
+                    print(f"{C.RED}    🔥 KRITISK: Emailen findes i {len(breaches)} datalaek!{C.RESET}")
+                    for b in breaches[:10]:
+                        print(f"{C.YELLOW}      -> Laekket i: {b}{C.RESET}")
+                        self.data["Data_Leaks"].append(b)
+                    if len(breaches) > 10:
+                        print(f"{C.DIM}      -> ... og {len(breaches)-10} mere.{C.RESET}")
+            elif res.status_code == 404:
+                print(f"{C.GREEN}    ✓ Ingen hits i databasen (Emailen er ikke fundet i kendte laek).{C.RESET}")
+            else:
+                print(f"{C.DIM}    [-] API gav ukendt statuskode: {res.status_code}{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [-] Forbindelsesfejl til XposedOrNot: {e}{C.RESET}")
 
     def save(self):
         os.makedirs(session["loot_folder"], exist_ok=True)
         filename = f"{session['loot_folder']}/03_BREACH_{self.email.replace('@', '_at_')}.json"
-        with open(filename, 'w', encoding='utf-8') as f: json.dump(self.data, f, indent=4, ensure_ascii=False)
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")

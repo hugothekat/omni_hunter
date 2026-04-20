@@ -1,186 +1,242 @@
-# modules/mod_01_krak.py
-import re
+# -*- coding: utf-8 -*-
+import sys
 import time
 import json
 import os
+import re
 import urllib.parse
 from pathlib import Path
 from datetime import datetime
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
 from core.utils import C, session
 from core.network import safe_get_with_retry
-from core.browser import zap_cookies
 
 class DirectoryIntelligenceHunter:
-    """Søger personinformation og ejendomsdata (Krak + DinGeo)."""
     def __init__(self, name, city):
         self.name = name.strip()
         self.city = city.strip()
         self.data = {
-            "Identitet": self.name,
-            "Lokation": self.city,
-            "Telefonnumre": [],
+            "Identitet": self.name, 
+            "Lokation": self.city, 
+            "Telefonnumre": [], 
             "Ejendom": {},
-            "DinGeo_Data": {},
+            "GPS_Koordinater": "",
+            "DinGeo_Intelligence": {}, 
+            "Screenshots": [],
             "Timestamp": datetime.now().isoformat()
         }
 
-    def run(self, driver):
-        # --- 1. FIX CIRCULAR IMPORT & IMPORTS ---
-        import sys
-        import time
-        from core.browser import zap_cookies 
-        
-        # --- 10% STATUS ---
-        sys.stdout.write(f"\r{C.YELLOW}[*] Starter Krak-analyse... 10%{C.RESET}"); sys.stdout.flush()
+    def _update_progress(self, pct, message):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
 
-        print(f"\n{C.CYAN}{'='*60}\n[01] Personregister-efterretning (Krak + DinGeo)\n{'='*60}{C.RESET}")
+    def run(self, driver):
+        from core.browser import zap_cookies 
+        print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS & DinGeo Deep-Scrape)\n{'='*60}{C.RESET}")
         
-        # Kraks nye søge-URL
+        # --- USYNLIGHEDS-TRICKET ---
+        # Vi skyder browseren langt uden for skærmen, så den ikke forstyrrer dig, 
+        # men Cloudflare tror stadig det er en "rigtig" synlig browser.
+        try:
+            driver.set_window_position(-2000, 0)
+        except:
+            pass
+
         query = f"{self.name} {self.city}".strip().replace(" ", "+").lower()
-        krak_url = f"https://www.krak.dk/{query}/personer"
-        
-        # --- 25% STATUS ---
-        sys.stdout.write(f"\r{C.YELLOW}[*] Forbinder til Krak... 25%{C.RESET}"); sys.stdout.flush()
-        print(f"{C.YELLOW}[*] Forbinder til Krak: {krak_url}{C.RESET}")
-        
-        if safe_get_with_retry(driver, krak_url):
-            zap_cookies(driver)
-            
-            # --- 50% STATUS ---
-            sys.stdout.write(f"\r{C.YELLOW}[*] Siden indlæst, venter på React... 50%{C.RESET}"); sys.stdout.flush()
-            time.sleep(4) # Giver React tid til at loade DOM'en
-            
-            # Tjek for bot-blokering
-            if "Robot" in driver.title or "Cloudflare" in driver.title:
-                print(f"{C.RED}[!] Krak blokerer vores anmodning (Bot Protection aktiv). Prøver at omgå...{C.RESET}")
-                time.sleep(5)
-            
-            try:
-                # 1. Prøv at læse direkte fra søgesiden først
-                if not self._extract_profile_data(driver):
-                    # --- 75% STATUS ---
-                    sys.stdout.write(f"\r{C.YELLOW}[*] Leder efter profil-links... 75%{C.RESET}"); sys.stdout.flush()
-                    print(f"{C.YELLOW}[*] Data ikke åben på forsiden. Leder efter profil-links...{C.RESET}")
+        providers = {
+            "Krak": f"https://www.krak.dk/{query}/personer",
+            "De Gule Sider": f"https://www.degulesider.dk/{query}/personer"
+        }
+
+        os.makedirs(session["loot_folder"], exist_ok=True)
+
+        for provider_name, url in providers.items():
+            print(f"\n{C.YELLOW}[*] Forbinder til {provider_name}: {url}{C.RESET}")
+            if safe_get_with_retry(driver, url):
+                zap_cookies(driver)
+                time.sleep(3)
+                
+                try:
+                    search_img = f"{session['loot_folder']}/01_{provider_name}_Search_{self.name.replace(' ', '_')}.png"
+                    driver.save_screenshot(search_img)
+                    self.data["Screenshots"].append(search_img)
                     
-                    # 2. Aggressiv Link-Finder (DIN LOGIK BEVARET)
-                    links = driver.find_elements(By.TAG_NAME, "a")
-                    first_name = self.name.split()[0].lower()
-                    unique_links = []
-                    
-                    for link in links:
-                        href = link.get_attribute("href")
-                        if href and "/person/" in href and "/personer" not in href:
-                            if first_name in href.lower() and href not in unique_links:
-                                unique_links.append(href)
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(1.5)
+                    current_url = driver.current_url
                     
                     target_url = None
-                    if len(unique_links) > 1:
-                        print(f"\n{C.YELLOW}[!] Fandt {len(unique_links)} mulige matches på Krak:{C.RESET}")
-                        for i, link in enumerate(unique_links):
-                            display_name = link.split('/')[-1].replace('-', ' ').replace('+', ' ').title()
-                            print(f"{C.CYAN}[{i+1}]{C.RESET} Mulig profil -> {display_name}")
-                        
-                        val = input(f"\n{C.YELLOW}Hvilken profil er den rigtige? (1-{len(unique_links)}, 0 for afbryd): {C.RESET}").strip()
-                        if val.isdigit() and 0 < int(val) <= len(unique_links):
-                            target_url = unique_links[int(val)-1]
-                    elif len(unique_links) == 1:
-                        target_url = unique_links[0]
-                
+                    if re.search(r'/\d+/person/?$', current_url):
+                        target_url = current_url
+                    else:
+                        links = driver.find_elements(By.TAG_NAME, "a")
+                        base_domain = "krak.dk" if provider_name == "Krak" else "degulesider.dk"
+                        pattern = rf'^https://www\.{base_domain}/([^/]+)/\d+/person$'
+                        for link in links:
+                            href = link.get_attribute("href")
+                            if href and re.match(pattern, href):
+                                target_url = href
+                                break
+                    
                     if target_url:
-                        # --- 90% STATUS ---
-                        sys.stdout.write(f"\r{C.YELLOW}[*] Ekstraherer data fra profil... 90%{C.RESET}"); sys.stdout.flush()
-                        print(f"{C.GREEN}\n    ✓ Graver dybere i valgt profil: {target_url}{C.RESET}")
                         driver.get(target_url)
                         time.sleep(3)
-                        if not self._extract_profile_data(driver):
-                            print(f"{C.YELLOW}    [-] Kunne ikke udtrække adressen fra profilen. Den er muligvis hemmelig.{C.RESET}")
-                    else:
-                        print(f"{C.RED}    [-] Ingen profil fundet for {self.name}.{C.RESET}")
+                        self._extract_profile_data(driver, provider_name)
+                except Exception as e:
+                    print(f"{C.RED}    [!] Fejl: {e}{C.RESET}")
 
-            except Exception as e:
-                print(f"{C.RED}    [!] Fejl under Krak-søgning: {e}{C.RESET}")
-        
-        # --- 100% STATUS ---
-        sys.stdout.write(f"\r{C.GREEN}[✓] Krak opslag 100% færdig.           \n{C.RESET}")
+        # --- SMART CLEANUP ---
+        if self.data["Telefonnumre"] or self.data.get("Ejendom"):
+            final_screenshots = []
+            for img in self.data["Screenshots"]:
+                if "DinGeo" not in img:
+                    try: os.remove(img)
+                    except: pass
+                else: final_screenshots.append(img)
+            self.data["Screenshots"] = final_screenshots
+
+        print(f"\n{C.GREEN}[✓] Intelligence opslag 100% færdig.{C.RESET}")
         self.save()
         return self.data
 
-    def _extract_profile_data(self, driver):
-        """Leder efter Telefon og Adresse på den aktuelle side"""
-        success = False
-        
+    def _extract_profile_data(self, driver, provider_name):
+        driver.execute_script("window.scrollBy(0, 400);")
+        time.sleep(1)
         try:
-            # Venter til der er mindst 4 tal på skærmen (Postnummer/telefon)
-            WebDriverWait(driver, 5).until(
-                lambda d: re.search(r'\b\d{4}\b', d.find_element(By.TAG_NAME, "body").text)
-            )
-        except Exception:
-            pass
+            buttons = driver.find_elements(By.TAG_NAME, "button")
+            for btn in buttons:
+                if "vis" in btn.text.lower() or "nummer" in btn.text.lower():
+                    driver.execute_script("arguments[0].click();", btn)
+                    time.sleep(1)
+        except: pass
 
-        # Udvinder al tekst på siden
         body_text = driver.find_element(By.TAG_NAME, "body").text
+        lines = [line.strip() for line in body_text.split('\n') if line.strip()]
         
-        # --- TELEFONNUMRE ---
-        phone_matches = re.findall(r'(?<!\d)(?:(?:\+45\s?)?[2-9]\d\s?\d{2}\s?\d{2}\s?\d{2})(?!\d)', body_text)
-        for pm in phone_matches:
-            p = pm.replace("+45", "").replace(" ", "")
-            if len(p) == 8:
-                formatted_p = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
-                if formatted_p not in self.data["Telefonnumre"]:
-                    self.data["Telefonnumre"].append(formatted_p)
-                    print(f"{C.GREEN}    ✓ Telefon Fundet: {formatted_p}{C.RESET}")
-                    success = True
+        for i, line in enumerate(lines):
+            # 1. TELEFON
+            if line == "Telefonnummer" and i + 1 < len(lines):
+                p = lines[i+1].replace(" ", "")
+                if len(p) == 8:
+                    fmt = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
+                    if fmt not in self.data["Telefonnumre"]: self.data["Telefonnumre"].append(fmt)
 
-        # --- ADRESSE ---
-        if not self.data.get("Ejendom"):
-            lines = body_text.split('\n')
-            for line in lines:
-                # Leder efter "Vejnavn Nummer, 1234 By"
-                match_a = re.search(r'(.*?)[,\s]+([1-9]\d{3})\s+(.*)', line)
-                if match_a and len(match_a.group(1)) > 3 and any(char.isdigit() for char in match_a.group(1)):
-                    vej = match_a.group(1).strip()
-                    post = match_a.group(2).strip()
-                    by = match_a.group(3).strip().split()[0]
-                    
-                    # Frasorterer støjsider og knapper
-                    if "Krak" not in vej and "Ruteplan" not in vej:
-                        self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
-                        print(f"{C.GREEN}    ✓ Adresse Fundet: {vej}, {post} {by}{C.RESET}")
-                        self._scrape_dingeo(driver, vej, post)
-                        success = True
-                        break
+            # 2. ADRESSE TOP
+            if line == "Adresse" and i + 2 < len(lines) and not self.data.get("Ejendom"):
+                vej, post_by = lines[i+1], lines[i+2]
+                match = re.search(r'^([1-9]\d{3})\s+(.*)', post_by)
+                if match:
+                    post, by = match.group(1), match.group(2)
+                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
+                    self._scrape_dingeo_deep(driver, vej, post, by)
 
-        return success
+            # 3. ADRESSE BACKUP (Tabel) - DENNE MANGLERDE FØR!
+            if line == "Vejnavn" and i + 1 < len(lines) and not self.data.get("Ejendom"):
+                vej = lines[i+1]
+                post, by = "", ""
+                for j in range(i, min(i+10, len(lines))):
+                    if lines[j] == "Postnummer" and j + 1 < len(lines):
+                        post = lines[j+1]
+                    if lines[j] == "Bynavn" and j + 1 < len(lines):
+                        by = lines[j+1]
+                
+                if vej and post and by:
+                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
+                    self._scrape_dingeo_deep(driver, vej, post, by)
 
-    def _scrape_dingeo(self, driver, vej, post):
-        print(f"{C.CYAN}    [*] Angriber DinGeo.dk for: {vej}, {post}...{C.RESET}")
-        search_query = urllib.parse.quote(f"{vej}, {post}")
-        dingeo_url = f"https://www.dingeo.dk/adresse/{search_query.replace('%20', '-').replace(',', '')}"
+            # 4. GPS
+            if line == "Koordinater" and i + 1 < len(lines):
+                self.data["GPS_Koordinater"] = lines[i+1]
+        return True
+
+    def _scrape_dingeo_deep(self, driver, vej, post, by):
+        print(f"{C.CYAN}      [*] Dybde-analyserer ejendommen på DinGeo...{C.RESET}")
         
-        if safe_get_with_retry(driver, dingeo_url, max_retries=1):
-            try:
+        city_slug = f"{post}-{by}".lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
+        vej_slug = vej.lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
+        base_url = f"https://www.dingeo.dk/adresse/{city_slug}/{vej_slug}"
+        
+        paths = {
+            "Profil": "",
+            "Dokumenter": "/dokument/",
+            "Vurdering": "/vurdering/",
+            "Boligskat": "/skat/",
+            "Net_Mobil": "/internet-mobil/"
+        }
+
+        for category, path in paths.items():
+            target = base_url + path
+            if safe_get_with_retry(driver, target, max_retries=1):
+                time.sleep(2)
+                # Cookie Killer
+                try:
+                    for btn in driver.find_elements(By.TAG_NAME, "button"):
+                        if any(x in btn.text.lower() for x in ["tillad", "accepter", "forstået"]):
+                            driver.execute_script("arguments[0].click();", btn)
+                            break
+                except: pass
+
                 text = driver.find_element(By.TAG_NAME, "body").text
-                if "BBR informationer" in text or "Salgshistorik" in text:
-                    print(f"{C.GREEN}    ✓ DinGeo Data fundet!{C.RESET}")
-                    self.data["DinGeo_Data"]["Link"] = dingeo_url
-                    self.data["DinGeo_Data"]["Opsummering"] = text[:300] + "..." 
-            except Exception: pass
+                lines = [l.strip() for l in text.split('\n') if l.strip()]
+                
+                if category == "Profil":
+                    # Screenshot af selve huset
+                    img = f"{session['loot_folder']}/01_DinGeo_Hus_{self.name.replace(' ', '_')}.png"
+                    driver.save_screenshot(img)
+                    if img not in self.data["Screenshots"]:
+                        self.data["Screenshots"].append(img)
+                    
+                    intel = {}
+                    keys = ["Opførselsesår", "Antal værelser", "Anvendelse", "Varmeinstallation", "Boligtype", "Ydervægsmateriale", "Tagmateriale"]
+                    for i, l in enumerate(lines):
+                        for k in keys:
+                            if l == k and i+1 < len(lines): intel[k] = lines[i+1]
+                        if "bor i" in l and "nærmeste naboer" in text:
+                            intel["Nabolag"] = l + " " + lines[i+1] if i+1 < len(lines) else l
+                    self.data["DinGeo_Intelligence"]["BBR"] = intel
+
+                elif category == "Dokumenter":
+                    docs = {"Servitutter": "0", "Byggesager": "Ingen fundet"}
+                    match = re.search(r'der (\w+) servitutter', text.lower())
+                    if match: docs["Servitutter"] = match.group(1).capitalize()
+                    if "ingen historiske byggesager" not in text.lower(): docs["Byggesager"] = "Fundet (Tjek link)"
+                    self.data["DinGeo_Intelligence"]["Dokument_Status"] = docs
+
+                elif category == "Vurdering":
+                    vurdering = {}
+                    for i, l in enumerate(lines):
+                        if "Dingestimat" in l and i+1 < len(lines):
+                            vurdering["Dingestimat"] = lines[i+1]
+                        if "Seneste salgspris" in l and i+1 < len(lines):
+                            vurdering["Seneste_Salg"] = lines[i+1] + " (" + (lines[i+2] if i+2 < len(lines) else "") + ")"
+                    if vurdering:
+                        self.data["DinGeo_Intelligence"]["Vurdering"] = vurdering
+
+                elif category == "Boligskat":
+                    skat = {}
+                    for i, l in enumerate(lines):
+                        if "Boligskat 2024" in l and i+1 < len(lines):
+                            skat["Total_2024"] = lines[i+1]
+                    if skat:
+                        self.data["DinGeo_Intelligence"]["Skat"] = skat
+
+                elif category == "Net_Mobil":
+                    net = {"Fiber": "Nej", "5G": "Nej", "Mobil": "Ukendt"}
+                    if "Fibernet" in text: net["Fiber"] = "Ja"
+                    if "5G-internet" in text: net["5G"] = "Ja"
+                    if "god mobildækning" in text: net["Mobil"] = "God"
+                    self.data["DinGeo_Intelligence"]["Infrastruktur"] = net
 
     def save(self):
-        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Data"))
+        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence"))
         if not has_data:
-            gem = input(f"\n{C.YELLOW}[?] Intet brugbart fundet. Vil du gemme rapporten alligevel? (j/n): {C.RESET}").strip().lower()
+            gem = input(f"\n{C.YELLOW}[?] Intet fundet. Vil du gemme en tom rapport? (j/n): {C.RESET}").strip().lower()
             if gem != 'j':
-                print(f"{C.RED}[*] Rapport kasseret. Sparer plads.{C.RESET}")
+                print(f"{C.DIM}[*] Rapport kasseret.{C.RESET}")
                 return
 
         os.makedirs(session["loot_folder"], exist_ok=True)
         filename = f"{session['loot_folder']}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
-        
         Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        self.last_saved_file = filename
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
