@@ -24,9 +24,8 @@ class SocialMediaProfiler:
             "Deep_Scrape": {}, 
             "Fundne_Profiler": [],
             "Identificerede_Aliaser": [],
-            "Timestamp": datetime.now().isoformat()
-        }
-
+            "Timestamp": datetime.now().isoformat(),
+            "Network_Intelligence": {"Inner_Circle": []},
     def run(self, driver):
         print(f"\n{C.CYAN}{'='*60}\n[04] GOLIATH SOCIAL STALKER (MONSTER EDITION)\n{'='*60}{C.RESET}")
         
@@ -143,6 +142,8 @@ class SocialMediaProfiler:
                 img = driver.find_elements(By.CSS_SELECTOR, "header img")
                 if img:
                     self._download_avatar(img[0].get_attribute("src"), "Instagram")
+                    self._image_forensics_pivot(img[0].get_attribute("src"), "Instagram")
+                    self._analyze_network_intelligence(driver)
             except Exception as e:
                 print(f"{C.DIM}      [-] Kunne ikke udtrække fuld bio: {e}{C.RESET}")
 
@@ -184,6 +185,28 @@ class SocialMediaProfiler:
                 handler.write(img_data)
             print(f"{C.GREEN}      ✓ Profilbillede sikret: {platform}{C.RESET}")
         except Exception: pass
+
+def _image_forensics_pivot(self, image_url, platform):
+        """NY V7: Image Forensics & Reverse Search Generation"""
+        print(f"{C.MAGENTA}    [*] Image Forensics på {platform}: Genererer Reverse Search...{C.RESET}")
+        try:
+            import urllib.parse
+            encoded_url = urllib.parse.quote(image_url)
+            print(f"      -> Google Lens: https://www.google.com/searchbyimage?image_url={encoded_url}")
+            print(f"      -> Yandex: https://yandex.com/images/search?url={encoded_url}")
+        except: pass
+
+    def _analyze_network_intelligence(self, driver):
+        """NY V7: Finder 'Inner Circle' leads via tags/mentions"""
+        print(f"{C.YELLOW}    [*] Scanner efter Network Intelligence (mentions)...{C.RESET}")
+        try:
+            elements = driver.find_elements(By.PARTIAL_LINK_TEXT, "@")
+            for el in elements:
+                handle = el.text.replace("@", "")
+                if handle and handle not in self.data["Network_Intelligence"]["Inner_Circle"]:
+                    self.data["Network_Intelligence"]["Inner_Circle"].append(handle)
+                    print(f"{C.CYAN}      -> Inner Circle Lead fundet: @{handle}{C.RESET}")
+        except: pass
 
     def save(self):
         os.makedirs(session["loot_folder"], exist_ok=True)

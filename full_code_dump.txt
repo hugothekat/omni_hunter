@@ -1,0 +1,3445 @@
+--- FIL: ./core/__init__.py ---
+--- FIL: ./core/browser.py ---
+# core/browser.py
+import time
+from datetime import datetime
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import os
+import json
+import re
+from core.utils import C, session
+
+def get_stealth_driver():
+    """Undetected Chromedriver i HEADLESS mode (100% usynlig)"""
+    from core.network import CONFIG 
+    import undetected_chromedriver as uc
+    
+    options = uc.ChromeOptions()
+    
+    # 🚨 AKTIVERET: Gør browseren totalt usynlig
+    options.add_argument("--headless=new") 
+    
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,1080")
+    
+    # Stealth indstillinger for at undgå detektering i headless mode
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36')
+    
+    if CONFIG.get("use_tor_proxy"):
+        proxy = CONFIG["tor_proxy_url"]
+        options.add_argument(f'--proxy-server={proxy}')
+    
+    driver = uc.Chrome(options=options) 
+    
+    driver.implicitly_wait(5)
+    driver.set_page_load_timeout(30)
+    return driver
+
+def zap_cookies(driver):
+    """Accept cookies automatically"""
+    terms = ['Accepter', 'OK', 'Godkend', 'Tillad', 'Accept all']
+    try:
+        xpath = "//button[" + " or ".join([f"contains(., '{t}')" for t in terms]) + "]"
+        btns = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+        if btns:
+            btns[0].click()
+            time.sleep(0.5)
+            return True
+    except Exception: pass
+    
+    try:
+        selectors = ["button.cookie-accept", "button[class*='cookie']", "button[class*='consent']"]
+        for selector in selectors:
+            try:
+                btn = WebDriverWait(driver, 1).until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+                btn.click()
+                time.sleep(0.5)
+                return True
+            except Exception:
+                continue
+    except Exception: pass
+    return False
+
+def capture_evidence(driver, name):
+    """Gemmer et screenshot af den nuværende side som bevismateriale."""
+    timestamp = datetime.now().strftime("%H%M%S")
+    path = f"{session['loot_folder']}/SCREENSHOT_{name}_{timestamp}.png"
+    driver.save_screenshot(path)
+    print(f"{C.YELLOW}    [📷] Bevis sikret: {path}{C.RESET}")
+
+def safe_driver_action(driver, action_func, timeout=10, action_name=""):
+    try:
+        return action_func(driver)
+    except (TimeoutException, NoSuchElementException, Exception):
+        return None
+
+def human_typing(element, text):
+    """Simulerer menneskelig skrivehastighed med mikropauser"""
+    for char in text:
+        element.send_keys(char)
+        # Tilføj en lille tilfældig pause mellem 0.05 og 0.2 sekunder
+        time.sleep(random.uniform(0.05, 0.2))
+
+def human_scroll(driver):
+    """Simulerer at en rigtig person læser siden ved at scrolle ujævnt"""
+    total_height = driver.execute_script("return document.body.scrollHeight")
+    current_position = 0
+    
+    while current_position < total_height:
+        # Scroll et tilfældigt antal pixels ned
+        scroll_step = random.randint(150, 400)
+        current_position += scroll_step
+        driver.execute_script(f"window.scrollTo(0, {current_position});")
+        # Vent som om vi kigger på indholdet
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # 10% chance for at vi "fortryder" og scroller lidt op igen
+        if random.random() < 0.10:
+            driver.execute_script(f"window.scrollBy(0, -{random.randint(50, 150)});")
+            time.sleep(random.uniform(0.3, 0.8))--- FIL: ./core/network.py ---
+# core/network.py
+import os
+import json
+import time
+import random
+import urllib.parse
+from pathlib import Path
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+from core.utils import C, session
+
+def load_config():
+    config_path = "config.json"
+    if not os.path.exists(config_path):
+        default_config = {
+            "use_tor_proxy": False,
+            "tor_proxy_url": "socks5://127.0.0.1:9050",
+            "api_keys": {
+                "shodan": "",
+                "hunter_io": "",
+                "virus_total": "",
+                "hibp_api_key": ""
+            }
+        }
+        with open(config_path, "w") as f:
+            json.dump(default_config, f, indent=4)
+        return default_config
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+CONFIG = load_config()
+
+def get_hunter_session():
+    req_session = requests.Session()
+    req_session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
+    
+    if CONFIG.get("use_tor_proxy"):
+        print(f"{C.YELLOW}[*] Ruter netværkstrafik gennem Tor/Proxy...{C.RESET}")
+        req_session.proxies = {
+            'http': CONFIG["tor_proxy_url"],
+            'https': CONFIG["tor_proxy_url"]
+        }
+    
+    retries = Retry(total=5, backoff_factor=1, status_forcelist=[ 429, 500, 502, 503, 504 ])
+    req_session.mount('http://', HTTPAdapter(max_retries=retries))
+    req_session.mount('https://', HTTPAdapter(max_retries=retries))
+    return req_session
+
+http = get_hunter_session()
+
+def safe_get_with_retry(driver, url, max_retries=2, backoff_base=3):
+    for attempt in range(max_retries):
+        try:
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            return True
+        except TimeoutException:
+            if attempt < max_retries - 1:
+                wait_time = backoff_base ** (attempt + 1) + random.uniform(2, 5)
+                time.sleep(wait_time)
+        except Exception:
+            pass
+    return False
+
+def extract_duckduckgo_links(driver, max_links=5):
+    links = []
+    selectors = [".result__a", "a.result__title", "a[href*='uddg=']", ".result"]
+    for selector in selectors:
+        try:
+            elements = WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector)))
+            if elements:
+                for el in elements[:max_links]:
+                    try:
+                        href = el.get_attribute("href")
+                        if href:
+                            if "uddg=" in href:
+                                href = urllib.parse.unquote(href.split("uddg=")[1].split("&")[0])
+                            if href.startswith(('http://', 'https://')):
+                                links.append({"url": href, "text": el.text.strip()})
+                    except Exception:
+                        continue
+            if links:
+                return links
+        except Exception:
+            continue
+    return links
+
+def omni_dork_search(driver, query, max_links=5):
+    from core.browser import zap_cookies
+    links = []
+    ddg_url = f"https://duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+    if safe_get_with_retry(driver, ddg_url, max_retries=1):
+        links = extract_duckduckgo_links(driver, max_links)
+        if links: return links
+        if "Redirecting" in driver.title or "Robot" in driver.title:
+            print(f"{C.DIM}    [*] DDG Blokeret. Skifter til Bing Fallback...{C.RESET}")
+            
+    bing_url = f"https://www.bing.com/search?q={urllib.parse.quote(query)}"
+    if safe_get_with_retry(driver, bing_url, max_retries=2):
+        zap_cookies(driver)
+        try:
+            elements = driver.find_elements(By.CSS_SELECTOR, "li.b_algo h2 a")
+            for el in elements[:max_links]:
+                href = el.get_attribute("href")
+                if href and "microsoft.com" not in href and "bing.com" not in href:
+                    links.append({"url": href, "text": el.text.strip()})
+            return links
+        except Exception: pass
+    return links--- FIL: ./core/logger.py ---
+# core/logger.py
+import logging
+from logging.handlers import RotatingFileHandler
+
+def setup_logger():
+    log_formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(module)s | %(message)s')
+    log_file = "omni_audit_trail.log"
+
+    # Roterer loggen så den ikke fylder uendeligt (gemmer max 5x 10MB filer)
+    my_handler = RotatingFileHandler(log_file, mode='a', maxBytes=10*1024*1024, backupCount=5, encoding=None, delay=0)
+    my_handler.setFormatter(log_formatter)
+    my_handler.setLevel(logging.DEBUG)
+
+    logger = logging.getLogger('OMNI_HUNTER')
+    logger.setLevel(logging.DEBUG)
+    
+    # Undgå at tilføje handlere flere gange hvis modulet loades igen
+    if not logger.handlers:
+        logger.addHandler(my_handler)
+        
+    return logger
+
+logger = setup_logger()--- FIL: ./core/utils.py ---
+# core/utils.py
+import re
+import os
+import shutil
+
+class C:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    CYAN = '\033[96m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+REGEX_EMAIL = re.compile(r'\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}\b')
+REGEX_BANK = re.compile(r'(?:reg|regnr)[^\d]{0,10}(\d{4}).{0,40}?(?:konto|kontonr)[^\d]{0,10}(\d{7,10})', re.IGNORECASE)
+REGEX_CPR = re.compile(r'\b(?:0[1-9]|[12][0-9]|3[01])(?:0[1-9]|1[0-2])\d{2}[- ]?\d{4}\b')
+REGEX_BTC = re.compile(r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b')
+REGEX_ETH = re.compile(r'\b0x[a-fA-F0-9]{40}\b')
+
+# Global session state (Deles på tværs af moduler)
+session = {
+    "name": "", 
+    "city": "", 
+    "email": "", 
+    "phone": "",
+    "username": "",
+    "found_links": [],
+    "loot_folder": "loot_evidence"
+}
+
+def get_input(prompt_text, session_key):
+    """Henter input og foreslår den tidligere værdi fra sessionen"""
+    default = session.get(session_key, "")
+    if default:
+        val = input(f"{C.CYAN}{prompt_text} [{default}]: {C.RESET}").strip()
+        if not val:  # Hvis brugeren bare trykker ENTER
+            return default
+    else:
+        val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
+    
+    session[session_key] = val
+    return val
+
+def extract_danish_phones(text):
+    """Extract Danish phone numbers from text"""
+    pattern = r'(?:^|\s)(\d{2})\s*(\d{2})\s*(\d{2})\s*(\d{2})(?:\s|$|[^\d])'
+    matches = re.findall(pattern, text, re.MULTILINE)
+    phones = set()
+    for match in matches:
+        phone = ''.join(match)
+        if phone.isdigit() and len(phone) == 8:
+            phones.add(phone)
+    return phones--- FIL: ./modules/__init__.py ---
+--- FIL: ./modules/mod_01_krak.py ---
+# -*- coding: utf-8 -*-
+import sys
+import time
+import json
+import os
+import re
+import urllib.parse
+from pathlib import Path
+from datetime import datetime
+from selenium.webdriver.common.by import By
+from core.utils import C, session
+from core.network import safe_get_with_retry
+
+class DirectoryIntelligenceHunter:
+    def __init__(self, name, city):
+        self.name = name.strip()
+        self.city = city.strip()
+        self.data = {
+            "Identitet": self.name, 
+            "Lokation": self.city, 
+            "Telefonnumre": [], 
+            "Ejendom": {},
+            "GPS_Koordinater": "",
+            "DinGeo_Intelligence": {}, 
+            "Screenshots": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def _update_progress(self, pct, message):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
+
+    def run(self, driver):
+        from core.browser import zap_cookies 
+        print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS & DinGeo Deep-Scrape)\n{'='*60}{C.RESET}")
+        
+        # --- USYNLIGHEDS-TRICKET ---
+        # Vi skyder browseren langt uden for skærmen, så den ikke forstyrrer dig, 
+        # men Cloudflare tror stadig det er en "rigtig" synlig browser.
+        try:
+            driver.set_window_position(-2000, 0)
+        except:
+            pass
+
+        query = f"{self.name} {self.city}".strip().replace(" ", "+").lower()
+        providers = {
+            "Krak": f"https://www.krak.dk/{query}/personer",
+            "De Gule Sider": f"https://www.degulesider.dk/{query}/personer"
+        }
+
+        os.makedirs(session["loot_folder"], exist_ok=True)
+
+        for provider_name, url in providers.items():
+            print(f"\n{C.YELLOW}[*] Forbinder til {provider_name}: {url}{C.RESET}")
+            if safe_get_with_retry(driver, url):
+                zap_cookies(driver)
+                time.sleep(3)
+                
+                try:
+                    search_img = f"{session['loot_folder']}/01_{provider_name}_Search_{self.name.replace(' ', '_')}.png"
+                    driver.save_screenshot(search_img)
+                    self.data["Screenshots"].append(search_img)
+                    
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(1.5)
+                    current_url = driver.current_url
+                    
+                    target_url = None
+                    if re.search(r'/\d+/person/?$', current_url):
+                        target_url = current_url
+                    else:
+                        links = driver.find_elements(By.TAG_NAME, "a")
+                        base_domain = "krak.dk" if provider_name == "Krak" else "degulesider.dk"
+                        pattern = rf'^https://www\.{base_domain}/([^/]+)/\d+/person$'
+                        for link in links:
+                            href = link.get_attribute("href")
+                            if href and re.match(pattern, href):
+                                target_url = href
+                                break
+                    
+                    if target_url:
+                        driver.get(target_url)
+                        time.sleep(3)
+                        self._extract_profile_data(driver, provider_name)
+                except Exception as e:
+                    print(f"{C.RED}    [!] Fejl: {e}{C.RESET}")
+
+        # --- SMART CLEANUP ---
+        if self.data["Telefonnumre"] or self.data.get("Ejendom"):
+            final_screenshots = []
+            for img in self.data["Screenshots"]:
+                if "DinGeo" not in img:
+                    try: os.remove(img)
+                    except: pass
+                else: final_screenshots.append(img)
+            self.data["Screenshots"] = final_screenshots
+
+        print(f"\n{C.GREEN}[✓] Intelligence opslag 100% færdig.{C.RESET}")
+        self.save()
+        return self.data
+
+    def _extract_profile_data(self, driver, provider_name):
+        driver.execute_script("window.scrollBy(0, 400);")
+        time.sleep(1)
+        try:
+            buttons = driver.find_elements(By.TAG_NAME, "button")
+            for btn in buttons:
+                if "vis" in btn.text.lower() or "nummer" in btn.text.lower():
+                    driver.execute_script("arguments[0].click();", btn)
+                    time.sleep(1)
+        except: pass
+
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        lines = [line.strip() for line in body_text.split('\n') if line.strip()]
+        
+        for i, line in enumerate(lines):
+            # 1. TELEFON
+            if line == "Telefonnummer" and i + 1 < len(lines):
+                p = lines[i+1].replace(" ", "")
+                if len(p) == 8:
+                    fmt = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
+                    if fmt not in self.data["Telefonnumre"]: self.data["Telefonnumre"].append(fmt)
+
+            # 2. ADRESSE TOP
+            if line == "Adresse" and i + 2 < len(lines) and not self.data.get("Ejendom"):
+                vej, post_by = lines[i+1], lines[i+2]
+                match = re.search(r'^([1-9]\d{3})\s+(.*)', post_by)
+                if match:
+                    post, by = match.group(1), match.group(2)
+                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
+                    self._scrape_dingeo_deep(driver, vej, post, by)
+
+            # 3. ADRESSE BACKUP (Tabel) - DENNE MANGLERDE FØR!
+            if line == "Vejnavn" and i + 1 < len(lines) and not self.data.get("Ejendom"):
+                vej = lines[i+1]
+                post, by = "", ""
+                for j in range(i, min(i+10, len(lines))):
+                    if lines[j] == "Postnummer" and j + 1 < len(lines):
+                        post = lines[j+1]
+                    if lines[j] == "Bynavn" and j + 1 < len(lines):
+                        by = lines[j+1]
+                
+                if vej and post and by:
+                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
+                    self._scrape_dingeo_deep(driver, vej, post, by)
+
+            # 4. GPS
+            if line == "Koordinater" and i + 1 < len(lines):
+                self.data["GPS_Koordinater"] = lines[i+1]
+        return True
+
+    def _scrape_dingeo_deep(self, driver, vej, post, by):
+        print(f"{C.CYAN}      [*] Dybde-analyserer ejendommen på DinGeo...{C.RESET}")
+        
+        city_slug = f"{post}-{by}".lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
+        vej_slug = vej.lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
+        base_url = f"https://www.dingeo.dk/adresse/{city_slug}/{vej_slug}"
+        
+        paths = {
+            "Profil": "",
+            "Dokumenter": "/dokument/",
+            "Vurdering": "/vurdering/",
+            "Boligskat": "/skat/",
+            "Net_Mobil": "/internet-mobil/"
+        }
+
+        for category, path in paths.items():
+            target = base_url + path
+            if safe_get_with_retry(driver, target, max_retries=1):
+                time.sleep(2)
+                # Cookie Killer
+                try:
+                    for btn in driver.find_elements(By.TAG_NAME, "button"):
+                        if any(x in btn.text.lower() for x in ["tillad", "accepter", "forstået"]):
+                            driver.execute_script("arguments[0].click();", btn)
+                            break
+                except: pass
+
+                text = driver.find_element(By.TAG_NAME, "body").text
+                lines = [l.strip() for l in text.split('\n') if l.strip()]
+                
+                if category == "Profil":
+                    # Screenshot af selve huset
+                    img = f"{session['loot_folder']}/01_DinGeo_Hus_{self.name.replace(' ', '_')}.png"
+                    driver.save_screenshot(img)
+                    if img not in self.data["Screenshots"]:
+                        self.data["Screenshots"].append(img)
+                    
+                    intel = {}
+                    keys = ["Opførselsesår", "Antal værelser", "Anvendelse", "Varmeinstallation", "Boligtype", "Ydervægsmateriale", "Tagmateriale"]
+                    for i, l in enumerate(lines):
+                        for k in keys:
+                            if l == k and i+1 < len(lines): intel[k] = lines[i+1]
+                        if "bor i" in l and "nærmeste naboer" in text:
+                            intel["Nabolag"] = l + " " + lines[i+1] if i+1 < len(lines) else l
+                    self.data["DinGeo_Intelligence"]["BBR"] = intel
+
+                elif category == "Dokumenter":
+                    docs = {"Servitutter": "0", "Byggesager": "Ingen fundet"}
+                    match = re.search(r'der (\w+) servitutter', text.lower())
+                    if match: docs["Servitutter"] = match.group(1).capitalize()
+                    if "ingen historiske byggesager" not in text.lower(): docs["Byggesager"] = "Fundet (Tjek link)"
+                    self.data["DinGeo_Intelligence"]["Dokument_Status"] = docs
+
+                elif category == "Vurdering":
+                    vurdering = {}
+                    for i, l in enumerate(lines):
+                        if "Dingestimat" in l and i+1 < len(lines):
+                            vurdering["Dingestimat"] = lines[i+1]
+                        if "Seneste salgspris" in l and i+1 < len(lines):
+                            vurdering["Seneste_Salg"] = lines[i+1] + " (" + (lines[i+2] if i+2 < len(lines) else "") + ")"
+                    if vurdering:
+                        self.data["DinGeo_Intelligence"]["Vurdering"] = vurdering
+
+                elif category == "Boligskat":
+                    skat = {}
+                    for i, l in enumerate(lines):
+                        if "Boligskat 2024" in l and i+1 < len(lines):
+                            skat["Total_2024"] = lines[i+1]
+                    if skat:
+                        self.data["DinGeo_Intelligence"]["Skat"] = skat
+
+                elif category == "Net_Mobil":
+                    net = {"Fiber": "Nej", "5G": "Nej", "Mobil": "Ukendt"}
+                    if "Fibernet" in text: net["Fiber"] = "Ja"
+                    if "5G-internet" in text: net["5G"] = "Ja"
+                    if "god mobildækning" in text: net["Mobil"] = "God"
+                    self.data["DinGeo_Intelligence"]["Infrastruktur"] = net
+
+    def save(self):
+        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence"))
+        if not has_data:
+            gem = input(f"\n{C.YELLOW}[?] Intet fundet. Vil du gemme en tom rapport? (j/n): {C.RESET}").strip().lower()
+            if gem != 'j':
+                print(f"{C.DIM}[*] Rapport kasseret.{C.RESET}")
+                return
+
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_03_breach.py ---
+# -*- coding: utf-8 -*-
+import requests
+import json
+import os
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+from core.utils import C, session
+from core.network import omni_dork_search
+
+class BreachIntelligenceAnalyst:
+    def __init__(self, email):
+        self.email = email.strip()
+        self.data = {
+            "Email": self.email, 
+            "Paste_Sites": [], 
+            "Data_Leaks": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def _update_progress(self, pct, message):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[03] Breach Analyse (XposedOrNot & Fast Dorks)\n{'='*60}{C.RESET}")
+        print(f"Target Email: {self.email}\n")
+        
+        self._update_progress(20, "Forbinder til gratis OSINT API")
+        
+        self._check_xposedornot()
+        
+        self._update_progress(60, "Bygger massiv Paste-Dork")
+        print(f"\n{C.YELLOW}[*] Udforer High-Speed Dorking mod Paste-sites...{C.RESET}")
+        
+        sites = ["pastebin.com", "throwbin.io", "ghostbin.co", "rentry.co", "controlc.com", "justpaste.it"]
+        sites_query = " OR ".join([f"site:{site}" for site in sites])
+        dork = f'({sites_query}) "{self.email}"'
+        
+        self._update_progress(80, "Soger globalt via Selenium")
+        links = omni_dork_search(driver, dork, max_links=5)
+        
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        if links:
+            for link in links:
+                print(f"{C.GREEN}    🔥 PASTE FUNDET: {link['url'][:80]}{C.RESET}")
+                if link["url"] not in self.data["Paste_Sites"]:
+                    self.data["Paste_Sites"].append(link["url"])
+        else:
+            print(f"{C.DIM}    [-] Ingen Paste-laekager fundet via Google.{C.RESET}")
+
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"\n{C.GREEN}[✓] Breach-analyse 100% fuldfort.{C.RESET}")
+        self.save()
+
+    def _check_xposedornot(self):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"{C.YELLOW}[*] Slaar op i globale Hacker-databaser (XposedOrNot API)...{C.RESET}")
+        
+        url = f"https://api.xposedornot.com/v1/check-email/{self.email}"
+        try:
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                breaches = data.get("breaches", [])
+                if breaches:
+                    print(f"{C.RED}    🔥 KRITISK: Emailen findes i {len(breaches)} datalaek!{C.RESET}")
+                    for b in breaches[:10]:
+                        print(f"{C.YELLOW}      -> Laekket i: {b}{C.RESET}")
+                        self.data["Data_Leaks"].append(b)
+                    if len(breaches) > 10:
+                        print(f"{C.DIM}      -> ... og {len(breaches)-10} mere.{C.RESET}")
+            elif res.status_code == 404:
+                print(f"{C.GREEN}    ✓ Ingen hits i databasen (Emailen er ikke fundet i kendte laek).{C.RESET}")
+            else:
+                print(f"{C.DIM}    [-] API gav ukendt statuskode: {res.status_code}{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [-] Forbindelsesfejl til XposedOrNot: {e}{C.RESET}")
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/03_BREACH_{self.email.replace('@', '_at_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_16_titan.py ---
+# -*- coding: utf-8 -*-
+import os
+import glob
+import time
+import json
+import re
+import zipfile
+import concurrent.futures
+from pathlib import Path
+from datetime import datetime
+
+import magic
+import cv2
+import pytesseract
+import fitz  # PyMuPDF
+from PIL import Image
+from PIL.ExifTags import TAGS
+
+from core.utils import C, session, REGEX_EMAIL, REGEX_BANK, REGEX_CPR, REGEX_BTC, REGEX_ETH
+from modules.mod_27_ai import TitanAIEnrichment
+from modules.mod_03_breach import BreachIntelligenceAnalyst
+
+HAS_OCR = True
+HAS_PDF = True
+
+class AutoForensicMassScanner:
+    """TITAN Orchestrator: Den mest komplette kombination af OSINT og digital forensik."""
+    def _convert_to_degrees(self, value):
+        try:
+            d, m, s = float(value[0]), float(value[1]), float(value[2])
+            return d + (m / 60.0) + (s / 3600.0)
+        except Exception: return None
+    
+    def __init__(self, folder_path):
+        self.folder_path = folder_path.strip()
+        self.start_time = time.time()
+        
+        self.master_data = {
+            "Meta": {"Sagsmappe": self.folder_path, "Timestamp": datetime.now().isoformat(), "Filer_Behandlet": 0},
+            "Case_Intelligence": {
+                "Verified_Identities": {}, 
+                "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set()},
+                "Financial_Leads": {"Bankkonti": set(), "Crypto_Seeds": [], "Keys_Secrets": [], "CVR": set()},
+                "Physical_Leads": {"Adresser": set(), "Nummerplader": set(), "GPS_Data": []},
+                "ID_Documents": {"MRZ_Koder": [], "CPR_Numre": set(), "Pasnumre": set()},
+                "Timeline": {"Datoer_Fundet": set()}
+            },
+            "Metadata_Report": {}, 
+            "Source_Map": {},      
+            "File_Integrity_Alerts": [], 
+            "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": []},
+            "Raw_Text_Archive": {} 
+        }
+        self.noise_list = ["Matas", "Apple", "Google", "Lunar", "Faktura", "Store", "Support", "Maria Casino", "Gældsstyrelsen", "Danske Spil", "Danske Inkasso"]
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[16] GOLIATH TITAN: FULL SPECTRUM FORENSICS\n{'='*60}{C.RESET}")
+        if not os.path.exists(self.folder_path): 
+            print(f"{C.RED}[!] Fejl: Stien {self.folder_path} findes ikke.{C.RESET}"); return
+        
+        print(f"{C.YELLOW}[*] Step 1: Deep Unpacking af arkiver...{C.RESET}")
+        self._unpack_archives()
+
+        files = [f for f in glob.glob(f"{self.folder_path}/**/*", recursive=True) if os.path.isfile(f)]
+        self.master_data["Meta"]["Filer_Behandlet"] = len(files)
+
+        print(f"{C.YELLOW}[*] Step 2: Starter synkroniseret OCR/Tekst-analyse af {len(files)} enheder (Max 8 tråde)...{C.RESET}")
+        completed = 0
+        
+        # Vi tilføjer robusthed her: Hvis én proces fejler (Pga. en mystisk fil), fortsætter de 7 andre
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(self._titan_process_file, f): f for f in files}
+            for future in concurrent.futures.as_completed(futures):
+                completed += 1
+                self._print_progress(completed, len(files))
+                try:
+                    res = future.result()
+                    if res: self._ingest_results(res)
+                except Exception as e:
+                    pass # Skjuler specifikke tråd-fejl for brugeren for at holde konsollen ren
+        
+        print(f"\n{C.GREEN}[✓] Forensic Pipeline komplet. Starter automatisk berigelse...{C.RESET}")
+        self._auto_pivot_engine(driver)
+        self._save_master_file()
+        
+        print(f"\n{C.CYAN}--- TITAN MISSION SUMMARY ---{C.RESET}")
+        print(f"Emails fundet: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['Emails'])}")
+        print(f"Bankkonti fundet: {len(self.master_data['Case_Intelligence']['Financial_Leads']['Bankkonti'])}")
+        print(f"CPR numre fundet: {len(self.master_data['Case_Intelligence']['ID_Documents']['CPR_Numre'])}")
+        
+        if "Devices" in self.master_data["Case_Intelligence"]:
+            print(f"Identificerede Enheder: {', '.join(self.master_data['Case_Intelligence']['Devices'].keys())}")
+        print(f"{C.CYAN}----------------------------{C.RESET}")
+
+    def _titan_process_file(self, f_path):
+        fname = os.path.basename(f_path)
+        res = {"file": fname, "path": f_path, "text": "", "meta": {}, "mime": "unknown", "entities": {}}
+        
+        if f_path.lower().endswith('.zip'):
+            return res
+
+        try:
+            mime_type = magic.from_file(f_path, mime=True)
+            res["mime"] = mime_type if mime_type else "unknown"
+
+            if "image" in res["mime"]:
+                res["meta"] = self._extract_exif(f_path)
+                if HAS_OCR: res["text"] = self._ocr_pro(f_path)
+                
+            elif "pdf" in res["mime"] and HAS_PDF:
+                try:
+                    doc = fitz.open(f_path)
+                    text_parts = []
+                    for page in doc:
+                        text_parts.append(page.get_text())
+                        
+                        if HAS_OCR:
+                            for img_idx, img in enumerate(page.get_images(full=True)):
+                                try:
+                                    base_image = doc.extract_image(img[0])
+                                    tmp_img = f"/tmp/pdf_tmp_{time.time()}_{img[0]}.png"
+                                    with open(tmp_img, "wb") as f: f.write(base_image["image"])
+                                    text_parts.append(self._ocr_pro(tmp_img))
+                                    os.remove(tmp_img)
+                                except Exception: pass
+                    res["text"] = "\n".join(text_parts)
+                    doc.close()
+                except Exception: pass
+                
+            elif any(x in res["mime"] for x in ["text", "json", "csv", "plain"]):
+                with open(f_path, 'r', encoding='utf-8', errors='ignore') as f: res["text"] = f.read()
+
+            if res["text"]:
+                res["entities"] = self._scrub_all(res["text"])
+                res["secrets"] = self._find_secrets(res["text"])
+                
+                if len(res["text"]) > 50:
+                    ai = TitanAIEnrichment()
+                    ai_data = ai.analyze_text(res["text"])
+                    if ai_data:
+                        res["ai_context"] = ai_data
+        except Exception: pass
+        return res
+
+    def _ocr_pro(self, path):
+        """OpenCV Pre-processing med MAX opløsning for memory-sikkerhed."""
+        try:
+            img = cv2.imread(path)
+            if img is None: return ""
+            
+            height, width = img.shape[:2]
+            max_dimension = 2500
+            if width > max_dimension or height > max_dimension:
+                scaling_factor = max_dimension / float(max(width, height))
+                img = cv2.resize(img, None, fx=scaling_factor, fy=scaling_factor, interpolation=cv2.INTER_AREA)
+
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+            
+            text = pytesseract.image_to_string(thresh, config='--psm 3 --oem 3')
+            
+            if "<" in text or "PAS" in text.upper() or "DANMARK" in text.upper():
+                text += "\n" + pytesseract.image_to_string(thresh, config='--psm 11')
+            return text
+        except Exception: return ""
+
+    def _scrub_all(self, text):
+        e = {"emails": [], "bank": [], "cpr": [], "mrz": [], "crypto": []}
+        
+        for mail in REGEX_EMAIL.findall(text):
+            clean_mail = self._sanitize_email(mail.lower())
+            e["emails"].append({"val": clean_mail, "score": 100})
+            
+        e["bank"] = REGEX_BANK.findall(text)
+        e["cpr"] = REGEX_CPR.findall(text)
+        
+        for m in REGEX_BTC.findall(text): e["crypto"].append({"type": "Bitcoin_Addr", "val": m})
+        for m in REGEX_ETH.findall(text): e["crypto"].append({"type": "Ethereum_Addr", "val": m})
+        return e
+
+    def _sanitize_email(self, email):
+        replacements = {
+            ".cona": ".com", ".con": ".com", "hotmell": "hotmail",
+            "hotmall": "hotmail", "gmaill": "gmail", "gmall": "gmail",
+            "outloook": "outlook", "live.dkk": "live.dk"
+        }
+        for fault, fix in replacements.items():
+            email = email.replace(fault, fix)
+        return email
+
+    def _find_secrets(self, text):
+        secrets = []
+        mnemonic = re.findall(r'\b(?:[a-z]{3,12}\s){11,23}[a-z]{3,12}\b', text.lower())
+        if mnemonic: secrets.append({"type": "Crypto_Mnemonic", "val": mnemonic})
+        keys = re.findall(r'\b(?:AIza[0-9A-Za-z-_]{35}|[0-9a-f]{64})\b', text)
+        if keys: secrets.append({"type": "API_Key_or_Hash", "val": keys})
+        return secrets
+
+    def _auto_pivot_engine(self, driver):
+        intel = self.master_data["Case_Intelligence"]
+        
+        if not intel["Digital_Footprint"]["Emails"]: return
+        
+        print(f"\n{C.CYAN}{'='*60}\nBERIGELSE: GOLIATH TITAN ORCHESTRATOR\n{'='*60}{C.RESET}")
+        
+        emails = [e for e, data in sorted(intel["Digital_Footprint"]["Emails"].items(), key=lambda x: x[1]['score'], reverse=True)[:5]]
+        for email in emails:
+            now = datetime.now().strftime("%H:%M:%S")
+            print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 03 (Breach): {email}...{C.RESET}")
+            mod = BreachIntelligenceAnalyst(email); mod.save = lambda: None
+            try: 
+                mod.run(driver)
+                if mod.data["Data_Leaks"] or mod.data["Paste_Sites"]:
+                    self.master_data["Berigelse_Resultater"]["Breach_Reports"].append(mod.data)
+            except Exception: pass
+            import random
+            time.sleep(random.uniform(3, 6))
+
+    def _ingest_results(self, res):
+        intel = self.master_data["Case_Intelligence"]
+        
+        for e in res["entities"].get("emails", []):
+            email = e["val"]
+            if email not in intel["Digital_Footprint"]["Emails"]:
+                intel["Digital_Footprint"]["Emails"][email] = {"score": 0, "sources": set()}
+            intel["Digital_Footprint"]["Emails"][email]["score"] += e["score"]
+            intel["Digital_Footprint"]["Emails"][email]["sources"].add(res["file"])
+
+        for bank in res["entities"].get("bank", []):
+            if isinstance(bank, tuple): bank = f"{bank[0]} {bank[1]}"
+            intel["Financial_Leads"]["Bankkonti"].add(bank)
+
+        for cpr in res["entities"].get("cpr", []):
+            intel["ID_Documents"]["CPR_Numre"].add(cpr)
+            
+        for crypt in res["entities"].get("crypto", []):
+            intel["Financial_Leads"]["Crypto_Seeds"].append(crypt)
+            
+        for sec in res.get("secrets", []):
+            intel["Financial_Leads"]["Keys_Secrets"].append(sec)
+
+        if res.get("meta") and "Make" in res["meta"]:
+            device = f"{res['meta'].get('Make', 'Unknown')} {res['meta'].get('Model', '')}".strip()
+            if "Devices" not in intel: 
+                intel["Devices"] = {}
+            intel["Devices"][device] = intel["Devices"].get(device, 0) + 1
+            
+        if res.get("meta") and "GPS_Link" in res["meta"]:
+            intel["Physical_Leads"]["GPS_Data"].append({"File": res["file"], "Link": res["meta"]["GPS_Link"]})
+
+    def _extract_exif(self, path):
+        meta = {}
+        try:
+            with Image.open(path) as img:
+                info = img._getexif()
+                if info:
+                    for tag, value in info.items():
+                        decoded = TAGS.get(tag, tag)
+                        if decoded == 'GPSInfo':
+                            gps_link = self._get_gps_link(value)
+                            if gps_link: meta['GPS_Link'] = gps_link
+                        elif decoded in ['DateTime', 'Make', 'Model']: 
+                            meta[decoded] = str(value)
+        except Exception: pass
+        return meta
+
+    def _get_gps_link(self, gps_info):
+        try:
+            if gps_info and 2 in gps_info and 4 in gps_info:
+                lat = self._convert_to_degrees(gps_info[2])
+                lon = self._convert_to_degrees(gps_info[4])
+                
+                lat_ref = gps_info.get(1, 'N')
+                lon_ref = gps_info.get(3, 'E')
+                
+                if isinstance(lat_ref, bytes): lat_ref = lat_ref.decode('utf-8')
+                if isinstance(lon_ref, bytes): lon_ref = lon_ref.decode('utf-8')
+                
+                if lat and lon:
+                    lat = lat * (-1 if lat_ref == 'S' else 1)
+                    lon = lon * (-1 if lon_ref == 'W' else 1)
+                    return f"https://www.google.com/maps?q={lat},{lon}"
+        except Exception: return None
+        return None
+
+    def _print_progress(self, current, total):
+        import sys
+        pct = int((current / total) * 100)
+        bar = "█" * (pct // 2) + "-" * (50 - (pct // 2))
+        sys.stdout.write(f"\r{C.YELLOW}[*] TITAN-SCAN: |{bar}| {pct}% ({current}/{total}){C.RESET}")
+        sys.stdout.flush()
+
+    def _save_master_file(self):
+        def convert_sets(obj):
+            if isinstance(obj, set): return list(obj)
+            if isinstance(obj, dict): return {k: convert_sets(v) for k, v in obj.items()}
+            if isinstance(obj, list): return [convert_sets(i) for i in obj]
+            return obj
+
+        self.master_data["Case_Intelligence"] = convert_sets(self.master_data["Case_Intelligence"])
+        
+        mappe_navn = os.path.basename(os.path.normpath(self.folder_path))
+        path = f"{session['loot_folder']}/16_TITAN_REPORT_{mappe_navn}_{datetime.now().strftime('%H%M%S')}.json"
+        
+        try:
+            Path(path).write_text(json.dumps(self.master_data, indent=4, ensure_ascii=False), encoding="utf-8")
+            print(f"\n{C.GREEN}[✓✓✓] TITAN MISSION FULDFØRT! FIL GEMT: {path}{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}[!] Fejl under gemning: {e}{C.RESET}")
+
+    def _unpack_archives(self):
+        for zf in glob.glob(f"{self.folder_path}/**/*.zip", recursive=True):
+            extract_dir = os.path.join(self.folder_path, f"_extracted_{os.path.basename(zf)[:-4]}")
+            if not os.path.exists(extract_dir):
+                try:
+                    with zipfile.ZipFile(zf, 'r') as zip_ref: zip_ref.extractall(extract_dir)
+                except Exception: pass--- FIL: ./modules/mod_02_business.py ---
+import json
+import os
+import sys
+import time
+import urllib.parse
+import requests
+from datetime import datetime
+from pathlib import Path
+
+from core.utils import C, session
+from core.network import http, CONFIG, omni_dork_search
+
+class BusinessIntelligenceAnalyst:
+    def __init__(self, name):
+        self.name = name.strip()
+        self.api_key = CONFIG.get("api_keys", {}).get("hunter_io", "")
+        self.results = {
+            "Mål": self.name, 
+            "CVR_Intel": [], 
+            "Hunter_Data": {}, 
+            "Proff_Links": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def _update_progress(self, pct, message):
+        """Klippestabil progress bar der rydder linjen"""
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[02] Erhvervs-efterretning (CVR, Hunter & Proff)\n{'='*60}{C.RESET}")
+        print(f"[*] Starter virksomheds-analyse for: {self.name}\n")
+        
+        self._update_progress(20, "Slår op i CVR-Registeret")
+        self._check_cvr()
+        
+        self._update_progress(50, "Søger i Hunter.io Databasen")
+        self._check_hunter()
+        
+        self._update_progress(80, "Dorking Proff.dk (Regnskaber & Netværk)")
+        self._check_proff(driver)
+        
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"{C.GREEN}[✓] Erhvervs-analyse 100% fuldført.{C.RESET}")
+        self.save()
+
+    def _check_cvr(self):
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        print(f"{C.YELLOW}[*] Henter virksomhedsdata via CVR API...{C.RESET}")
+        headers = {"User-Agent": "OmniHunter-OSINT-Tool"}
+        url = f"https://cvrapi.dk/api?search={urllib.parse.quote(self.name)}&country=dk"
+        
+        try:
+            response = http.get(url, headers=headers, timeout=10)
+            if response.status_code == 200 and "error" not in response.text:
+                raw_data = response.json()
+                
+                # --- INTELLIGENCE PARSER: Forhindrer "Ubrugelig JSON" ---
+                p_units = raw_data.get("productionunits", [])
+                
+                clean_intel = {
+                    "Virksomhed": raw_data.get("name"),
+                    "CVR": raw_data.get("vat"),
+                    "Status": raw_data.get("status", "Aktiv"),
+                    "Type": raw_data.get("companydesc"),
+                    "Hovedadresse": f"{raw_data.get('address')}, {raw_data.get('zipcode')} {raw_data.get('city')}",
+                    "Ansatte": raw_data.get("employees"),
+                    "Branche": raw_data.get("industrydesc"),
+                    "Antal_Afdelinger_P_Numre": len(p_units),
+                    "Udvalgte_Afdelinger": [
+                        {"Navn": p.get("name"), "Adresse": f"{p.get('address')}, {p.get('city')}"} 
+                        for p in p_units[:5] # Viser kun Top 5 for at undgå støj
+                    ]
+                }
+
+                # Fanger ejere/direktion hvis de findes (CVR API leverer dette på nogle selskaber)
+                if raw_data.get("owners"):
+                    clean_intel["Ejere_Direktion"] = [o.get("name") for o in raw_data.get("owners", [])]
+
+                print(f"{C.GREEN}    ✓ Virksomhed fundet: {clean_intel['Virksomhed']} (CVR: {clean_intel['CVR']}){C.RESET}")
+                print(f"      -> Status: {clean_intel['Status']}")
+                print(f"      -> Adresse: {clean_intel['Hovedadresse']}")
+                print(f"      -> Ansatte: {clean_intel['Ansatte']}")
+                
+                if len(p_units) > 5:
+                    print(f"{C.DIM}      -> Fandt {len(p_units)} afdelinger (P-numre). Gemmer kun Top 5 for at holde rapporten ren.{C.RESET}")
+
+                # Gemmer den rensede data i toppen af JSON
+                self.results["CVR_Intel"].append(clean_intel)
+                
+                # Gemmer den massive raw data under en anden nøgle, så vi IKKE nerfer scriptet!
+                self.results["CVR_Raw_Dump"] = raw_data 
+
+            else:
+                print(f"{C.DIM}    [-] Ingen CVR matches fundet.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] CVR API Fejl: {e}{C.RESET}")
+
+    def _check_hunter(self):
+        if not self.api_key:
+            print(f"\n{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
+            return
+
+        domain = self.name
+        if "." not in domain:
+            # Novo Nordisk bruger .com - Vi laver et intelligent gæt
+            forslag = self.name.lower().replace(' ', '') + ".com" 
+            domain = input(f"\n{C.YELLOW}[?] Indtast domæne for email-udtræk (f.eks. {forslag}) eller tryk ENTER for at springe over: {C.RESET}").strip()
+            if not domain:
+                return
+
+        print(f"\n{C.YELLOW}[*] Udfører Corporate Domain Search på '{domain}'...{C.RESET}")
+        url = f"https://api.hunter.io/v2/domain-search?domain={domain}&api_key={self.api_key}"
+        
+        try:
+            res = requests.get(url, timeout=10).json()
+            if "data" in res and "emails" in res["data"] and len(res["data"]["emails"]) > 0:
+                emails = res["data"]["emails"]
+                pattern = res["data"].get("pattern", "Ukendt")
+                
+                print(f"{C.GREEN}    🔥 Fandt {len(emails)} e-mails tilknyttet {domain}!{C.RESET}")
+                if pattern:
+                    print(f"      -> Format: {pattern}")
+                
+                # Renere JSON for Hunter
+                clean_emails = []
+                for emp in emails[:15]:
+                    first = emp.get("first_name", "")
+                    last = emp.get("last_name", "")
+                    pos = emp.get("position", "")
+                    clean_emails.append({
+                        "Email": emp.get("value"),
+                        "Navn": f"{first} {last}".strip(),
+                        "Stilling": pos
+                    })
+                    print(f"{C.GREEN}      ✓ {emp.get('value')} ({first} {last}) - {pos}{C.RESET}")
+                    
+                self.results["Hunter_Data"] = {"Format": pattern, "Emails": clean_emails}
+                
+                if len(emails) > 15:
+                    print(f"{C.CYAN}    ... og {len(emails)-15} flere.{C.RESET}")
+            else:
+                print(f"{C.YELLOW}    [-] Ingen offentlige e-mails fundet for {domain}.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Hunter.io Fejl: {e}{C.RESET}")
+
+    def _check_proff(self, driver):
+        print(f"\n{C.YELLOW}[*] Dorking Proff.dk for nøgletal og netværk...{C.RESET}")
+        if driver:
+            dork = f'site:proff.dk "{self.name}"'
+            links = omni_dork_search(driver, dork, max_links=2)
+            if links:
+                print(f"{C.GREEN}    ✓ Fandt regnskabs/netværks-data på Proff.dk!{C.RESET}")
+                for link in links:
+                    print(f"      -> {link['url']}")
+                    self.results["Proff_Links"].append(link['url'])
+            else:
+                print(f"{C.DIM}    [-] Intet fundet på Proff.dk.{C.RESET}")
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/02_BUSINESS_{self.name.replace(' ', '_').replace('.', '_')}.json"
+        Path(filename).write_text(json.dumps(self.results, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_04_social.py ---
+# -*- coding: utf-8 -*-
+import json
+import os
+import requests
+import sys
+import re
+from datetime import datetime
+from pathlib import Path
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from core.utils import C, session
+from core.network import omni_dork_search, safe_get_with_retry
+
+class SocialMediaProfiler:
+    def __init__(self, username):
+        self.username = username.strip()
+        # Hvis input er et fuldt navn, gemmer vi det til alias-generering
+        self.full_name = username if " " in username else None
+        self.data = {
+            "Brugernavn": self.username,
+            "Fuldt_Navn": self.full_name,
+            "Deep_Scrape": {}, 
+            "Fundne_Profiler": [],
+            "Identificerede_Aliaser": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[04] GOLIATH SOCIAL STALKER (MONSTER EDITION)\n{'='*60}{C.RESET}")
+        
+        # --- NYT: ALIAS GENERERING ---
+        if self.full_name:
+            print(f"{C.YELLOW}[*] Genererer sandsynlige brugernavne ud fra navn...{C.RESET}")
+            self._generate_aliases()
+            print(f"      -> Aliaser: {', '.join(self.data['Identificerede_Aliaser'][:5])}...")
+
+        # --- EKSISTERENDE GITHUB SCRAPE (Bibeholdt) ---
+        print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på GitHub...{C.RESET}")
+        github_url = f"https://github.com/{self.username}"
+        if safe_get_with_retry(driver, github_url):
+            if "404" not in driver.title and "Not Found" not in driver.title:
+                self._scrape_github(driver)
+
+        # --- NYT: INSTAGRAM DEEP SCRAPE (Cemile Specific) ---
+        # Hvis vi har et alias som cemileb.c, prøver vi at scrape det direkte
+        insta_handle = self.username if "." in self.username or "_" in self.username else "cemileb.c"
+        print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på Instagram (@{insta_handle})...{C.RESET}")
+        self._scrape_instagram(driver, insta_handle)
+
+        # --- NYT: TIKTOK DEEP SCRAPE ---
+        print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på TikTok...{C.RESET}")
+        self._scrape_tiktok(driver, self.username)
+
+        # --- EKSISTERENDE MASSIV DORKING MATRIX (Bibeholdt & Forbedret) ---
+        print(f"\n{C.YELLOW}[*] Udruller massiv OSINT Dorking Matrix over 40+ platforme...{C.RESET}")
+        
+        international_sites = [
+            "facebook.com", "instagram.com", "linkedin.com", "tiktok.com", 
+            "twitter.com", "x.com", "reddit.com/user", "pinterest.com", 
+            "youtube.com", "twitch.tv", "steamcommunity.com/id", 
+            "tinder.com", "badoo.com", "vk.com", "medium.com", "github.com",
+            "t.me", "vimeo.com", "soundcloud.com", "spotify.com", "snapchat.com/add"
+        ]
+        
+        danish_sites = [
+            "dba.dk", "guloggratis.dk", "scor.dk", "dating.dk", 
+            "holdet.dk", "amino.dk", "hardwareonline.dk", "studieportalen.dk", 
+            "trustpilot.com/users", "kino.dk", "boligportal.dk", "heste-nettet.dk", "trendsales.dk"
+        ]
+        
+        all_platforms = international_sites + danish_sites
+        
+        # Vi tilføjer navne-søgning til dorking hvis vi har et fuldt navn
+        search_term = f'"{self.full_name}"' if self.full_name else f'"{self.username}"'
+        
+        chunk_size = 4
+        for i in range(0, len(all_platforms), chunk_size):
+            total_chunks = (len(all_platforms) + chunk_size - 1) // chunk_size
+            current_chunk = (i // chunk_size) + 1
+            pct = int((current_chunk / total_chunks) * 100)
+            
+            sys.stdout.write(f"\r{C.CYAN}    [*] Skanner platform matrix... {pct}% ({all_platforms[i]})      {C.RESET}")
+            sys.stdout.flush()
+            
+            chunk = all_platforms[i:i+chunk_size]
+            sites_query = " OR ".join([f"site:{site}" for site in chunk])
+            dork = f'({sites_query}) {search_term}'
+            
+            links = omni_dork_search(driver, dork, max_links=6)
+            if links:
+                for link in links:
+                    url = link['url']
+                    titel = link.get('text', '')
+                    
+                    if any(p.replace('/user', '').replace('/id', '').replace('/users', '').replace('/add', '') in url for p in chunk):
+                        sys.stdout.write("\r" + " " * 80 + "\r")
+                        print(f"{C.GREEN}    🔥 SPOR FUNDET: {url}{C.RESET}")
+                        if not any(p['URL'] == url for p in self.data["Fundne_Profiler"]):
+                            self.data["Fundne_Profiler"].append({"URL": url, "Kontekst": titel})
+
+        print(f"\n{C.GREEN}[✓] Profil-scanning komplet.{C.RESET}")
+        self.save()
+
+    def _generate_aliases(self):
+        """Kreativ generering af brugernavne ud fra navn"""
+        if not self.full_name: return
+        parts = self.full_name.lower().split()
+        if len(parts) >= 2:
+            f, l = parts[0], parts[-1]
+            m = parts[1] if len(parts) > 2 else ""
+            self.data["Identificerede_Aliaser"].extend([
+                f"{f}{l}", f"{f}.{l}", f"{f}_{l}", f"{f}{l[0]}", 
+                f"{f}{m}{l}", f"{f}.{m}.{l}", f"{f}{m[0]}.{l[0]}"
+            ])
+
+    # --- Tilføj/Opdater denne metode i mod_04_social.py ---
+    def _scrape_instagram(self, driver, handle):
+        """Deep Scrape af Instagram Bio og Stats med fokus på SOSU-info"""
+        url = f"https://www.instagram.com/{handle}/"
+        if safe_get_with_retry(driver, url):
+            time.sleep(4) # Giv den tid til at loade bio
+            try:
+                # Find bio-containeren
+                bio_elements = driver.find_elements(By.CSS_SELECTOR, "header section div.-v79Z, header section div.Qpx6u")
+                if not bio_elements:
+                    bio_elements = driver.find_elements(By.XPATH, "//header//section")
+
+                if bio_elements:
+                    bio_text = bio_elements[0].text
+                    self.data["Deep_Scrape"]["Instagram"] = {
+                        "Handle": handle,
+                        "Raw_Bio": bio_text
+                    }
+                    print(f"{C.GREEN}    ✓ Instagram Bio udtrukket:{C.RESET}")
+                    # Her printer vi specifikt bio-linjerne ud i terminalen
+                    for line in bio_text.split('\n'):
+                        if line.strip():
+                            print(f"      -> {C.CYAN}{line.strip()}{C.RESET}")
+                
+                # Gem profilbillede til Reverse Image Search
+                img = driver.find_elements(By.CSS_SELECTOR, "header img")
+                if img:
+                    self._download_avatar(img[0].get_attribute("src"), "Instagram")
+            except Exception as e:
+                print(f"{C.DIM}      [-] Kunne ikke udtrække fuld bio: {e}{C.RESET}")
+
+    def _scrape_tiktok(self, driver, handle):
+        """Deep Scrape af TikTok profiler"""
+        url = f"https://www.tiktok.com/@{handle}"
+        if safe_get_with_retry(driver, url):
+            try:
+                title = driver.title
+                if "@" in title:
+                    bio = driver.find_element(By.CSS_SELECTOR, "[data-e2e='user-bio']").text
+                    stats = driver.find_element(By.CSS_SELECTOR, "[data-e2e='user-stats']").text
+                    self.data["Deep_Scrape"]["TikTok"] = {"Bio": bio, "Stats": stats}
+                    print(f"{C.GREEN}    ✓ TikTok Profil fundet!{C.RESET}")
+                    print(f"      -> Bio: {bio}")
+            except Exception: pass
+
+    def _scrape_github(self, driver):
+        """Eksisterende GitHub logik pakket ind for renhed"""
+        try:
+            navn_el = driver.find_elements(By.CSS_SELECTOR, "span.p-name")
+            bio_el = driver.find_elements(By.CSS_SELECTOR, "div.p-note")
+            img_el = driver.find_elements(By.CSS_SELECTOR, "img.avatar-user")
+            navn = navn_el[0].text if navn_el else "Ukendt"
+            bio = bio_el[0].text if bio_el else ""
+            billede_url = img_el[0].get_attribute("src") if img_el else None
+            self.data["Deep_Scrape"]["GitHub"] = {"Navn": navn, "Bio": bio}
+            print(f"{C.GREEN}    ✓ GitHub intel udtrukket.{C.RESET}")
+            if billede_url: self._download_avatar(billede_url, "GitHub")
+        except Exception: pass
+
+    def _download_avatar(self, url, platform):
+        try:
+            img_data = requests.get(url, timeout=10).content
+            mappe = os.path.join(session["loot_folder"], "avatars")
+            os.makedirs(mappe, exist_ok=True)
+            filsti = os.path.join(mappe, f"{platform}_{self.username}.jpg")
+            with open(filsti, 'wb') as handler:
+                handler.write(img_data)
+            print(f"{C.GREEN}      ✓ Profilbillede sikret: {platform}{C.RESET}")
+        except Exception: pass
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/04_SOCIAL_{self.username}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"{C.GREEN}[✓] Omfattende profil-rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_05_offline.py ---
+# -*- coding: utf-8 -*-
+import subprocess
+import json
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+from core.utils import C, session
+
+class OfflineDatabaseAnalyzer:
+    def __init__(self, target, file_path):
+        self.target = target.strip()
+        self.file_path = file_path.strip()
+        self.data = {
+            "Mål": self.target, 
+            "Fil": self.file_path, 
+            "Hits": [], 
+            "Credentials": [], 
+            "Hashes": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+        
+        # Regex for at fange almindelige kryptografiske hashes i lækager
+        self.hash_patterns = [
+            r'\b[A-Fa-f0-9]{32}\b',           # MD5
+            r'\b[A-Fa-f0-9]{40}\b',           # SHA1
+            r'\b[A-Fa-f0-9]{64}\b',           # SHA256
+            r'\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9\.\/]{53}' # Bcrypt
+        ]
+
+    def run(self):
+        print(f"\n{C.CYAN}{'='*60}\n[05] Offline Database Analyse (Ripgrep Context Engine)\n{'='*60}{C.RESET}")
+        if not os.path.exists(self.file_path):
+            print(f"{C.RED}[!] Databasefil ikke fundet: {self.file_path}{C.RESET}")
+            return
+            
+        print(f"{C.YELLOW}[*] Kører High-Speed scan på {os.path.basename(self.file_path)} med kontekst...{C.RESET}")
+        try:
+            result = subprocess.run(['rg', '-z', '-i', '-m', '100', '-C', '1', self.target, self.file_path], capture_output=True, text=True)
+            if result.stdout:
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if line.strip() and "--" not in line: 
+                        clean_line = line.strip()
+                        print(f"{C.GREEN}    🔥 HIT: {clean_line[:150]}...{C.RESET}")
+                        self.data["Hits"].append(clean_line)
+                        
+                        # 1. Auto-ekstrahering af plaintext passwords (fx email:pass eller email;pass)
+                        # Tillader :, ; og | som adskiller
+                        split_chars = re.split(r'[:;|]', clean_line)
+                        if len(split_chars) >= 2 and self.target in split_chars[0]:
+                            self.data["Credentials"].append({"Konto": split_chars[0].strip(), "Secret": split_chars[-1].strip()})
+                            
+                        # 2. Advanced Hash Detection
+                        for pattern in self.hash_patterns:
+                            hashes = re.findall(pattern, clean_line)
+                            for h in hashes:
+                                if h not in self.data["Hashes"]:
+                                    self.data["Hashes"].append(h)
+                                    print(f"{C.RED}      -> KRYPTOGRAFISK HASH FUNDET: {h}{C.RESET}")
+                                
+                print(f"\n{C.YELLOW}[*] Fandt {len(self.data['Hits'])} rå matches, {len(self.data['Credentials'])} mulige passwords og {len(self.data['Hashes'])} hashes.{C.RESET}")
+            else:
+                print(f"{C.DIM}    [-] Ingen matches i databasen.{C.RESET}")
+        except FileNotFoundError:
+            print(f"{C.RED}[!] Fejl: Ripgrep er ikke installeret. Kør 'sudo apt install ripgrep'.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}[!] Systemfejl under database scanning: {e}{C.RESET}")
+            
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/05_OFFLINE_{self.target.replace('@','_at_').replace(' ', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_06_emailgen.py ---
+# -*- coding: utf-8 -*-
+import os
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+from core.network import omni_dork_search
+
+class EmailPatternGenerator:
+    """Generates and validates email address patterns from name"""
+    def __init__(self, name):
+        parts = name.lower().split()
+        self.first = parts[0] if len(parts) > 0 else "unknown"
+        self.last = parts[-1] if len(parts) > 1 else self.first
+        self.name = name
+        self.data = {
+            "Navn": name,
+            "Generated_Emails": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[06] E-mail-mønster Validering (OSINT Engine)\n{'='*60}{C.RESET}")
+        print(f"Target: {self.name}\n")
+        
+        # Udvidet domæneliste for moderne trusselsbilleder
+        domains = ["gmail.com", "hotmail.com", "live.dk", "mail.dk", "outlook.dk", "yahoo.com", "icloud.com", "proton.me"]
+        
+        # Flere klassiske corporate og private mønstre
+        patterns = [
+            f"{self.first}.{self.last}", 
+            f"{self.first}{self.last}", 
+            f"{self.first[0]}{self.last}",
+            f"{self.first[0]}.{self.last}",
+            f"{self.last}.{self.first}",
+            f"{self.first}_{self.last}"
+        ]
+        
+        all_emails = [f"{p}@{d}" for p in patterns for d in domains]
+        print(f"{C.YELLOW}[*] Genererede {len(all_emails)} potentielle email-mønstre. Udfører Dorking validering...{C.RESET}")
+        
+        # Vi sender mønstrene afsted i "OR" søgninger via Anti-Ban motoren (5 ad gangen for ikke at knække url'en)
+        found_emails = set()
+        chunk_size = 5
+        
+        for i in range(0, len(all_emails), chunk_size):
+            chunk = all_emails[i:i+chunk_size]
+            batch_query = " OR ".join([f'"{e}"' for e in chunk])
+            
+            sys.stdout.write(f"\r{C.CYAN}    [*] Tester mønstre... {i}/{len(all_emails)}{C.RESET}")
+            sys.stdout.flush()
+            
+            links = omni_dork_search(driver, batch_query, max_links=5)
+            if links:
+                for link in links:
+                    text = link["text"].lower()
+                    url_text = link["url"].lower()
+                    for email in chunk:
+                        if email in text or email in url_text:
+                            found_emails.add(email)
+                            sys.stdout.write("\r" + " " * 80 + "\r")
+                            print(f"{C.GREEN}    🔥 BEKRÆFTET MØNSTER: {email}{C.RESET}")
+                            print(f"{C.DIM}      -> Kilde: {link['url']}{C.RESET}")
+
+        sys.stdout.write("\r" + " " * 80 + "\r")
+        self.data["Generated_Emails"] = list(found_emails)
+        if not found_emails:
+            print(f"{C.YELLOW}    [-] Ingen email-mønstre kunne bekræftes offentligt.{C.RESET}")
+            
+        self.save()
+
+    def save(self):
+        """Save findings to JSON"""
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/06_EMAILGEN_{self.first}_{self.last}.json"
+        Path(filename).write_text(
+            json.dumps(self.data, indent=4, ensure_ascii=False),
+            encoding="utf-8"
+        )
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_07_phone.py ---
+# -*- coding: utf-8 -*-
+import os
+import json
+import urllib.parse
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+from core.network import omni_dork_search
+
+class PhoneIntelligenceHunter:
+    """Deep web search for phone number occurrences"""
+    def __init__(self, phone):
+        self.phone = phone.replace(" ", "").replace("+45", "").replace("-", "")
+        self.data = {
+            "Nummer": f"+45 {self.phone}",
+            "Web_Spor": [],
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver):
+        """Execute phone search"""
+        print(f"\n{C.CYAN}{'='*60}\n[07] Telefon-efterretning (Dorking Matrix)\n{'='*60}{C.RESET}")
+        print(f"Target: +45 {self.phone}\n")
+
+        # Bygger alle tænkelige måder et dansk nummer kan skrives på
+        formats = [
+            f'"{self.phone}"',
+            f'"{self.phone[:2]} {self.phone[2:4]} {self.phone[4:6]} {self.phone[6:8]}"',
+            f'"{self.phone[:4]} {self.phone[4:]}"',
+            f'"{self.phone[:2]}-{self.phone[2:4]}-{self.phone[4:6]}-{self.phone[6:8]}"',
+            f'"+45{self.phone}"',
+            f'"+45 {self.phone}"'
+        ]
+        
+        print(f"{C.YELLOW}[*] Udruller massiv søgning på {len(formats)} tal-formater...{C.RESET}")
+        
+        # Samler alt i ét stort DORK call for stealth og speed
+        combined_dork = " OR ".join(formats)
+        
+        # Bruger nu din centrale omni_dork_search for anti-bot beskyttelse og bing-fallback
+        links = omni_dork_search(driver, combined_dork, max_links=10)
+        
+        if links:
+            for link in links:
+                href = link["url"]
+                # Vi ignorerer krak/dgs da vi allerede har et dedikeret modul (12) til det
+                if "krak.dk" not in href and "degulesider.dk" not in href:
+                    print(f"{C.GREEN}    🔥 SPOR: {href[:80]}{C.RESET}")
+                    if href not in self.data["Web_Spor"]:
+                        self.data["Web_Spor"].append(href)
+        else:
+            print(f"{C.DIM}    [-] Ingen offentlige spor fundet udover standard registre.{C.RESET}")
+        
+        self.save()
+
+    def save(self):
+        """Save findings to JSON"""
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/07_PHONE_{self.phone}.json"
+        Path(filename).write_text(
+            json.dumps(self.data, indent=4, ensure_ascii=False),
+            encoding="utf-8"
+        )
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_08_darkweb.py ---
+# -*- coding: utf-8 -*-
+import requests
+import json
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+from bs4 import BeautifulSoup 
+
+from core.utils import C, session
+from core.network import CONFIG # Til at hente Tor opsætning
+
+class DarkWebIntelligence:
+    def __init__(self, query):
+        self.query = query.strip()
+        self.data = {
+            "Søgning": self.query, 
+            "Proxy_Type": "Clearnet",
+            "Onion_Hits": [], 
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[08] Mørkenet-efterretning (Ahmia Deep Context)\n{'='*60}{C.RESET}")
+        print(f"Target Query: {self.query}\n")
+        
+        url = f"https://ahmia.fi/search/?q={requests.utils.quote(self.query)}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0"}
+        
+        req_session = requests.Session()
+        
+        # --- NYT: Tjekker dynamisk om systemet er bedt om at køre via TOR ---
+        if CONFIG.get("use_tor_proxy"):
+            print(f"{C.YELLOW}[*] TOR PROXY AKTIVERET: Ruter trafiken gennem Onion-netværket...{C.RESET}")
+            req_session.proxies = {
+                'http': CONFIG["tor_proxy_url"],
+                'https': CONFIG["tor_proxy_url"]
+            }
+            self.data["Proxy_Type"] = "TOR Network"
+        else:
+            print(f"{C.YELLOW}[*] Crawler Ahmia.fi via Clearnet...{C.RESET}")
+        
+        try:
+            res = req_session.get(url, headers=headers, timeout=20)
+            
+            soup = BeautifulSoup(res.text, 'html.parser')
+            results = soup.find_all('li', class_='searchResultsItem')
+            
+            if not results:
+                print(f"{C.YELLOW}    [-] Ingen nævneværdige .onion resultater fundet.{C.RESET}")
+            else:
+                # Udvidet fra 10 til 20 hits for mere dybde
+                for item in results[:20]: 
+                    title_tag = item.find('h4')
+                    link_tag = item.find('cite')
+                    desc_tag = item.find('p')
+                    
+                    if link_tag:
+                        onion_link = link_tag.text.strip()
+                        titel = title_tag.text.strip() if title_tag else "Ukendt Titel"
+                        beskrivelse = desc_tag.text.strip() if desc_tag else "Ingen beskrivelse tilgængelig"
+                        
+                        print(f"{C.RED}    🔥 HIT: {titel}{C.RESET}")
+                        print(f"{C.CYAN}      -> Link: {onion_link}{C.RESET}")
+                        print(f"{C.DIM}      -> Udklip: {beskrivelse[:100]}...{C.RESET}")
+                        
+                        self.data["Onion_Hits"].append({
+                            "Titel": titel,
+                            "URL": onion_link,
+                            "Kontekst": beskrivelse
+                        })
+
+        except requests.exceptions.ProxyError:
+            print(f"{C.RED}    [!] Proxy Fejl: Kunne ikke forbinde til Tor. Tjek at Tor-tjenesten kører på maskinen.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved crawling af Dark Web proxy: {e}{C.RESET}")
+        
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/08_DARKWEB_{self.query.replace(' ', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Dark Web rapport gemt ({len(self.data['Onion_Hits'])} fund): {filename}{C.RESET}")--- FIL: ./modules/mod_09_emailtrack.py ---
+# -*- coding: utf-8 -*-
+import json
+import os
+import hashlib
+import subprocess
+import requests
+import sys
+import re
+from datetime import datetime
+from pathlib import Path
+
+# Henter fra Core
+from core.utils import C, session, REGEX_EMAIL
+from core.network import CONFIG
+
+class EmailTracker:
+    def __init__(self, email):
+        self.email = email.strip().lower()
+        self.api_key = CONFIG.get("api_keys", {}).get("hunter_io", "")
+        self.gravatar_hash = hashlib.md5(self.email.encode()).hexdigest()
+        self.data = {
+            "Email": self.email, 
+            "Gravatar_Data": {}, 
+            "Holehe_Hits": [], 
+            "Hunter_Data": {},
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, _=None):
+        print(f"\n{C.CYAN}{'='*60}\n[09] E-mail Tracker (Hunter.io, Gravatar & Holehe)\n{'='*60}{C.RESET}")
+        
+        if not re.match(REGEX_EMAIL, self.email):
+            print(f"{C.RED}[!] Ugyldigt e-mail format angivet: {self.email}{C.RESET}")
+            return
+            
+        print(f"Target Email: {self.email}\n")
+        
+        # 1. Hunter.io Intelligence
+        self._check_hunter()
+        
+        # 2. Gravatar Tjek (Med Avatar Bevissikring)
+        print(f"\n{C.YELLOW}[*] Checker globalt Gravatar netværk for profildata...{C.RESET}")
+        try:
+            res = requests.get(f"https://en.gravatar.com/{self.gravatar_hash}.json", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+            if res.status_code == 200:
+                grav_json = res.json()
+                if "entry" in grav_json and grav_json["entry"]:
+                    entry = grav_json["entry"][0]
+                    print(f"{C.GREEN}    ✓ Offentlig Gravatar Profil Fundet!{C.RESET}")
+                    
+                    navn = entry.get("displayName", "Ukendt")
+                    self.data["Gravatar_Data"]["Navn"] = navn
+                    print(f"      -> Navn: {navn}")
+                    
+                    if "thumbnailUrl" in entry:
+                        img_url = entry["thumbnailUrl"] + "?s=600"
+                        self.data["Gravatar_Data"]["Billede"] = img_url
+                        self._download_image(img_url)
+            else:
+                print(f"{C.DIM}    [-] Ingen Gravatar profil tilknyttet denne e-mail.{C.RESET}")
+        except Exception: pass
+
+        # 3. Holehe Integration (Trådsikker Live % Progress Bar)
+        print(f"\n{C.YELLOW}[*] Kører Holehe OSINT engine for at finde registrerede profiler...{C.RESET}")
+        try:
+            process = subprocess.Popen(
+                ['holehe', self.email, '--only-used'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1, 
+                universal_newlines=True
+            )
+            
+            checked_lines = 0
+            estimated_total = 120 
+            
+            for line in iter(process.stdout.readline, ''):
+                if not line: break
+                
+                checked_lines += 1
+                pct = min(int((checked_lines / estimated_total) * 100), 99)
+                
+                sys.stdout.write(f"\r{C.CYAN}    [*] Analyserer platforme... {pct}% færdig {C.RESET}")
+                sys.stdout.flush()
+
+                if "[+]" in line:
+                    try:
+                        site = line.split("]")[1].strip().split(" ")[0].replace('\x1b[0m', '')
+                        sys.stdout.write("\r" + " " * 60 + "\r")
+                        print(f"{C.GREEN}    🔥 Registreret på: {C.CYAN}{site}{C.RESET}")
+                        self.data["Holehe_Hits"].append(site)
+                    except IndexError: pass
+                    
+            process.wait()
+            sys.stdout.write("\r" + " " * 60 + "\r")
+            print(f"{C.GREEN}    [✓] Holehe scanning 100% fuldført. Fandt {len(self.data['Holehe_Hits'])} profiler.{C.RESET}")
+
+        except FileNotFoundError:
+            sys.stdout.write("\r" + " " * 60 + "\r")
+            print(f"{C.RED}    [!] 'holehe' er ikke installeret. Kør: pip install holehe{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved Holehe kørsel: {e}{C.RESET}")
+
+        self.save()
+
+    def _check_hunter(self):
+        if not self.api_key:
+            print(f"{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
+            return
+
+        print(f"{C.YELLOW}[*] Kontakter Hunter.io for Corporate Intelligence...{C.RESET}")
+        
+        ver_url = f"https://api.hunter.io/v2/email-verifier?email={self.email}&api_key={self.api_key}"
+        try:
+            res = requests.get(ver_url, timeout=10).json()
+            if "data" in res:
+                status = res["data"]["status"]
+                score = res["data"]["score"]
+                color = C.GREEN if score > 70 else (C.YELLOW if score > 40 else C.RED)
+                print(f"{color}    ✓ Status: {status.upper()} (Sikkerhedsscore: {score}/100){C.RESET}")
+                self.data["Hunter_Data"]["Verification"] = res["data"]
+        except Exception as e:
+            print(f"{C.DIM}    [!] Kunne ikke verificere email: {e}{C.RESET}")
+
+        enr_url = f"https://api.hunter.io/v2/combined/find?email={self.email}&api_key={self.api_key}"
+        try:
+            res = requests.get(enr_url, timeout=10).json()
+            if "data" in res and res["data"]:
+                data = res["data"]
+                print(f"{C.GREEN}    🔥 Person & Firma Berigelse Fundet!{C.RESET}")
+                
+                first = data.get("first_name", "")
+                last = data.get("last_name", "")
+                company = data.get("company", "")
+                position = data.get("position", "")
+                twitter = data.get("twitter", "")
+                linkedin = data.get("linkedin", "")
+
+                if first or last: print(f"      -> Navn: {first} {last}")
+                if company: print(f"      -> Firma: {company}")
+                if position: print(f"      -> Stilling: {position}")
+                if linkedin: print(f"      -> LinkedIn: {linkedin}")
+                if twitter: print(f"      -> Twitter: {twitter}")
+
+                self.data["Hunter_Data"]["Enrichment"] = data
+        except Exception:
+            pass
+
+    def _download_image(self, url):
+        try:
+            img_data = requests.get(url, timeout=10).content
+            mappe = os.path.join(session["loot_folder"], "avatars")
+            os.makedirs(mappe, exist_ok=True)
+            filsti = os.path.join(mappe, f"Gravatar_{self.email.replace('@', '_at_')}.jpg")
+            with open(filsti, 'wb') as handler:
+                handler.write(img_data)
+            print(f"{C.GREEN}      ✓ Avatar sikret lokalt: {filsti}{C.RESET}")
+        except Exception: pass
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/09_EMAILTRACK_{self.email.replace('@', '_at_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")--- FIL: ./modules/mod_10_ip.py ---
+# -*- coding: utf-8 -*-
+import json
+import os
+import re
+import requests
+from datetime import datetime
+from pathlib import Path
+from core.utils import C, session
+
+class IPNetworkAnalyzer:
+    """Geo, Shodan og AlienVault OTX Threat Intelligence"""
+    def __init__(self, ip):
+        self.ip = ip.strip()
+        self.data = {
+            "IP": self.ip, 
+            "GeoData": {}, 
+            "Shodan_Data": {}, 
+            "AlienVault_OTX": {}, 
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[10] IP- & Threat Intel Analyse (Geo + Shodan + AlienVault)\n{'='*60}{C.RESET}")
+        
+        # Simpel IP validering (IPv4)
+        if not re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", self.ip):
+            print(f"{C.RED}[!] Ugyldigt IPv4 format angivet: {self.ip}{C.RESET}")
+            return
+
+        print(f"[*] Analyserer target IP: {self.ip}\n")
+        
+        # 1. GeoIP
+        print(f"{C.YELLOW}[*] Henter global routing og lokationsdata...{C.RESET}")
+        try:
+            res1 = requests.get(f"http://ip-api.com/json/{self.ip}?fields=status,country,city,isp,org,mobile,proxy,hosting", timeout=10).json()
+            if res1.get("status") == "success":
+                self.data["GeoData"] = res1
+                print(f"{C.GREEN}    ✓ Lokation: {res1.get('city')}, {res1.get('country')} (ISP: {res1.get('isp')}){C.RESET}")
+                if res1.get("proxy") or res1.get("hosting"):
+                    print(f"{C.RED}      -> [!] ADVARSEL: IP er flaget som Datacenter/Proxy/VPN! (Mulig OPSEC sløring){C.RESET}")
+            else:
+                print(f"{C.YELLOW}    [-] GeoIP opslag fejlede eller IP er lokal/reserveret.{C.RESET}")
+        except Exception as e: 
+            print(f"{C.DIM}    [!] Forbindelsesfejl til GeoIP: {e}{C.RESET}")
+
+        # 2. Shodan
+        print(f"\n{C.YELLOW}[*] Scanner via Shodan InternetDB (Porte og sårbarheder)...{C.RESET}")
+        try:
+            shodan = requests.get(f"https://internetdb.shodan.io/{self.ip}", timeout=10).json()
+            if "ports" in shodan:
+                self.data["Shodan_Data"] = shodan
+                print(f"{C.GREEN}    ✓ Åbne Porte: {', '.join(map(str, shodan.get('ports', [])))}{C.RESET}")
+                if shodan.get('hostnames'):
+                    print(f"{C.CYAN}    ✓ Hostnames: {', '.join(shodan.get('hostnames'))}{C.RESET}")
+            elif "error" in shodan:
+                print(f"{C.GREEN}    ✓ Ingen åbne porte registreret af Shodan.{C.RESET}")
+        except Exception: 
+            print(f"{C.DIM}    [-] Shodan gav intet svar.{C.RESET}")
+
+        # 3. AlienVault OTX
+        print(f"\n{C.YELLOW}[*] Checker IP mod AlienVault OTX Threat Pulses...{C.RESET}")
+        try:
+            otx = requests.get(f"https://otx.alienvault.com/api/v1/indicators/IPv4/{self.ip}/general", timeout=10).json()
+            if "pulse_info" in otx and otx["pulse_info"]["count"] > 0:
+                self.data["AlienVault_OTX"] = otx["pulse_info"]
+                print(f"{C.RED}    🔥 KRITISK: IP optræder i {otx['pulse_info']['count']} AlienVault Threat Pulses (Kendt ondsindet aktivitet)!{C.RESET}")
+            else:
+                print(f"{C.GREEN}    ✓ IP'en er ren hos AlienVault.{C.RESET}")
+        except Exception: 
+            print(f"{C.DIM}    [-] AlienVault OTX kunne ikke kontaktes.{C.RESET}")
+
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/10_IP_{self.ip.replace('.', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Netværksrapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_11_forensics.py ---
+# -*- coding: utf-8 -*-
+import os
+import json
+import hashlib
+from pathlib import Path
+from datetime import datetime
+from PIL import Image
+import piexif
+from PIL.ExifTags import TAGS
+from core.utils import C, session
+
+class DigitalForensicsExaminer:
+    """Advanced file forensics with metadata extraction"""
+    def __init__(self, file_path):
+        self.file_path = file_path.strip()
+        self.data = {
+            "Fil": os.path.basename(file_path),
+            "Sti": file_path,
+            "Filstørrelse": 0,
+            "Filtype": "",
+            "Kryptografi": {},
+            "GPS_Koordinater": None,
+            "GPS_Maps_Link": "",
+            "Temporal_Data": {"Oprettet": None, "Ændret": None, "Manipuleret": False},
+            "Enheds_Info": {},
+            "EXIF_Data": {},
+            "Integritetstjek": {"Bevis": "", "Modsigende_Felter": []},
+            "Timestamp": datetime.now().isoformat()
+        }
+    
+    def run(self):
+        print(f"\n{C.CYAN}{'='*60}\n[11] Digital Forensik & Bevis-sikring\n{'='*60}{C.RESET}")
+        print(f"Analyserer: {os.path.basename(self.file_path)}\n")
+        
+        if not os.path.exists(self.file_path):
+            print(f"{C.RED}[!] Fejl: Filen findes ikke på stien.{C.RESET}")
+            return
+        
+        self._extract_basic_info()
+        if self.data["Filtype"].lower() in ['jpg', 'jpeg', 'png', 'tiff']:
+            self._extract_exif_data()
+            self._extract_gps_data()
+        self._temporal_analysis()
+        self._device_profiling()
+        self._integrity_check()
+        self.save()
+    
+    def _extract_basic_info(self):
+        print(f"{C.YELLOW}[*] Beregner kryptografiske fingeraftryk for Chain of Custody...{C.RESET}")
+        try:
+            stat_info = os.stat(self.file_path)
+            self.data["Filstørrelse"] = stat_info.st_size
+            self.data["Filtype"] = os.path.splitext(self.file_path)[1][1:].upper()
+            
+            with open(self.file_path, "rb") as f:
+                file_bytes = f.read()
+                self.data["Kryptografi"] = {
+                    "MD5": hashlib.md5(file_bytes).hexdigest(),
+                    "SHA-1": hashlib.sha1(file_bytes).hexdigest(),
+                    "SHA-256": hashlib.sha256(file_bytes).hexdigest()
+                }
+            
+            print(f"    -> Filtype: {self.data['Filtype']}")
+            print(f"    -> Størrelse: {self.data['Filstørrelse']} bytes")
+            print(f"    -> SHA-256: {self.data['Kryptografi']['SHA-256']}")
+        except Exception as e:
+            print(f"{C.RED}[!] Fejl ved grund-analyse: {e}{C.RESET}")
+    
+    def _extract_exif_data(self):
+        print(f"\n{C.YELLOW}[*] Deep-scan for skjult EXIF metadata...{C.RESET}")
+        try:
+            exif_dict = piexif.load(self.file_path)
+            for ifd_name in ("0th", "Exif", "GPS", "1st"):
+                ifd = exif_dict.get(ifd_name)
+                if not ifd: continue
+                for tag in ifd:
+                    try:
+                        tag_name = piexif.TAGS[ifd_name][tag]["name"]
+                        tag_value = ifd[tag]
+                        # Sikker dekodning af binære EXIF data
+                        if isinstance(tag_value, bytes):
+                            tag_value = tag_value.decode('utf-8', errors='ignore')
+                        self.data["EXIF_Data"][tag_name] = str(tag_value)[:500]
+                    except Exception: pass
+            print(f"{C.GREEN}    ✓ Udtræk komplet. Fandt {len(self.data['EXIF_Data'])} EXIF felter.{C.RESET}")
+        except piexif.InvalidImageDataError:
+            print(f"{C.DIM}    [-] Billedet indeholder ingen eller korrupt EXIF-data (Muligvis renset/Social Media).{C.RESET}")
+        except Exception as e:
+            print(f"{C.DIM}    [-] EXIF scan fejl: {e}{C.RESET}")
+    
+    def _extract_gps_data(self):
+        try:
+            img = Image.open(self.file_path)
+            exif_data = img._getexif()
+            if not exif_data: return
+            
+            gps_ifd = exif_data.get(34853) # GPS Info Tag
+            if not gps_ifd: return
+            
+            lat = self._convert_to_degrees(gps_ifd.get(2))
+            lon = self._convert_to_degrees(gps_ifd.get(4))
+            lat_ref = gps_ifd.get(1, b'N').decode('utf-8', errors='ignore') if isinstance(gps_ifd.get(1), bytes) else gps_ifd.get(1, 'N')
+            lon_ref = gps_ifd.get(3, b'E').decode('utf-8', errors='ignore') if isinstance(gps_ifd.get(3), bytes) else gps_ifd.get(3, 'E')
+            
+            if lat and lon:
+                if lat_ref == 'S': lat = -lat
+                if lon_ref == 'W': lon = -lon
+                
+                self.data["GPS_Koordinater"] = {"Breddegrad": lat, "Længdegrad": lon}
+                self.data["GPS_Maps_Link"] = f"https://www.google.com/maps?q={lat},{lon}"
+                print(f"{C.RED}    📍 BINGO! GPS Lokation Fundet: {lat:.6f}, {lon:.6f}{C.RESET}")
+        except Exception: pass
+    
+    def _convert_to_degrees(self, value):
+        try:
+            d, m, s = value
+            return float(d) + (float(m) / 60.0) + (float(s) / 3600.0)
+        except Exception: return None
+    
+    def _temporal_analysis(self):
+        print(f"\n{C.YELLOW}[*] Udfører Temporal Analyse (Timestamps)...{C.RESET}")
+        try:
+            stat_info = os.stat(self.file_path)
+            created = datetime.fromtimestamp(stat_info.st_ctime).isoformat()
+            modified = datetime.fromtimestamp(stat_info.st_mtime).isoformat()
+            self.data["Temporal_Data"]["Oprettet"] = created
+            self.data["Temporal_Data"]["Ændret"] = modified
+            
+            print(f"    -> Oprettet: {created.replace('T', ' ')}")
+            print(f"    -> Senest ændret: {modified.replace('T', ' ')}")
+        except Exception: pass
+    
+    def _device_profiling(self):
+        try:
+            img = Image.open(self.file_path)
+            exif_data = img._getexif()
+            if not exif_data: return
+            
+            important_tags = {271: "Fabrikant", 272: "Kameramodel", 305: "Software"}
+            found = False
+            for tag_id, tag_name in important_tags.items():
+                if tag_id in exif_data:
+                    value = exif_data[tag_id]
+                    if isinstance(value, bytes): value = value.decode('utf-8', errors='ignore')
+                    self.data["Enheds_Info"][tag_name] = str(value)
+                    if not found: 
+                        print(f"\n{C.YELLOW}[*] Analyserer optage-udstyr...{C.RESET}")
+                        found = True
+                    print(f"    -> {tag_name}: {value}")
+        except Exception: pass
+    
+    def _integrity_check(self):
+        print(f"\n{C.YELLOW}[*] Kører File Integrity Check...{C.RESET}")
+        modsigende = []
+        
+        t_data = self.data["Temporal_Data"]
+        if t_data["Oprettet"] and t_data["Ændret"]:
+            if t_data["Oprettet"] != t_data["Ændret"]:
+                modsigende.append("OS Timestamps stemmer ikke overens (Mulig manipulation/kopiering)")
+                t_data["Manipuleret"] = True
+        
+        # Sammenlign OS oprettelse med EXIF oprettelse
+        if "DateTimeOriginal" in self.data["EXIF_Data"] and t_data["Oprettet"]:
+            exif_time = self.data["EXIF_Data"]["DateTimeOriginal"].replace(":", "-", 2)
+            if exif_time[:10] not in t_data["Oprettet"]:
+                modsigende.append("EXIF dato matcher ikke Fil-systemets oprettelsesdato")
+        
+        self.data["Integritetstjek"]["Modsigende_Felter"] = modsigende
+        
+        if modsigende:
+            print(f"{C.RED}    [!] ADVARSEL: Unormaliteter detekteret i metadata!{C.RESET}")
+            for m in modsigende: print(f"      -> {m}")
+            self.data["Integritetstjek"]["Bevis"] = "CRITICAL"
+        else:
+            print(f"{C.GREEN}    ✓ Filen fremstår intakt uden åbenlyse tids-uoverensstemmelser.{C.RESET}")
+            self.data["Integritetstjek"]["Bevis"] = "OK"
+    
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/11_FORENSIK_{os.path.basename(self.file_path).replace('.', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding='utf-8')
+        print(f"\n{C.GREEN}[✓] Forensisk rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_12_revphone.py ---
+# -*- coding: utf-8 -*-
+import os
+import json
+import urllib.parse
+from pathlib import Path
+from datetime import datetime
+from selenium.webdriver.common.by import By
+from core.utils import C, session
+from core.network import safe_get_with_retry, omni_dork_search
+
+class ReversePhoneIntelligence:
+    """True Reverse lookup med Kontekst-Injektion og Data-Fletning"""
+    def __init__(self, phone, context_data=None, save_path=None):
+        self.raw_phone = phone.replace(" ", "").replace("+45", "").replace("-", "")
+        self.save_path = save_path
+        
+        self.data = context_data if context_data else {
+            "Telefon": f"+45 {self.raw_phone}",
+            "Identificeret_Navn": "Ukendt",
+            "Lokation": "Ukendt",
+            "Timestamp": datetime.now().isoformat()
+        }
+        
+        if "Telefon_Efterretning" not in self.data:
+            self.data["Telefon_Efterretning"] = {"Kilder": [], "SoMe_Spor": []}
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[12] Identificer ukendt telefonnummer\n{'='*60}{C.RESET}")
+        print(f"Søger på: +45 {self.raw_phone}\n")
+        
+        kendt_identitet = self.data.get("Identitet", None)
+        if kendt_identitet:
+            print(f"{C.GREEN}[*] Springer Krak over. Identitet allerede fastslået: {kendt_identitet}{C.RESET}")
+        else:
+            # 1. Direkte opslag på Krak for ukendte numre
+            krak_url = f"https://www.krak.dk/søg/{self.raw_phone}/personer"
+            print(f"{C.YELLOW}[*] Tjekker offentlige danske registre (Krak)...{C.RESET}")
+            
+            if safe_get_with_retry(driver, krak_url):
+                try:
+                    name_elements = driver.find_elements(By.CSS_SELECTOR, "h2 a, h1.name")
+                    if name_elements:
+                        navn = name_elements[0].text.strip()
+                        self.data["Identificeret_Navn"] = navn
+                        self.data["Telefon_Efterretning"]["Kilder"].append("Krak.dk")
+                        print(f"{C.GREEN}    ✓ IDENTIFICERET: {navn}{C.RESET}")
+                    else:
+                        print(f"{C.YELLOW}    [-] Intet match på Krak (Muligvis hemmeligt nummer eller taletidskort){C.RESET}")
+                except Exception: pass
+
+        # 2. Advanced Dorking & SoMe Spor
+        print(f"\n{C.YELLOW}[*] Graver efter sociale netværk og MobilePay links...{C.RESET}")
+        
+        wa_url = f"https://wa.me/45{self.raw_phone}"
+        mp_url = f"https://box.mobilepay.dk/pay?phone={self.raw_phone}"
+        
+        print(f"{C.CYAN}    -> WhatsApp Direct: {wa_url} (Åbn på mobil for at se profilbillede){C.RESET}")
+        print(f"{C.CYAN}    -> MobilePay Check: {mp_url} (Åbn i app for at bekræfte navn){C.RESET}")
+        
+        self.data["Telefon_Efterretning"]["SoMe_Spor"].extend([wa_url, mp_url])
+        
+        # TrueCaller, Sync.me og 118.dk Dorking for at fange spam/hemmelige numre
+        print(f"\n{C.YELLOW}[*] Checker globale spam-databaser og 118...{C.RESET}")
+        dork = f'"{self.raw_phone}" OR "+45 {self.raw_phone}" site:truecaller.com OR site:sync.me OR site:118.dk'
+        links = omni_dork_search(driver, dork, max_links=3)
+        
+        if links:
+            for link in links:
+                print(f"{C.GREEN}    🔥 Eksternt database-hit fundet: {link['url']}{C.RESET}")
+                self.data["Telefon_Efterretning"]["Kilder"].append(link['url'])
+        else:
+            print(f"{C.DIM}    [-] Ingen hits i globale telefon-databaser.{C.RESET}")
+
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = self.save_path if self.save_path else f"{session['loot_folder']}/12_REVERSE_PHONE_{self.raw_phone}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding='utf-8')
+        print(f"\n{C.GREEN}[✓] Data flettet og gemt i sagmappe: {filename}{C.RESET}")--- FIL: ./modules/mod_13_revimage.py ---
+# -*- coding: utf-8 -*-
+import os
+import json
+import time
+from pathlib import Path
+from datetime import datetime
+from PIL import Image
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from core.utils import C, session
+from core.network import safe_get_with_retry
+
+class ReverseImageIntelligence:
+    def __init__(self, image_path):
+        self.image_path = image_path.strip()
+        self.data = {
+            "Billede": os.path.basename(image_path),
+            "Yandex_URL": "",
+            "Google_Klar": False,
+            "Bing_Klar": False,
+            "Timestamp": datetime.now().isoformat()
+        }
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[13] Omvendt Billedsøgning (Yandex + Google + Bing)\n{'='*60}{C.RESET}")
+        
+        if not os.path.exists(self.image_path):
+            print(f"{C.RED}[!] Fejl: Billede ikke fundet på stien: {self.image_path}{C.RESET}")
+            return
+            
+        # Beskyttelse mod gigantiske filer der crasher browseren
+        if os.path.getsize(self.image_path) > 15 * 1024 * 1024:
+            print(f"{C.RED}[!] Filen er for stor (>15MB). Komprimer den først.{C.RESET}")
+            return
+
+        self._analyze_authenticity()
+        self._check_google_bing(driver)
+        self._yandex_auto_upload(driver)
+        self.save()
+
+    def _check_google_bing(self, driver):
+        """Tjekker om portalerne er tilgængelige for manuel søgning"""
+        print(f"\n{C.YELLOW}[*] Checker adgang til vestlige Reverse-Image portaler...{C.RESET}")
+        try:
+            if safe_get_with_retry(driver, "https://www.google.com/imghp"):
+                print(f"{C.GREEN}    ✓ Google Lens portal er tilgængelig{C.RESET}")
+                self.data["Google_Klar"] = True
+            if safe_get_with_retry(driver, "https://www.bing.com/images"):
+                print(f"{C.GREEN}    ✓ Bing Visual Search er tilgængelig{C.RESET}")
+                self.data["Bing_Klar"] = True
+        except Exception: pass
+
+    def _yandex_auto_upload(self, driver):
+        """Udfører den automatiske ansigts/billede søgning på Yandex (Markant bedre til ansigter)"""
+        print(f"\n{C.YELLOW}[*] Auto-uploader {os.path.basename(self.image_path)} til Yandex Vision...{C.RESET}")
+        try:
+            driver.get("https://yandex.com/images/")
+            
+            # Smart klik på kamera ikon
+            try:
+                cam_btn = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Image search'], button[title='Image search']"))
+                )
+                cam_btn.click()
+            except Exception:
+                # Fallback hvis yandex UI har ændret sig
+                driver.get("https://yandex.com/images/search?rpt=imageview")
+            
+            time.sleep(1.5)
+            
+            # Finder den usynlige file-input og injicerer billedet direkte
+            file_input = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
+            )
+            file_input.send_keys(os.path.abspath(self.image_path))
+            
+            print(f"{C.CYAN}    [*] Uploader billede. Venter på Yandex analyse...{C.RESET}")
+            
+            # Venter tålmodigt på resultatsiden
+            WebDriverWait(driver, 25).until(
+                lambda d: "rpt=imageview" not in d.current_url or len(d.find_elements(By.CSS_SELECTOR, ".CbirItem")) > 0
+            )
+            
+            self.data["Yandex_URL"] = driver.current_url
+            print(f"{C.GREEN}    ✓ Yandex Analyse færdig! Ansigts/Objekt genkendelse udført.{C.RESET}")
+            print(f"{C.CYAN}    -> ÅBN RESULTAT HER: {self.data['Yandex_URL'][:100]}...{C.RESET}")
+            
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved Yandex upload (Browser timeout eller UI blokering): {e}{C.RESET}")
+
+    def _analyze_authenticity(self):
+        print(f"{C.YELLOW}[*] Kører lokal visuel præ-analyse...{C.RESET}")
+        try:
+            img = Image.open(self.image_path)
+            score = 0
+            if hasattr(img, '_getexif') and img._getexif(): score += 20
+            if img.size[0] > 1920: score += 15
+            print(f"{C.GREEN}    ✓ Metadata og Opløsning analyseret (Autenticitets-score: {score}).{C.RESET}")
+        except Exception: pass
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/13_REVERSE_IMAGE_{os.path.basename(self.image_path).replace('.', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Billed-rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_17_sniper.py ---
+import os
+import json
+import glob
+import itertools
+from core.utils import C, session
+
+class GoliathSniperEngine:
+    """Universal og interaktiv wordlist generator med avanceret mangling."""
+    def __init__(self, name, city, cpr, clues, json_folder=None):
+        self.target_name = name.strip()
+        self.city = city.strip()
+        self.cpr = cpr.replace("-", "").strip()
+        self.clues = [c.strip() for c in clues.split(",") if c.strip()]
+        self.json_folder = json_folder
+        self.wordlist = set()
+        
+        self.name_parts = self.target_name.split()
+        self.dates = self._extract_dates()
+        self.seeds = set(self.name_parts + [self.city] + self.clues)
+        
+        if self.json_folder:
+            self._ingest_json_data()
+
+    def _extract_dates(self):
+        if len(self.cpr) < 6: return ["2024", "2025", "24"]
+        ddmm, yy = self.cpr[:4], self.cpr[4:6]
+        yyyy = ("19" if int(yy) > 25 else "20") + yy
+        return [ddmm, yy, yyyy, "2024", "24"]
+
+    def _leetspeak(self, word):
+        subs = {'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7'}
+        res = word.lower()
+        for char, repl in subs.items(): res = res.replace(char, repl)
+        return res
+
+    def _ingest_secrets(self):
+        """Henter fundne passwords fra TITAN rapporter til at forbedre wordlisten."""
+        for f_path in glob.glob(os.path.join(self.json_folder, "16_TITAN_*.json")):
+            try:
+                with open(f_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    secrets = data.get("Case_Intelligence", {}).get("secrets", [])
+                    for s in secrets:
+                        if s.get("type") == "Generic_Secret":
+                            self.seeds.add(s.get("val"))
+                            print(f"{C.GREEN}    [+] Sniper genbruger fundet secret: {s.get('val')[:5]}...{C.RESET}")
+            except Exception: continue
+
+    def generate(self):
+        print(f"\n{C.CYAN}[17] STARTER SNIPER-ENGINE FOR: {self.target_name.upper()}{C.RESET}")
+        suffixes = ["!", "123", "!", "#", "_", ".", "2024"]
+        
+        print("[*] Skaber avancerede ord-kombinationer...")
+        for combo in itertools.permutations(list(self.seeds), 2):
+            self.wordlist.add(f"{combo[0].capitalize()}{combo[1].lower()}")
+            self.wordlist.add(f"{combo[0].lower()}{combo[1].lower()}")
+
+        for base in self.seeds:
+            for d in self.dates:
+                for s in suffixes:
+                    for m in [base.lower(), base.capitalize(), self._leetspeak(base)]:
+                        self.wordlist.add(f"{m}{d}")
+                        self.wordlist.add(f"{m}{d}{s}")
+                        self.wordlist.add(f"{m}{s}{d}")
+        self._save()
+
+    def _save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        path = os.path.join(session["loot_folder"], f"17_SNIPER_{self.target_name.replace(' ', '_')}.txt")
+        final = sorted(list(self.wordlist), key=lambda x: (not any(c in x for c in self.clues), len(x)))
+        with open(path, "w", encoding="utf-8") as f:
+            for w in final:
+                if 6 <= len(w) <= 20: f.write(f"{w}\n")
+        print(f"{C.GREEN}[✓] WORDLIST KLAR: {path} ({len(final)} ord){C.RESET}")--- FIL: ./modules/mod_18_mailrip.py ---
+import os
+import imaplib
+import email
+from email.header import decode_header
+from core.utils import C
+
+class GoliathMailRipper:
+    """Tømmer mailkontoen hurtigt og gemmer alt lokalt (inkl. attachments)."""
+    def __init__(self, user, app_password):
+        self.user = user
+        self.pwd = app_password.replace(" ", "")
+        self.host = "imap-mail.outlook.com"
+        self.save_dir = os.path.join("loot", f"RIP_{user.split('@')[0]}")
+
+    def run(self):
+        print(f"\n{C.CYAN}[18] FORBINDER TIL {self.user}...{C.RESET}")
+        try:
+            mail = imaplib.IMAP4_SSL(self.host)
+            mail.login(self.user, self.pwd)
+            
+            _, folders = mail.list()
+            for f in folders:
+                f_name = f.decode().split(' "/" ')[-1].strip('"')
+                print(f"[*] Ripper mappe: {f_name}")
+                self._rip_folder(mail, f_name)
+                
+            mail.logout()
+            print(f"\n{C.GREEN}[✓] RIP COMPLETE. Data gemt i: {self.save_dir}{C.RESET}")
+        except Exception as e:
+            if "BasicAuthBlocked" in str(e):
+                print(f"{C.RED}[!] FEJL: Microsoft blokerer. Du SKAL bruge 'App Password'.{C.RESET}")
+            else:
+                print(f"{C.RED}[!] Systemfejl: {e}{C.RESET}")
+
+    # I stedet for at hente 'ALL', beder vi serveren om kun at returnere 
+    # mails der indeholder "password", "kode", "lunar" osv.
+    def _rip_folder_smart(self, mail, folder):
+        mail.select(f'"{folder}"')
+        
+        # Server-side søgning (Meget hurtigere, sparer båndbredde)
+        search_criteria = '(OR OR BODY "password" BODY "kode" BODY "lunar")'
+        status, messages = mail.search(None, search_criteria)
+        
+        if status == 'OK' and messages[0]:
+            mail_ids = messages[0].split()
+            print(f"[*] Fandt {len(mail_ids)} høj-værdi mails i {folder}. Downloader...")
+            for num in mail_ids:
+                # Her henter den faktisk mailen og sender den til save_content
+                _, data = mail.fetch(num, '(RFC822)')
+                msg = email.message_from_bytes(data[0][1])
+                self._save_content(msg, folder, num.decode())
+
+    def _save_content(self, msg, folder, mid):
+        # Dette er koden du manglede, som faktisk downloader og gemmer mails!
+        subject, encoding = decode_header(msg.get("Subject", "Ingen emne"))[0]
+        if isinstance(subject, bytes): subject = subject.decode(encoding or "utf-8", errors="ignore")
+        
+        safe_subject = "".join([c for c in str(subject) if c.isalnum() or c in (' ', '_')]).rstrip()
+        folder_path = os.path.join(self.save_dir, folder.replace("/", "_"))
+        os.makedirs(folder_path, exist_ok=True)
+        
+        file_path = os.path.join(folder_path, f"{mid}_{safe_subject[:50]}.txt")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"Fra: {msg.get('From')}\nEmne: {subject}\n{'-'*50}\n")
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        f.write(part.get_payload(decode=True).decode(errors="ignore"))
+                    elif part.get_filename(): # Gemmer vedhæftede filer (PDF, billeder etc)
+                        attach_dir = os.path.join(folder_path, "attachments")
+                        os.makedirs(attach_dir, exist_ok=True)
+                        with open(os.path.join(attach_dir, f"{mid}_{part.get_filename()}"), "wb") as af:
+                            af.write(part.get_payload(decode=True))
+            else:
+                f.write(msg.get_payload(decode=True).decode(errors="ignore"))--- FIL: ./modules/mod_19_crypto.py ---
+import os
+import json
+import requests
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+
+class CryptoLedgerAnalyzer:
+    def __init__(self, address):
+        self.address = address.strip()
+        self.data = {"Adresse": self.address, "Valuta": "Ukendt", "Balance": 0, "Total_Modtaget": 0, "Transaktioner": 0, "Timestamp": datetime.now().isoformat()}
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[19] Blockchain Efterretning (Crypto-Sporing)\n{'='*60}{C.RESET}")
+        print(f"[*] Analyserer krypto-adresse: {self.address}")
+
+        if self.address.startswith("1") or self.address.startswith("3") or self.address.startswith("bc1"):
+            self.data["Valuta"] = "Bitcoin (BTC)"
+            self._trace_btc()
+        elif self.address.startswith("0x"):
+            self.data["Valuta"] = "Ethereum (ETH)"
+            self._trace_eth()
+        else:
+            print(f"{C.RED}[!] Ukendt kæde-format. Understøtter BTC og ETH.{C.RESET}")
+
+        self.save()
+
+    def _trace_btc(self):
+        try:
+            print(f"{C.YELLOW}[*] Forbinder til Bitcoin Blockchain API...{C.RESET}")
+            res = requests.get(f"https://blockchain.info/rawaddr/{self.address}", timeout=10).json()
+            self.data["Balance"] = res.get("final_balance", 0) / 100000000
+            self.data["Total_Modtaget"] = res.get("total_received", 0) / 100000000
+            self.data["Transaktioner"] = res.get("n_tx", 0)
+
+            print(f"{C.GREEN}    ✓ Netværk: Bitcoin{C.RESET}")
+            print(f"{C.GREEN}    ✓ Aktuel Balance: {self.data['Balance']} BTC{C.RESET}")
+            print(f"{C.GREEN}    ✓ Total Modtaget: {self.data['Total_Modtaget']} BTC{C.RESET}")
+            print(f"{C.GREEN}    ✓ Antal Transaktioner: {self.data['Transaktioner']}{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [-] Fejl ved BTC opslag: Kunne ikke finde adresse.{C.RESET}")
+
+    def _trace_eth(self):
+        try:
+            print(f"{C.YELLOW}[*] Forbinder til Etherscan API...{C.RESET}")
+            res = requests.get(f"https://api.etherscan.io/api?module=account&action=balance&address={self.address}&tag=latest", timeout=10).json()
+            if res.get("status") == "1":
+                bal = int(res.get("result", 0)) / 10**18
+                self.data["Balance"] = bal
+                print(f"{C.GREEN}    ✓ Netværk: Ethereum{C.RESET}")
+                print(f"{C.GREEN}    ✓ Aktuel Balance: {bal:.4f} ETH{C.RESET}")
+            else:
+                print(f"{C.YELLOW}    [-] Ingen data fundet på Etherscan.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [-] Fejl ved ETH opslag: {e}{C.RESET}")
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/19_CRYPTO_{self.address[:10]}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_20_vehicle.py ---
+import os
+import json
+import re
+import time
+from pathlib import Path
+from datetime import datetime
+from selenium.webdriver.common.by import By
+from core.utils import C, session
+from core.network import safe_get_with_retry
+from core.browser import zap_cookies
+
+class VehicleIntelligence:
+    def __init__(self, reg_nr):
+        self.reg = reg_nr.upper().replace(" ", "").replace("-", "")
+        self.data = {"RegNr": self.reg, "Mærke_Model": "", "Stelnummer": "", "Status": "", "Timestamp": datetime.now().isoformat()}
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[20] Køretøjs-Efterretning (Nummerpladeopslag)\n{'='*60}{C.RESET}")
+        print(f"[*] Slår nummerplade op: {self.reg}")
+
+        url = f"https://www.tjekbil.dk/nummerplade/{self.reg}/overblik"
+        if safe_get_with_retry(driver, url):
+            zap_cookies(driver)
+            time.sleep(2)
+            try:
+                body_text = driver.find_element(By.TAG_NAME, "body").text
+                stel_match = re.search(r'(?i)(?:stelnummer|vin)[:\s]+([A-Z0-9]{17})', body_text)
+                if stel_match:
+                    self.data["Stelnummer"] = stel_match.group(1)
+                    print(f"{C.GREEN}    ✓ Stelnummer (VIN) fundet: {self.data['Stelnummer']}{C.RESET}")
+
+                try:
+                    h1 = driver.find_element(By.TAG_NAME, "h1").text
+                    self.data["Mærke_Model"] = h1.replace("Tjekbil", "").strip()
+                    print(f"{C.GREEN}    ✓ Køretøj: {self.data['Mærke_Model']}{C.RESET}")
+                except Exception: pass
+
+                if "Afgemeldt" in body_text or "Afmeldt" in body_text:
+                    self.data["Status"] = "Afmeldt"
+                else:
+                    self.data["Status"] = "Aktiv"
+                print(f"{C.GREEN}    ✓ Status: {self.data['Status']}{C.RESET}")
+
+            except Exception as e:
+                print(f"{C.YELLOW}    [-] Kunne ikke udtrække alt data automatisk. Tjek manuelt: {url}{C.RESET}")
+        else:
+            print(f"{C.RED}    [-] Kunne ikke forbinde til motor-registret.{C.RESET}")
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/20_VEHICLE_{self.reg}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_21_bssid.py ---
+import os
+import json
+import requests
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+
+class BSSIDGeofencer:
+    def __init__(self, bssid):
+        self.bssid = bssid.strip().replace("-", ":").lower()
+        self.data = {"BSSID": self.bssid, "Fundet": False, "Lat": None, "Lon": None, "Timestamp": datetime.now().isoformat()}
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[21] BSSID Geofencer (MAC Lokations-sporing)\n{'='*60}{C.RESET}")
+        print(f"[*] Søger efter router MAC i global database: {self.bssid}")
+
+        # Bruger Mylnikov Open Wifi API (Åben database)
+        url = f"https://api.mylnikov.org/geolocation/wifi?v=1.1&data={self.bssid}"
+        try:
+            res = requests.get(url, timeout=10).json()
+            if res.get("result") == 200:
+                self.data["Fundet"] = True
+                self.data["Lat"] = res["data"]["lat"]
+                self.data["Lon"] = res["data"]["lon"]
+
+                maps_url = f"https://www.google.com/maps?q={self.data['Lat']},{self.data['Lon']}"
+
+                print(f"{C.GREEN}    🔥 BINGO! Fysisk lokation fastslået!{C.RESET}")
+                print(f"{C.GREEN}    ✓ Breddegrad: {self.data['Lat']}{C.RESET}")
+                print(f"{C.GREEN}    ✓ Længdegrad: {self.data['Lon']}{C.RESET}")
+                print(f"{C.CYAN}    -> Google Maps: {maps_url}{C.RESET}")
+            else:
+                print(f"{C.YELLOW}    [-] Routeren findes ikke i de åbne databaser.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved API opslag: {e}{C.RESET}")
+
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/21_BSSID_{self.bssid.replace(':', '')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_22_chatapp.py ---
+import os
+import json
+import re
+from datetime import datetime
+from core.utils import C, session
+from core.network import omni_dork_search
+
+class ChatAppIntelligence:
+    def __init__(self, query):
+        self.query = query.strip()
+        self.data = {"Søgeord": self.query, "Telegram_Hits": [], "Discord_Hits": [], "Snowflakes_Decoded": [], "Timestamp": datetime.now().isoformat()}
+
+    # --- TILFØJ DENNE NYE FUNKTION ---
+    def _decode_discord_snowflake(self, snowflake_id):
+        """Dekoder et Discord ID for at finde oprettelsesdatoen (OSINT Trick)"""
+        try:
+            # Discord Epoch (2015-01-01T00:00:00.000Z)
+            discord_epoch = 1420070400000
+            # Tidsstemplet er gemt i de første 42 bits af ID'et
+            timestamp_ms = (int(snowflake_id) >> 22) + discord_epoch
+            creation_date = datetime.fromtimestamp(timestamp_ms / 1000.0)
+            return creation_date.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            return None
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*60}\n[22] Chat App Intelligence & Forensics\n{'='*60}{C.RESET}")
+        
+        # 1. Tjek om søgeordet rent faktisk er et Discord ID!
+        if self.query.isdigit() and 17 <= len(self.query) <= 19:
+            print(f"{C.YELLOW}[*] Detekterede et muligt Discord Snowflake ID! Udfører matematisk dekodning...{C.RESET}")
+            creation_time = self._decode_discord_snowflake(self.query)
+            if creation_time:
+                print(f"{C.RED}    🔥 KONTO/SERVER OPRETTET: {creation_time}{C.RESET}")
+                self.data["Snowflakes_Decoded"].append({"ID": self.query, "Oprettet": creation_time})
+
+        # ... (Din eksisterende kode med tg_dork og dc_dork fortsætter herunder)
+        print(f"\n{C.YELLOW}[*] Scanner Telegram økosystemet...{C.RESET}")
+        tg_dork = f'"{self.query}" site:t.me OR site:telegra.ph'
+        tg_links = omni_dork_search(driver, tg_dork, max_links=5)
+        for link in tg_links:
+            print(f"{C.GREEN}    ✓ TELEGRAM SPOR: {link['url']}{C.RESET}")
+            self.data["Telegram_Hits"].append(link['url'])
+
+        # Scanner Discord og fanger automatisk IDs i URL'er
+        print(f"\n{C.YELLOW}[*] Scanner Discord servere...{C.RESET}")
+        dc_dork = f'"{self.query}" site:discord.com/invite OR site:discord.gg'
+        dc_links = omni_dork_search(driver, dc_dork, max_links=5)
+        for link in dc_links:
+            print(f"{C.GREEN}    ✓ DISCORD INVITE: {link['url']}{C.RESET}")
+            self.data["Discord_Hits"].append(link['url'])
+
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/22_CHATAPP_{self.query.replace(' ', '_')}.json"
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_23_matrix.py ---
+import os
+import json
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from core.utils import C, session
+
+class UsernameMatrixAnalyzer:
+    def __init__(self, username):
+        self.username = username.strip()
+        self.data = {"Brugernavn": self.username, "Platforme": [], "Timestamp": datetime.now().isoformat()}
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[23] Global Username Matrix (Sherlock Engine)\n{'='*60}{C.RESET}")
+        print(f"[*] Skanner over 300 platforme for: {self.username} (Tillad op til 2 minutter)...")
+        
+        try:
+            # Vi øger timeout let, men fanger fejl bedre
+            process = subprocess.Popen(
+                ['sherlock', self.username, '--timeout', '5', '--print-found'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Læser output live!
+            for line in iter(process.stdout.readline, ''):
+                line = line.strip()
+                if "[+]" in line:
+                    site_url = line.split("[+]")[1].strip()
+                    platform_name = site_url.split("://")[1].split("/")[0]
+                    
+                    print(f"{C.GREEN}    🔥 {platform_name.upper()}: {C.CYAN}{site_url}{C.RESET}")
+                    self.data["Platforme"].append(site_url)
+
+            process.wait()
+            
+            if not self.data["Platforme"]:
+                print(f"{C.YELLOW}    [-] Ingen profiler fundet (eller Sherlock er ikke installeret korrekt).{C.RESET}")
+                
+        except FileNotFoundError:
+            print(f"{C.RED}    [!] 'sherlock' er ikke installeret globalt. Kør: pip install sherlock-project{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl under Matrix skanning: {e}{C.RESET}")
+
+        self.save()
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        filename = f"{session['loot_folder']}/23_MATRIX_{self.username}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Matrix rapport gemt ({len(self.data['Platforme'])} hits): {filename}{C.RESET}")--- FIL: ./modules/mod_24_opsec.py ---
+import os
+from PIL import Image
+from core.utils import C
+
+class OpsecSanitizer:
+    """Fjerner al EXIF og metadata fra filer, inden de deles eller uploades"""
+    def __init__(self, file_path):
+        self.file_path = file_path.strip()
+        
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[24] OPSEC Sanitizer (Fjern Metadata)\n{'='*60}{C.RESET}")
+        if not os.path.exists(self.file_path):
+            print(f"{C.RED}[!] Filen findes ikke.{C.RESET}"); return
+            
+        try:
+            img = Image.open(self.file_path)
+            # Kopierer kun pixels, ingen metadata
+            clean_data = list(img.getdata())
+            clean_img = Image.new(img.mode, img.size)
+            clean_img.putdata(clean_data)
+            
+            clean_path = self.file_path.rsplit('.', 1)[0] + "_CLEANED." + self.file_path.rsplit('.', 1)[1]
+            clean_img.save(clean_path)
+            
+            print(f"{C.GREEN}    ✓ Bevis renset for metadata!{C.RESET}")
+            print(f"{C.GREEN}    ✓ Sikker kopi gemt: {clean_path}{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Kunne ikke rense filen (Understøtter kun billeder pt.): {e}{C.RESET}")--- FIL: ./modules/mod_25_wayback.py ---
+# modules/mod_25_wayback.py
+import os
+import json
+import requests
+from datetime import datetime
+from core.utils import C, session
+
+class WaybackMachineIntelligence:
+    def __init__(self, url):
+        self.url = url.strip()
+        self.data = {"Mål": self.url, "Arkiveret_Link": None, "Timestamp": datetime.now().isoformat()}
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}{'='*60}\n[25] Wayback Bevissikring (Auto-Downloader)\n{'='*60}{C.RESET}")
+        print(f"[*] Søger i Internet Archive efter slettet indhold: {self.url}")
+        
+        try:
+            res = requests.get(f"http://archive.org/wayback/available?url={self.url}", timeout=10).json()
+            if "closest" in res.get("archived_snapshots", {}):
+                hit = res["archived_snapshots"]["closest"]["url"]
+                self.data["Arkiveret_Link"] = hit
+                print(f"{C.GREEN}    🔥 ARKIVERET VERSION FUNDET: {hit}{C.RESET}")
+                
+                # Bevissikring: Download hele siden offline
+                self._download_archive(hit)
+            else:
+                print(f"{C.YELLOW}    [-] Ingen arkiveret version fundet.{C.RESET}")
+        except Exception as e:
+            print(f"{C.RED}    [!] Fejl ved arkiv-søgning: {e}{C.RESET}")
+        
+        self.save()
+
+    def _download_archive(self, archive_url):
+        print(f"{C.YELLOW}    [*] Downloader offline kopi til bevissikring...{C.RESET}")
+        try:
+            # Wayback machine tilføjer "id_" til URL'en for at give dig den RÅ originale HTML uden deres top-bar
+            raw_url = archive_url.replace("/web/", "/web/id_/", 1)
+            page_data = requests.get(raw_url, timeout=20).text
+            
+            mappe = os.path.join(session["loot_folder"], "wayback_archives")
+            os.makedirs(mappe, exist_ok=True)
+            
+            safe_name = self.url.replace("https://", "").replace("http://", "").replace("/", "_")
+            filsti = os.path.join(mappe, f"OFFLINE_{safe_name}.html")
+            
+            with open(filsti, 'w', encoding='utf-8', errors='ignore') as f:
+                f.write(page_data)
+                
+            print(f"{C.GREEN}    ✓ Komplet webside sikret offline: {filsti}{C.RESET}")
+        except Exception as e:
+            print(f"{C.DIM}    [-] Kunne ikke downloade rå HTML: {e}{C.RESET}")
+
+    def save(self):
+        os.makedirs(session["loot_folder"], exist_ok=True)
+        safe_url = self.url.replace("https://", "").replace("/", "_")
+        filename = f"{session['loot_folder']}/25_WAYBACK_{safe_url}.json"
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)--- FIL: ./modules/mod_26_virustotal.py ---
+import requests
+from core.utils import C
+from core.network import CONFIG
+
+class VirusTotalAnalyzer:
+    def __init__(self, hash_or_ip):
+        self.target = hash_or_ip.strip()
+        self.api_key = CONFIG["api_keys"].get("virus_total", "")
+        self.data = {"Target": self.target, "Malicious": 0, "Undetected": 0, "Details": {}}
+
+    def run(self, driver=None):
+        print(f"\n{C.CYAN}[26] VirusTotal Threat Intelligence{C.RESET}")
+        if not self.api_key:
+            print(f"{C.RED}[!] VirusTotal API-nøgle mangler i config.json{C.RESET}")
+            return
+            
+        headers = {"x-apikey": self.api_key}
+        # Auto-detekter om det er IP eller File Hash
+        if "." in self.target and len(self.target) < 16:
+            url = f"https://www.virustotal.com/api/v3/ip_addresses/{self.target}"
+        else:
+            url = f"https://www.virustotal.com/api/v3/files/{self.target}"
+
+        try:
+            res = requests.get(url, headers=headers).json()
+            stats = res['data']['attributes']['last_analysis_stats']
+            print(f"{C.RED}    🔥 Malicious Hits: {stats['malicious']}{C.RESET}")
+            print(f"{C.GREEN}    ✓ Rene Scans: {stats['undetected']}{C.RESET}")
+            self.data["Malicious"] = stats['malicious']
+            # Gem logik her...
+        except Exception as e:
+            print(f"{C.RED}[!] Fejl ved VT API: {e}{C.RESET}")--- FIL: ./modules/mod_27_ai.py ---
+import json
+import requests
+from core.utils import C
+
+class TitanAIEnrichment:
+    """Kører rå tekst gennem en lokal LLM (Ollama) for at finde skjult kontekst."""
+    def __init__(self, model="llama3"):
+        self.model = model
+        self.api_url = "http://localhost:11434/api/generate"
+
+    def analyze_text(self, text):
+        if not text or len(text) < 20:
+            return {}
+
+        # Vi begrænser teksten for at undgå at overbelaste den lokale model
+        safe_text = text[:4000] 
+
+        prompt = """
+        Du er en cyber-efterforsker. Analyser følgende tekst og uddrag de vigtigste entiteter.
+        Returner KUN et validt JSON-objekt med følgende nøgler: 'navne' (liste), 'adresser' (liste), 
+        'organisationer' (liste), og 'mistænkelig_adfærd' (kort string opsummering).
+        Tekst:
+        """ + safe_text
+
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "format": "json",
+            "stream": False
+        }
+
+        try:
+            res = requests.post(self.api_url, json=payload, timeout=60).json()
+            return json.loads(res.get("response", "{}"))
+        except requests.exceptions.ConnectionError:
+            print(f"{C.DIM}    [AI Offline] Ollama kører ikke på localhost:11434{C.RESET}")
+            return {}
+        except Exception as e:
+            print(f"{C.DIM}    [AI Fejl] {e}{C.RESET}")
+            return {}--- FIL: ./modules/mod_28_graph.py ---
+import os
+import json
+import csv
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+
+class GoliathGraphExporter:
+    """Samler alt loot data og genererer en Maltego/Gephi venlig CSV-fil."""
+    def __init__(self):
+        self.loot_dir = session["loot_folder"]
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        self.csv_file = f"GRAPH_EXPORT_{self.timestamp}.csv"
+
+    def generate(self):
+        print(f"\n{C.CYAN}{'='*60}\n[28] Visual Graph Exporter (Maltego / Link Analyse)\n{'='*60}{C.RESET}")
+        files = list(Path(self.loot_dir).glob("*.json"))
+        
+        if not files:
+            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet i {self.loot_dir}.{C.RESET}")
+            return
+
+        print(f"{C.YELLOW}[*] Støvsuger {len(files)} bevisfiler for relationer (Nodes & Edges)...{C.RESET}")
+        
+        # Liste til vores netværks-links: [Kilde, Forbindelse_Type, Mål]
+        edges = []
+        target_name = session.get('name', 'Hovedmål')
+
+        for file in files:
+            try:
+                data = json.loads(file.read_text(encoding='utf-8'))
+                
+                # Hvis vi finder Email-mønstre
+                if "Email" in data:
+                    edges.append([target_name, "Har Email", data["Email"]])
+                    # Hvis emailen var med i datalæk
+                    if "Lækager" in data or "Free_Breach_Hits" in data:
+                        leaks = data.get("Lækager", []) + data.get("Free_Breach_Hits", [])
+                        for leak in leaks:
+                            edges.append([data["Email"], "Lækket I", leak])
+                
+                # Hvis vi finder Telefonnumre (Fra Krak)
+                if "Telefonnumre" in data:
+                    for tlf in data["Telefonnumre"]:
+                        edges.append([target_name, "Har Telefon", tlf])
+                        
+                # Fra TITAN mass-scan
+                if "Intelligence" in data:
+                    intel = data["Intelligence"]
+                    for e in intel.get("Emails", []): edges.append(["TITAN Mappe", "Indeholder Email", e])
+                    for k in intel.get("Krypto", []): edges.append(["TITAN Mappe", "Indeholder Wallet", k])
+
+            except Exception: continue
+
+        # Skriv til CSV
+        self._write_csv(edges)
+
+    def _write_csv(self, edges):
+        # Fjern dubletter
+        unique_edges = []
+        for edge in edges:
+            if edge not in unique_edges:
+                unique_edges.append(edge)
+
+        file_path = os.path.join(self.loot_dir, self.csv_file)
+        with open(file_path, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Source", "Relation", "Target"]) # Maltego format headers
+            writer.writerows(unique_edges)
+
+        print(f"{C.GREEN}[✓] Data-netværk eksporteret succesfuldt!{C.RESET}")
+        print(f"{C.CYAN}    -> Fil klar til import i Maltego/Gephi: {file_path}{C.RESET}")
+        print(f"{C.YELLOW}    (Dette kortlægger {len(unique_edges)} forbindelser visuelt!){C.RESET}")--- FIL: ./modules/mod_29_kml.py ---
+# modules/mod_29_kml.py
+import os
+import json
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session
+
+class GoogleEarthExporter:
+    """Støvsuger beviser for GPS koordinater og genererer et Google Earth 3D-kort"""
+    def __init__(self):
+        self.loot_dir = session["loot_folder"]
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        self.kml_file = f"MAP_EXPORT_{self.timestamp}.kml"
+
+    def generate(self):
+        print(f"\n{C.CYAN}{'='*60}\n[29] Google Earth KML-Kortlægning\n{'='*60}{C.RESET}")
+        files = list(Path(self.loot_dir).glob("*.json"))
+        
+        placemarks = []
+        
+        print(f"{C.YELLOW}[*] Støvsuger {len(files)} bevisfiler for lokations-data (GPS/BSSID)...{C.RESET}")
+        
+        for file in files:
+            try:
+                data = json.loads(file.read_text(encoding='utf-8'))
+                
+                # Finder GPS fra Forensik (Modul 11)
+                if "GPS_Koordinater" in data and data["GPS_Koordinater"]:
+                    lat = data["GPS_Koordinater"].get("Breddegrad")
+                    lon = data["GPS_Koordinater"].get("Længdegrad")
+                    if lat and lon:
+                        placemarks.append(self._create_placemark(
+                            name=f"Billede EXIF: {data.get('Fil', 'Ukendt')}",
+                            desc=f"Tidspunkt: {data.get('Temporal_Data', {}).get('Oprettet', 'Ukendt')}",
+                            lat=lat, lon=lon
+                        ))
+
+                # Finder GPS fra WiFi BSSID (Modul 21)
+                if "BSSID" in data and data.get("Fundet") == True:
+                    placemarks.append(self._create_placemark(
+                        name=f"Router BSSID: {data['BSSID']}",
+                        desc="Fysisk router lokation",
+                        lat=data["Lat"], lon=data["Lon"]
+                    ))
+                    
+            except Exception: continue
+
+        if not placemarks:
+            print(f"{C.RED}[!] Ingen GPS-koordinater fundet i dine beviser.{C.RESET}")
+            return
+
+        self._write_kml(placemarks)
+
+    def _create_placemark(self, name, desc, lat, lon):
+        # KML kræver Længdegrad før Breddegrad (Lon, Lat)
+        return f"""
+        <Placemark>
+            <name>{name}</name>
+            <description>{desc}</description>
+            <Point>
+                <coordinates>{lon},{lat},0</coordinates>
+            </Point>
+        </Placemark>
+        """
+
+    def _write_kml(self, placemarks):
+        kml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <name>OMNI-HUNTER Lokations Spor</name>
+        <description>Automatisk genereret OSINT kort</description>
+        {''.join(placemarks)}
+    </Document>
+</kml>
+        """
+        file_path = os.path.join(self.loot_dir, self.kml_file)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(kml_content)
+            
+        print(f"{C.GREEN}[✓] Fandt {len(placemarks)} præcise GPS-lokationer!{C.RESET}")
+        print(f"{C.CYAN}    -> Åbn denne fil direkte i Google Earth: {file_path}{C.RESET}")--- FIL: ./modules/mod_30_person_intel.py ---
+# -*- coding: utf-8 -*-
+import time
+import json
+import os
+import re
+import random
+from pathlib import Path
+from core.utils import C, session, REGEX_EMAIL
+
+# Imports fra hele din suite
+from core.network import omni_dork_search, safe_get_with_retry
+from modules.mod_02_business import BusinessIntelligenceAnalyst
+from modules.mod_03_breach import BreachIntelligenceAnalyst
+from modules.mod_04_social import SocialMediaProfiler
+from modules.mod_06_emailgen import EmailPatternGenerator
+from modules.mod_08_darkweb import DarkWebIntelligence # MODUL 08 TIL DARKNET
+from modules.mod_12_revphone import ReversePhoneIntelligence
+from modules.mod_17_sniper import GoliathSniperEngine
+from modules.mod_19_crypto import CryptoLedgerAnalyzer
+from modules.mod_20_vehicle import VehicleIntelligence
+from modules.mod_22_chatapp import ChatAppIntelligence
+from modules.mod_23_matrix import UsernameMatrixAnalyzer
+from modules.mod_25_wayback import WaybackMachineIntelligence
+from modules.mod_27_ai import TitanAIEnrichment
+
+class PersonIntelligenceOrchestrator:
+    """Modul 30: GOLIATH OMNIPOTENT V4 - Recursive Identity & Darknet Engine."""
+    
+    def __init__(self, target_name):
+        self.target_name = target_name.strip()
+        self.intel_pool = {
+            "Emails": set(),
+            "Telefonnumre": set(),
+            "Brugernavne": set(),
+            "Virksomheder": set(),
+            "Sociale_Links": set(),
+            "Profiler_Bio_Data": [],
+            "Darknet_Hits": []
+        }
+        # Støj-liste: Disse domæner filtreres fra for at holde feedet rent
+        self.noise_domains = [
+            "microsoft.com", "outlook.office", "support.google", "accounts.google",
+            "login.live", "office365.com", "appleid.apple", "support.microsoft"
+        ]
+
+    def run(self, driver):
+        print(f"\n{C.CYAN}{'='*85}\n[30] GOLIATH OMNIPOTENT V4: GLOBAL IDENTITY & DARKNET RECON\n{'='*85}{C.RESET}")
+        
+        self._prepare_session(driver)
+
+        # --- TRIN 1: MASSIV DISCOVERY (CLEANED) ---
+        print(f"{C.YELLOW}[*] Fase 1: Global Discovery & Darknet Proxy Search...{C.RESET}")
+        
+        search_queries = [
+            f'"{self.target_name}"',
+            f'"{self.target_name}" site:tiktok.com OR site:instagram.com OR site:facebook.com',
+            f'"{self.target_name}" leak OR breach OR combolist OR database', # Leak search
+            f'"{self.target_name}" @gmail.com OR @hotmail.com OR @live.dk OR @icloud.com', # Email focus
+            f'"{self.target_name}" site:pastebin.com OR site:ghostbin.com OR site:controlc.com' # Paste sites
+        ]
+        
+        all_hits = []
+        for q in search_queries:
+            print(f"{C.DIM}    -> Graver i OSINT-rummet: {q}{C.RESET}")
+            try:
+                hits = omni_dork_search(driver, q, max_links=20)
+                if hits: all_hits.extend(hits)
+            except Exception: pass
+            time.sleep(random.uniform(1, 1.5))
+
+        # --- TRIN 2: DARKNET ANALYSE (Modul 08 Logik) ---
+        print(f"{C.RED}[*] Fase 2: Scanner Darknet (Tor Proxy Search via Ahmia)...{C.RESET}")
+        try:
+            dark_mod = DarkWebIntelligence(self.target_name)
+            dark_mod.run(None) # Vi bruger dens interne logik til at slå op
+            # Vi indfanger fund her (simuleret integration)
+        except Exception: pass
+
+        # --- TRIN 3: INTELLIGENT DATA EXTRACTION & NOISE FILTERING ---
+        unique_hits = self._clean_hits(all_hits)
+        
+        print(f"\n{C.CYAN}--- GOLIATH DISCOVERY FEED (Microsoft-links filtreret) ---{C.RESET}")
+        for i, hit in enumerate(unique_hits):
+            raw_title = hit.get('title', '').strip()
+            url = hit.get('url', 'Ingen URL')
+            
+            # Smart Title Generation
+            if not raw_title or raw_title.lower() == "ingen titel":
+                domain = url.split("//")[-1].split("/")[0]
+                title = f"Spor fundet på {C.YELLOW}{domain}{C.RESET}"
+            else:
+                title = raw_title
+
+            snippet = hit.get('snippet', '').strip()
+            print(f" [{i}] {C.GREEN}{title}{C.RESET}\n     URL: {url}")
+            
+            self._extract_data_from_hit(title, url, snippet)
+
+        print(f"\n{C.YELLOW}[!] Identificerede Aliaser: {', '.join(self.intel_pool['Brugernavne']) if self.intel_pool['Brugernavne'] else 'Ingen'}{C.RESET}")
+        print(f"{C.YELLOW}[!] Potentielle Emails: {', '.join(self.intel_pool['Emails']) if self.intel_pool['Emails'] else 'Søger...'}{C.RESET}")
+        
+        valg = input(f"\n{C.CYAN}[?] Bekræft hits (fx 0,1,3) eller 'alle': {C.RESET}").strip()
+        if not valg: return
+
+        # --- TRIN 4: DEN STORE REKURSIVE PIVOT ---
+        print(f"\n{C.RED}[!] VALIDERING FULDFØRT. STARTER TOTAL PUSLESPILS-LØSNING...{C.RESET}")
+
+        # 1. Social & Bio (Modul 04 + 25)
+        if self.intel_pool["Brugernavne"]:
+            print(f"{C.YELLOW}[*] Pivot: Modul 04 (Deep Social Scrape)...{C.RESET}")
+            for handle in self.intel_pool["Brugernavne"]:
+                try:
+                    social = SocialMediaProfiler(handle)
+                    social.run(driver)
+                    if "Deep_Scrape" in social.data:
+                        self.intel_pool["Profiler_Bio_Data"].append(social.data["Deep_Scrape"])
+                except Exception: pass
+
+        # 2. Breach & Email (Modul 03 + 06)
+        if not self.intel_pool["Emails"]:
+            print(f"{C.DIM}[*] Ingen emails fundet. Genererer mønstre (Modul 06)...{C.RESET}")
+            EmailPatternGenerator(self.target_name).run(driver) # Genererer dem til session
+            
+        for email in self.intel_pool["Emails"]:
+            print(f"{C.RED}[*] Pivot: Modul 03 (Breach Analytics) -> {email}{C.RESET}")
+            try: BreachIntelligenceAnalyst(email).run(driver)
+            except Exception: pass
+
+        # 3. Erhverv & Økonomi (Modul 02 + 19)
+        if self.intel_pool["Virksomheder"]:
+            print(f"{C.YELLOW}[*] Pivot: Modul 02 (Business Intelligence)...{C.RESET}")
+            try: BusinessIntelligenceAnalyst(self.target_name).run(None)
+            except Exception: pass
+
+        # 4. AI & Matrix (Modul 27 + 23)
+        print(f"{C.CYAN}[*] Pivot: Modul 27 & 23 (Titan AI Context & Matrix Synthesis)...{C.RESET}")
+        try:
+            ai = TitanAIEnrichment()
+            combined_context = f"Mål: {self.target_name}. Fundne emails: {self.intel_pool['Emails']}. Sociale spor: {self.intel_pool['Profiler_Bio_Data']}"
+            ai.analyze_text(combined_context)
+            UsernameMatrixAnalyzer(self.target_name).run(None)
+        except Exception: pass
+        
+        print(f"\n{C.GREEN}[✓✓✓] MISSION COMPLETE. GOLIATH V4 har færdiggjort analysen.{C.RESET}")
+
+    def _extract_data_from_hit(self, title, url, snippet):
+        # Email extraction (Højt prioriteret)
+        for e in REGEX_EMAIL.findall(f"{title} {url} {snippet}"):
+            self.intel_pool["Emails"].add(e.lower())
+        
+        # Social Handles
+        handle_match = re.search(r'(?:instagram\.com|tiktok\.com\/@|facebook\.com|linkedin\.com\/in|youtube\.com\/@)\/([a-zA-Z0-9._-]+)', url)
+        if handle_match:
+            handle = handle_match.group(1).replace('@', '')
+            if handle not in ['p', 'reels', 'people', 'explore']:
+                self.intel_pool["Brugernavne"].add(handle)
+
+        # Business Detection
+        if any(x in url.lower() for x in ["ownr.dk", "virkly.io", "proff.dk", "cvr"]):
+            self.intel_pool["Virksomheder"].add(self.target_name)
+
+    def _prepare_session(self, driver):
+        try:
+            driver.get("https://www.google.com")
+            time.sleep(1)
+            buttons = driver.find_elements(By.TAG_NAME, "button")
+            for b in buttons:
+                if any(x in b.text for x in ["Accept", "accept", "Jeg accepterer", "Enig"]):
+                    b.click()
+                    break
+        except Exception: pass
+
+    def _clean_hits(self, hits):
+        seen = set()
+        clean = []
+        for h in hits:
+            url = h.get('url', '')
+            if not url or url in seen: continue
+            
+            # NOISE FILTER: Hvis domænet er i vores sortliste, hopper vi over det
+            if any(domain in url.lower() for domain in self.noise_domains):
+                continue
+                
+            clean.append(h)
+            seen.add(url)
+        return clean--- FIL: ./main.py ---
+# main.py
+import os
+import sys
+import shutil
+import argparse
+import json
+from pathlib import Path
+from datetime import datetime
+from core.utils import C, session, get_input
+from core.browser import get_stealth_driver
+from core.logger import logger
+from modules.mod_30_person_intel import PersonIntelligenceOrchestrator
+
+def check_dependencies():
+    print(f"{C.CYAN}[*] Udfører system-tjek for OMNI-HUNTER v52.0...{C.RESET}")
+    tools = {"rg": "Ripgrep", "tesseract": "Tesseract OCR", "holehe": "Holehe Tracker"}
+    for tool, desc in tools.items():
+        if shutil.which(tool) is None:
+            print(f"{C.RED}    [!] ADVARSEL: {desc} mangler på systemet!{C.RESET}")
+        else:
+            print(f"{C.GREEN}    [✓] System-Værktøj OK: {tool}{C.RESET}")
+
+def setup_cli():
+    parser = argparse.ArgumentParser(description="OMNI-HUNTER OSINT Framework")
+    parser.add_argument("-t", "--target", help="Målets navn eller email")
+    parser.add_argument("-m", "--module", help="Modulnummer", type=str)
+    parser.add_argument("--headless", action="store_true", help="Kør uden menu")
+    return parser.parse_args()
+
+def main():
+    os.makedirs(session["loot_folder"], exist_ok=True)
+    check_dependencies()
+    
+    while True:
+        print(f"{C.CYAN}{'='*70}{C.RESET}")
+        print(f"  {C.YELLOW}OSINT Final - Suite for OSINT{C.RESET}")
+        print(f"  {C.RED}PETFE // Politi - Efterretningsværktøj{C.RESET}")
+        print(f"{C.CYAN}{'='*70}{C.RESET}")
+        
+        print(f"  {C.GREEN}[00] TOTAL PERSON PIVOT (Full Identity Reconstruction){C.RESET}")
+
+        print(f"{C.CYAN}[01]{C.RESET} Personregister (Krak)          {C.CYAN}[02]{C.RESET} Erhverv (CVR API)")
+        print(f"{C.CYAN}[03]{C.RESET} Lækage-analyse (Breach)        {C.CYAN}[04]{C.RESET} Social Media Profiler")
+        print(f"{C.CYAN}[05]{C.RESET} Offline DB (Ripgrep)           {C.CYAN}[06]{C.RESET} E-mail Mønstre")
+        print(f"{C.CYAN}[07]{C.RESET} Telefon-efterretning           {C.CYAN}[08]{C.RESET} Mørkenet (Ahmia)")
+        print(f"{C.CYAN}[09]{C.RESET} E-mail Tracker (Dyb)           {C.CYAN}[10]{C.RESET} IP/Netværk (API)")
+        print(f"{C.CYAN}[11]{C.RESET} Udtræk data fra billeder       {C.CYAN}[12]{C.RESET} Omvendt Telefonopslag")
+        print(f"{C.CYAN}[13]{C.RESET} Omvendt Billedsøgning          {C.CYAN}[16]{C.RESET} Auto-Forensisk (TITAN)")
+        print(f"{C.CYAN}[17]{C.RESET} Goliath Final Strike           {C.CYAN}[18]{C.RESET} Mail-Ripper (IMAP)")
+        print(f"{C.CYAN}[19]{C.RESET} Crypto Ledger Tracker          {C.CYAN}[20]{C.RESET} Køretøjs-OSINT")
+        print(f"{C.CYAN}[21]{C.RESET} BSSID Geofencer (MAC -> GPS)   {C.CYAN}[22]{C.RESET} Chat App Intelligence")
+        print(f"{C.CYAN}[23]{C.RESET} Global Username Matrix         {C.CYAN}[24]{C.RESET} OPSEC Sanitizer")
+        print(f"{C.CYAN}[25]{C.RESET} Wayback Machine                {C.CYAN}[26]{C.RESET} VirusTotal Threat Intel")
+        print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
+        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport)")
+        
+        print(f"{C.CYAN}{'-' * 70}{C.RESET}")
+        print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
+        print(f"{C.RED}[15]{C.RESET} Afslut Session")
+        print(f"{C.CYAN}{'='*70}{C.RESET}")
+        
+        choice = input(f"\n{C.YELLOW}Vælg Modul [01-29]: {C.RESET}").strip()
+        
+        if choice == "15": 
+            print(f"\n{C.RED}[*] Session afsluttet. God jagt.{C.RESET}")
+            break
+
+        # --- DYNAMISK ROUTING MED INTELLIGENT BROWSER-STYRING ---
+        try:
+            if choice == "00" or choice == "0":
+                navn = get_input("Målets fulde navn", "name")
+                print(f"{C.CYAN}[*] Starter GOLIATH PIVOT ENGINE...{C.RESET}")
+                driver = get_stealth_driver()
+                try:
+                    PersonIntelligenceOrchestrator(navn).run(driver)
+                finally:
+                    driver.quit()
+
+            elif choice == "01":
+                from modules.mod_01_krak import DirectoryIntelligenceHunter
+                navn = get_input("Navn", "name")
+                by = get_input("By", "city")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: DirectoryIntelligenceHunter(navn, by).run(driver)
+                finally: driver.quit()
+
+            elif choice == "02":
+                from modules.mod_02_business import BusinessIntelligenceAnalyst
+                navn = get_input("Navn/Firma", "name")
+                BusinessIntelligenceAnalyst(navn).run(None)
+
+            elif choice == "03":
+                from modules.mod_03_breach import BreachIntelligenceAnalyst
+                email = get_input("Email", "email")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: BreachIntelligenceAnalyst(email).run(driver)
+                finally: driver.quit()
+
+            elif choice == "04":
+                from modules.mod_04_social import SocialMediaProfiler
+                username = get_input("Brugernavn", "username")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: SocialMediaProfiler(username).run(driver)
+                finally: driver.quit()
+
+            elif choice == "05":
+                from modules.mod_05_offline import OfflineDatabaseAnalyzer
+                OfflineDatabaseAnalyzer(get_input("Søgeord", "db_target"), get_input("Sti til .txt", "db_path")).run()
+
+            elif choice == "06":
+                from modules.mod_06_emailgen import EmailPatternGenerator
+                navn = get_input("Navn", "name")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: EmailPatternGenerator(navn).run(driver)
+                finally: driver.quit()
+
+            elif choice == "07":
+                from modules.mod_07_phone import PhoneIntelligenceHunter
+                phone = get_input("Telefon (uden +45)", "phone")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: PhoneIntelligenceHunter(phone).run(driver)
+                finally: driver.quit()
+
+            elif choice == "08":
+                from modules.mod_08_darkweb import DarkWebIntelligence
+                DarkWebIntelligence(get_input("Søgeord", "dark_query")).run(None)
+
+            elif choice == "09":
+                from modules.mod_09_emailtrack import EmailTracker
+                EmailTracker(get_input("Email", "email")).run(None)
+
+            elif choice == "10":
+                from modules.mod_10_ip import IPNetworkAnalyzer
+                IPNetworkAnalyzer(get_input("IP Adresse", "ip")).run(None)
+
+            elif choice == "11":
+                from modules.mod_11_forensics import DigitalForensicsExaminer
+                DigitalForensicsExaminer(get_input("Sti til billede/fil", "file_path")).run()
+
+            elif choice == "12":
+                from modules.mod_12_revphone import ReversePhoneIntelligence
+                phone = get_input("Ukendt Telefon (uden +45)", "phone")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ReversePhoneIntelligence(phone).run(driver)
+                finally: driver.quit()
+
+            elif choice == "13":
+                from modules.mod_13_revimage import ReverseImageIntelligence
+                img_path = get_input("Sti til billede", "image_path")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ReverseImageIntelligence(img_path).run(driver)
+                finally: driver.quit()
+
+            elif choice == "16":
+                from modules.mod_16_titan import AutoForensicMassScanner
+                folder = get_input("Sti til Mappe (f.eks. /home/user/leaks)", "dump_folder")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: AutoForensicMassScanner(folder).run(driver)
+                finally: driver.quit()
+
+            elif choice == "17":
+                from modules.mod_17_sniper import GoliathSniperEngine
+                print(f"\n{C.YELLOW}--- GOLIATH SNIPER: KONFIGURATION ---{C.RESET}")
+                name = get_input("Målets fulde navn", "name")
+                city = get_input("By", "city")
+                cpr = get_input("CPR (DDMMYY-XXXX)", "cpr") if input(f"{C.CYAN}Brug CPR? (j/n): {C.RESET}").lower() == 'j' else ""
+                clues = get_input("Clues (f.eks. hund, børn)", "clues")
+                GoliathSniperEngine(name, city, cpr, clues, session["loot_folder"]).generate()
+
+            elif choice == "18":
+                from modules.mod_18_mailrip import GoliathMailRipper
+                print(f"\n{C.YELLOW}--- GOLIATH MAIL-RIPPER ---{C.RESET}")
+                GoliathMailRipper(get_input("Email", "email"), get_input("App Password", "password")).run()
+
+            elif choice == "19":
+                from modules.mod_19_crypto import CryptoLedgerAnalyzer
+                CryptoLedgerAnalyzer(get_input("Krypto Adresse (BTC/ETH)", "crypto")).run(None)
+
+            elif choice == "20":
+                from modules.mod_20_vehicle import VehicleIntelligence
+                regnr = get_input("Nummerplade (f.eks. AB12345)", "regnr")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: VehicleIntelligence(regnr).run(driver)
+                finally: driver.quit()
+
+            elif choice == "21":
+                from modules.mod_21_bssid import BSSIDGeofencer
+                BSSIDGeofencer(get_input("MAC Adresse / BSSID (xx:xx:xx:xx:xx)", "bssid")).run(None)
+
+            elif choice == "22":
+                from modules.mod_22_chatapp import ChatAppIntelligence
+                chat_query = get_input("Søgeord/Brugernavn", "chat_query")
+                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
+                driver = get_stealth_driver()
+                try: ChatAppIntelligence(chat_query).run(driver)
+                finally: driver.quit()
+
+            elif choice == "23":
+                from modules.mod_23_matrix import UsernameMatrixAnalyzer
+                UsernameMatrixAnalyzer(get_input("Brugernavn", "username")).run(None)
+
+            elif choice == "24":
+                from modules.mod_24_opsec import OpsecSanitizer
+                OpsecSanitizer(get_input("Sti til fil", "file_path")).run(None)
+
+            elif choice == "25":
+                from modules.mod_25_wayback import WaybackMachineIntelligence
+                WaybackMachineIntelligence(get_input("URL", "url")).run(None)
+
+            elif choice == "26":
+                from modules.mod_26_virustotal import VirusTotalAnalyzer
+                VirusTotalAnalyzer(get_input("IP eller Hash", "ip")).run(None)
+
+            elif choice == "27":
+                from modules.mod_27_ai import TitanAIEnrichment
+                ai = TitanAIEnrichment()
+                res = ai.analyze_text(get_input("Tekst der skal analyseres", "ai_text"))
+                print(f"\n{C.GREEN}[✓] AI Resultat:\n{json.dumps(res, indent=4, ensure_ascii=False)}{C.RESET}")
+
+            elif choice == "28":
+                from modules.mod_28_graph import GoliathGraphExporter
+                GoliathGraphExporter().generate()
+
+            elif choice == "29":
+                from modules.mod_29_kml import GoogleEarthExporter
+                GoogleEarthExporter().generate()
+
+            elif choice == "14":
+                AutomatedCaseReporter().generate()
+
+            else:
+                print(f"{C.YELLOW}[!] Modul {choice} er tomt pt. eller findes ikke.{C.RESET}")
+
+        except Exception as e:
+            print(f"\n{C.RED}[!] Fejl i modul: {str(e)}{C.RESET}")
+
+class AutomatedCaseReporter:
+    """Genererer et professionelt interaktivt HTML Dashboard over alle beviser"""
+    def __init__(self):
+        self.loot_dir = session["loot_folder"]
+        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        self.report_file = f"FINAL_REPORT_{self.timestamp}.html"
+
+    def generate(self):
+        files = list(Path(self.loot_dir).glob("*.json"))
+        all_cpr, all_bank, all_emails = set(), set(), set()
+        
+        for file in files:
+            try:
+                data = json.loads(file.read_text(encoding='utf-8'))
+                if "Intelligence" in data:
+                    intel = data["Intelligence"]
+                    all_cpr.update(intel.get("CPR", []))
+                    all_bank.update(intel.get("Bank_Accounts", []))
+                    all_emails.update(intel.get("Emails", []))
+                if "HIBP_Breaches" in data or "Data_Leaks" in data:
+                    all_emails.add(data.get("Email", ""))
+            except Exception: continue
+
+        html_content = f"""
+        <html>
+        <head>
+            <title>OSINT MISSION REPORT</title>
+            <style>
+                body {{ font-family: 'Courier New', Courier, monospace; background-color: #0d1117; color: #c9d1d9; margin: 40px; }}
+                h1 {{ color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }}
+                h2 {{ color: #ff7b72; margin-top: 30px; }}
+                .box {{ background-color: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 6px; margin-bottom: 20px; }}
+                .badge {{ background-color: #238636; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }}
+                ul {{ list-style-type: square; }}
+                li {{ margin-bottom: 8px; }}
+            </style>
+        </head>
+        <body>
+            <h1>OMNI-HUNTER // INTELLIGENCE DASHBOARD</h1>
+            <p><strong>Genereret:</strong> {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}</p>
+            <p><strong>Mål/Sag:</strong> {session.get('name', 'Ukendt')}</p>
+            
+            <div class="box">
+                <h2>🚨 KRITISKE IDENTIFIKATORER</h2>
+                <p><strong>CPR Numre <span class="badge">{len(all_cpr)}</span></strong></p>
+                <ul>{''.join([f"<li>{c}</li>" for c in all_cpr]) if all_cpr else "<li>Ingen fundet</li>"}</ul>
+                
+                <p><strong>Bankkonti <span class="badge">{len(all_bank)}</span></strong></p>
+                <ul>{''.join([f"<li>{b}</li>" for b in all_bank]) if all_bank else "<li>Ingen fundet</li>"}</ul>
+                
+                <p><strong>Email Adresser <span class="badge">{len(all_emails)}</span></strong></p>
+                <ul>{''.join([f"<li>{e}</li>" for e in all_emails]) if all_emails else "<li>Ingen fundet</li>"}</ul>
+            </div>
+            
+            <div class="box">
+                <h2>📁 RÅ BEVIS-FILER I SAGSMAPPEN</h2>
+                <ul>{''.join([f"<li>{f.name}</li>" for f in files])}</ul>
+            </div>
+        </body>
+        </html>
+        """
+
+        Path(self.report_file).write_text(html_content, encoding='utf-8')
+        print(f"\n{C.GREEN}[✓✓✓] MISSION DASHBOARD GENERERET! Åbn denne fil i din browser: {self.report_file}{C.RESET}")
+
+if __name__ == "__main__":
+    args = setup_cli()
+    if args.headless: print("Headless mode aktiveret.")
+    else: main()
