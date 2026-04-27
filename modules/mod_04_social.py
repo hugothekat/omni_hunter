@@ -25,7 +25,8 @@ class SocialMediaProfiler:
             "Fundne_Profiler": [],
             "Identificerede_Aliaser": [],
             "Timestamp": datetime.now().isoformat(),
-            "Network_Intelligence": {"Inner_Circle": []},
+            "Network_Intelligence": {"Inner_Circle": []}
+        }
     def run(self, driver):
         print(f"\n{C.CYAN}{'='*60}\n[04] GOLIATH SOCIAL STALKER (MONSTER EDITION)\n{'='*60}{C.RESET}")
         
@@ -186,7 +187,7 @@ class SocialMediaProfiler:
             print(f"{C.GREEN}      ✓ Profilbillede sikret: {platform}{C.RESET}")
         except Exception: pass
 
-def _image_forensics_pivot(self, image_url, platform):
+    def _image_forensics_pivot(self, image_url, platform):
         """NY V7: Image Forensics & Reverse Search Generation"""
         print(f"{C.MAGENTA}    [*] Image Forensics på {platform}: Genererer Reverse Search...{C.RESET}")
         try:

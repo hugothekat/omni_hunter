@@ -42,7 +42,7 @@ class PersonIntelligenceOrchestrator:
         # --- 1. MODUL 0: INITIAL DISCOVERY (Massive Search & Snippet Scraping) ---
         # Vi søger på Google, Bing, DuckDuckGo (omni_dork_search logik)
         print(f"{C.YELLOW}[*] Fase 1: Modul 0 - Massive Discovery & Snippet Scraping...{C.RESET}")
-        self._run_mod0_discovery(driver)
+        all_hits = self._run_mod0_discovery(driver)
         # V7 Fallback Logik
         if len(all_hits) < 5:
             print(f"{C.RED}[!] Få resultater fundet. Kører fallback på navne-kombinationer...{C.RESET}")
