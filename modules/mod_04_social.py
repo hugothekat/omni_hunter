@@ -67,7 +67,8 @@ class SocialMediaProfiler:
         danish_sites = [
             "dba.dk", "guloggratis.dk", "scor.dk", "dating.dk", 
             "holdet.dk", "amino.dk", "hardwareonline.dk", "studieportalen.dk", 
-            "trustpilot.com/users", "kino.dk", "boligportal.dk", "heste-nettet.dk", "trendsales.dk"
+            "trustpilot.com/users", "kino.dk", "boligportal.dk", "heste-nettet.dk", "trendsales.dk",
+            "ownr.dk", "virk.dk" # <--- V7: Tilføjet erhvervs-matrix
         ]
         
         all_platforms = international_sites + danish_sites

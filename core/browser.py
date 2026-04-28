@@ -33,7 +33,9 @@ def get_stealth_driver():
         proxy = CONFIG["tor_proxy_url"]
         options.add_argument(f'--proxy-server={proxy}')
     
-    driver = uc.Chrome(options=options) 
+    # Find linjen der starter uc.Chrome og tilføj version_main=147
+    driver = uc.Chrome(options=options, version_main=147)
+    
     
     driver.implicitly_wait(5)
     driver.set_page_load_timeout(30)

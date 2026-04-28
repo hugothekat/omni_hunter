@@ -32,15 +32,24 @@ def main():
     check_dependencies()
     
     while True:
-        print(f"{C.CYAN}{'='*70}{C.RESET}")
-        print(f"  {C.YELLOW}OSINT Final - Suite for OSINT{C.RESET}")
-        print(f"  {C.RED}PETFE // Politi - Efterretningsværktøj{C.RESET}")
-        print(f"{C.CYAN}{'='*70}{C.RESET}")
+        # --- OMNIPOTENT V7 BANNER ---
+        print(f"""{C.RED}
+   ____  ___  _     ___    _  _____ _   _ 
+  / ___|/ _ \\| |   |_ _|  / \\|_   _| | | |
+ | |  _| | | | |    | |  / _ \\ | | | |_| |
+ | |_| | |_| | |___ | | / ___ \\| | |  _  |
+  \\____|\\___/|_____|___/_/   \\_\\_| |_| |_|
+                                          
+{C.CYAN}  OSINT
+{C.RED}
+  [+] Værktøj: PETFE // Politi - Efterretningsværktøj{C.RESET}
+""")
         
-        print(f"  {C.GREEN}[00] TOTAL PERSON PIVOT (Full Identity Reconstruction){C.RESET}")
+        print(f"  {C.GREEN}[00] TOTAL RECURSIVE RECON (GOLIATH OMNIPOTENT V7){C.RESET}")
+        print(f"{C.CYAN}{'-' * 70}{C.RESET}")
 
-        print(f"{C.CYAN}[01]{C.RESET} Personregister (Krak)          {C.CYAN}[02]{C.RESET} Erhverv (CVR API)")
-        print(f"{C.CYAN}[03]{C.RESET} Lækage-analyse (Breach)        {C.CYAN}[04]{C.RESET} Social Media Profiler")
+        print(f"{C.CYAN}[01]{C.RESET} Personregister & Geo           {C.CYAN}[02]{C.RESET} Erhverv (CVR, Hunter, Proff V7)")
+        print(f"{C.CYAN}[03]{C.RESET} Breach & Email Leak Pivot      {C.CYAN}[04]{C.RESET} Social Media Monster (V7)")
         print(f"{C.CYAN}[05]{C.RESET} Offline DB (Ripgrep)           {C.CYAN}[06]{C.RESET} E-mail Mønstre")
         print(f"{C.CYAN}[07]{C.RESET} Telefon-efterretning           {C.CYAN}[08]{C.RESET} Mørkenet (Ahmia)")
         print(f"{C.CYAN}[09]{C.RESET} E-mail Tracker (Dyb)           {C.CYAN}[10]{C.RESET} IP/Netværk (API)")
@@ -59,7 +68,7 @@ def main():
         print(f"{C.RED}[15]{C.RESET} Afslut Session")
         print(f"{C.CYAN}{'='*70}{C.RESET}")
         
-        choice = input(f"\n{C.YELLOW}Vælg Modul [01-29]: {C.RESET}").strip()
+        choice = input(f"\n{C.YELLOW}Vælg Modul [00-29]: {C.RESET}").strip()
         
         if choice == "15": 
             print(f"\n{C.RED}[*] Session afsluttet. God jagt.{C.RESET}")
@@ -88,7 +97,10 @@ def main():
             elif choice == "02":
                 from modules.mod_02_business import BusinessIntelligenceAnalyst
                 navn = get_input("Navn/Firma", "name")
-                BusinessIntelligenceAnalyst(navn).run(None)
+                print(f"{C.CYAN}[*] Starter sikker browser-session til Deep Scrape...{C.RESET}")
+                driver = get_stealth_driver()
+                try: BusinessIntelligenceAnalyst(navn).run(driver)
+                finally: driver.quit()
 
             elif choice == "03":
                 from modules.mod_03_breach import BreachIntelligenceAnalyst
