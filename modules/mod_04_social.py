@@ -4,6 +4,7 @@ import os
 import requests
 import sys
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from selenium.webdriver.common.by import By
@@ -21,39 +22,48 @@ class SocialMediaProfiler:
         self.data = {
             "Brugernavn": self.username,
             "Fuldt_Navn": self.full_name,
+            "Sherlock_Direct_Hits": [],      # NY V7: Fund udenom Google
+            "Link_In_Bio_Udtræk": [],        # NY V7: Udtræk af links i bio
             "Deep_Scrape": {}, 
             "Fundne_Profiler": [],
             "Identificerede_Aliaser": [],
             "Timestamp": datetime.now().isoformat(),
             "Network_Intelligence": {"Inner_Circle": []}
         }
+
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[04] GOLIATH SOCIAL STALKER (MONSTER EDITION)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[04] GOLIATH SOCIAL STALKER (MONSTER EDITION V7)\n{'='*60}{C.RESET}")
         
-        # --- NYT: ALIAS GENERERING ---
+        # --- NYT V7: HANDLE-TO-EMAIL MAPPING ---
+        print(f"{C.YELLOW}[*] Analyserer brugernavnets potentiale som e-mail...{C.RESET}")
+        print(f"{C.DIM}      -> Højsandsynlige mål: {self.username}@gmail.com, {self.username}@hotmail.com{C.RESET}")
+
+        # --- NYT V7: SHERLOCK DIRECT API CHECK ---
+        self._sherlock_direct_check()
+
+        # --- EKSISTERENDE: ALIAS GENERERING ---
         if self.full_name:
-            print(f"{C.YELLOW}[*] Genererer sandsynlige brugernavne ud fra navn...{C.RESET}")
+            print(f"\n{C.YELLOW}[*] Genererer sandsynlige brugernavne ud fra navn...{C.RESET}")
             self._generate_aliases()
             print(f"      -> Aliaser: {', '.join(self.data['Identificerede_Aliaser'][:5])}...")
 
-        # --- EKSISTERENDE GITHUB SCRAPE (Bibeholdt) ---
+        # --- EKSISTERENDE GITHUB SCRAPE ---
         print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på GitHub...{C.RESET}")
         github_url = f"https://github.com/{self.username}"
         if safe_get_with_retry(driver, github_url):
             if "404" not in driver.title and "Not Found" not in driver.title:
                 self._scrape_github(driver)
 
-        # --- NYT: INSTAGRAM DEEP SCRAPE (Cemile Specific) ---
-        # Hvis vi har et alias som cemileb.c, prøver vi at scrape det direkte
+        # --- EKSISTERENDE: INSTAGRAM DEEP SCRAPE ---
         insta_handle = self.username if "." in self.username or "_" in self.username else "cemileb.c"
         print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på Instagram (@{insta_handle})...{C.RESET}")
         self._scrape_instagram(driver, insta_handle)
 
-        # --- NYT: TIKTOK DEEP SCRAPE ---
+        # --- EKSISTERENDE: TIKTOK DEEP SCRAPE ---
         print(f"\n{C.YELLOW}[*] Udfører Deep Scrape på TikTok...{C.RESET}")
         self._scrape_tiktok(driver, self.username)
 
-        # --- EKSISTERENDE MASSIV DORKING MATRIX (Bibeholdt & Forbedret) ---
+        # --- EKSISTERENDE MASSIV DORKING MATRIX ---
         print(f"\n{C.YELLOW}[*] Udruller massiv OSINT Dorking Matrix over 40+ platforme...{C.RESET}")
         
         international_sites = [
@@ -68,12 +78,11 @@ class SocialMediaProfiler:
             "dba.dk", "guloggratis.dk", "scor.dk", "dating.dk", 
             "holdet.dk", "amino.dk", "hardwareonline.dk", "studieportalen.dk", 
             "trustpilot.com/users", "kino.dk", "boligportal.dk", "heste-nettet.dk", "trendsales.dk",
-            "ownr.dk", "virk.dk" # <--- V7: Tilføjet erhvervs-matrix
+            "ownr.dk", "virk.dk" 
         ]
         
         all_platforms = international_sites + danish_sites
         
-        # Vi tilføjer navne-søgning til dorking hvis vi har et fuldt navn
         search_term = f'"{self.full_name}"' if self.full_name else f'"{self.username}"'
         
         chunk_size = 4
@@ -104,6 +113,39 @@ class SocialMediaProfiler:
         print(f"\n{C.GREEN}[✓] Profil-scanning komplet.{C.RESET}")
         self.save()
 
+    def _sherlock_direct_check(self):
+        """NY V7: Tjekker platforme direkte via HTTP/API for at fange profiler Google har misset"""
+        print(f"\n{C.YELLOW}[*] Udfører Ghost-Check (Direkte API kald udenom Google)...{C.RESET}")
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        
+        # Udvalgte platforme der kan tjekkes lynhurtigt uden Selenium
+        targets = {
+            "Reddit": f"https://www.reddit.com/user/{self.username}/about.json",
+            "GitHub": f"https://github.com/{self.username}",
+            "Pinterest": f"https://www.pinterest.com/{self.username}/"
+        }
+        
+        for platform, url in targets.items():
+            try:
+                res = requests.get(url, headers=headers, timeout=5)
+                # Hvis Reddit returnerer JSON med "name", eksisterer brugeren
+                if platform == "Reddit" and res.status_code == 200 and "name" in res.text:
+                    print(f"{C.RED}    🔥 DIRECT HIT: Profil fundet på {platform} (https://reddit.com/user/{self.username}){C.RESET}")
+                    self.data["Sherlock_Direct_Hits"].append(f"https://reddit.com/user/{self.username}")
+                elif platform != "Reddit" and res.status_code == 200:
+                    print(f"{C.RED}    🔥 DIRECT HIT: Profil fundet på {platform} ({url}){C.RESET}")
+                    self.data["Sherlock_Direct_Hits"].append(url)
+            except: pass
+
+    def _extract_bio_links(self, text, platform):
+        """NY V7: Udtrækker Linktree, OnlyFans, Patreon etc. fra bios"""
+        # Regex der fanger de mest brugte 'link-in-bio' tjenester
+        links = re.findall(r'(https?://(?:linktr\.ee|beacons\.ai|allmylinks\.com|campsite\.bio|onlyfans\.com|patreon\.com)/[a-zA-Z0-9_-]+)', text)
+        for l in links:
+            if l not in self.data["Link_In_Bio_Udtræk"]:
+                self.data["Link_In_Bio_Udtræk"].append(l)
+                print(f"{C.RED}      🔥 LINK-IN-BIO FUNDET PÅ {platform.upper()}: {l}{C.RESET}")
+
     def _generate_aliases(self):
         """Kreativ generering af brugernavne ud fra navn"""
         if not self.full_name: return
@@ -116,14 +158,12 @@ class SocialMediaProfiler:
                 f"{f}{m}{l}", f"{f}.{m}.{l}", f"{f}{m[0]}.{l[0]}"
             ])
 
-    # --- Tilføj/Opdater denne metode i mod_04_social.py ---
     def _scrape_instagram(self, driver, handle):
         """Deep Scrape af Instagram Bio og Stats med fokus på SOSU-info"""
         url = f"https://www.instagram.com/{handle}/"
         if safe_get_with_retry(driver, url):
-            time.sleep(4) # Giv den tid til at loade bio
+            time.sleep(4) 
             try:
-                # Find bio-containeren
                 bio_elements = driver.find_elements(By.CSS_SELECTOR, "header section div.-v79Z, header section div.Qpx6u")
                 if not bio_elements:
                     bio_elements = driver.find_elements(By.XPATH, "//header//section")
@@ -135,12 +175,13 @@ class SocialMediaProfiler:
                         "Raw_Bio": bio_text
                     }
                     print(f"{C.GREEN}    ✓ Instagram Bio udtrukket:{C.RESET}")
-                    # Her printer vi specifikt bio-linjerne ud i terminalen
                     for line in bio_text.split('\n'):
                         if line.strip():
                             print(f"      -> {C.CYAN}{line.strip()}{C.RESET}")
+                    
+                    # NY V7: Tjek bio for skjulte links
+                    self._extract_bio_links(bio_text, "Instagram")
                 
-                # Gem profilbillede til Reverse Image Search
                 img = driver.find_elements(By.CSS_SELECTOR, "header img")
                 if img:
                     self._download_avatar(img[0].get_attribute("src"), "Instagram")
@@ -161,6 +202,9 @@ class SocialMediaProfiler:
                     self.data["Deep_Scrape"]["TikTok"] = {"Bio": bio, "Stats": stats}
                     print(f"{C.GREEN}    ✓ TikTok Profil fundet!{C.RESET}")
                     print(f"      -> Bio: {bio}")
+                    
+                    # NY V7: Tjek bio for skjulte links
+                    self._extract_bio_links(bio, "TikTok")
             except Exception: pass
 
     def _scrape_github(self, driver):

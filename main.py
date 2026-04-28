@@ -96,7 +96,7 @@ def main():
 
             elif choice == "02":
                 from modules.mod_02_business import BusinessIntelligenceAnalyst
-                navn = get_input("Navn/Firma", "name")
+                navn = get_input("Firma/CVR", "name")
                 print(f"{C.CYAN}[*] Starter sikker browser-session til Deep Scrape...{C.RESET}")
                 driver = get_stealth_driver()
                 try: BusinessIntelligenceAnalyst(navn).run(driver)

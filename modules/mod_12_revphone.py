@@ -1,80 +1,86 @@
 # -*- coding: utf-8 -*-
-import os
 import json
-import urllib.parse
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
-from selenium.webdriver.common.by import By
+from pathlib import Path
+
 from core.utils import C, session
-from core.network import safe_get_with_retry, omni_dork_search
+from core.network import omni_dork_search, safe_get_with_retry
 
 class ReversePhoneIntelligence:
-    """True Reverse lookup med Kontekst-Injektion og Data-Fletning"""
-    def __init__(self, phone, context_data=None, save_path=None):
-        self.raw_phone = phone.replace(" ", "").replace("+45", "").replace("-", "")
-        self.save_path = save_path
-        
-        self.data = context_data if context_data else {
-            "Telefon": f"+45 {self.raw_phone}",
-            "Identificeret_Navn": "Ukendt",
-            "Lokation": "Ukendt",
+    def __init__(self, phone):
+        self.phone = phone.replace(" ", "").replace("+45", "").strip()
+        self.data = {
+            "Telefon": self.phone,
+            "OSINT_Hits": [],
+            "WhatsApp_Status": "Ukendt",
+            "Identificeret_Navn": "",
             "Timestamp": datetime.now().isoformat()
         }
-        
-        if "Telefon_Efterretning" not in self.data:
-            self.data["Telefon_Efterretning"] = {"Kilder": [], "SoMe_Spor": []}
 
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[12] Identificer ukendt telefonnummer\n{'='*60}{C.RESET}")
-        print(f"Søger på: +45 {self.raw_phone}\n")
-        
-        kendt_identitet = self.data.get("Identitet", None)
-        if kendt_identitet:
-            print(f"{C.GREEN}[*] Springer Krak over. Identitet allerede fastslået: {kendt_identitet}{C.RESET}")
-        else:
-            # 1. Direkte opslag på Krak for ukendte numre
-            krak_url = f"https://www.krak.dk/søg/{self.raw_phone}/personer"
-            print(f"{C.YELLOW}[*] Tjekker offentlige danske registre (Krak)...{C.RESET}")
-            
-            if safe_get_with_retry(driver, krak_url):
-                try:
-                    name_elements = driver.find_elements(By.CSS_SELECTOR, "h2 a, h1.name")
-                    if name_elements:
-                        navn = name_elements[0].text.strip()
-                        self.data["Identificeret_Navn"] = navn
-                        self.data["Telefon_Efterretning"]["Kilder"].append("Krak.dk")
-                        print(f"{C.GREEN}    ✓ IDENTIFICERET: {navn}{C.RESET}")
-                    else:
-                        print(f"{C.YELLOW}    [-] Intet match på Krak (Muligvis hemmeligt nummer eller taletidskort){C.RESET}")
-                except Exception: pass
+        print(f"\n{C.CYAN}{'='*60}\n[12] Omvendt Telefon-Intelligence (GOLIATH V7)\n{'='*60}{C.RESET}")
+        print(f"Target Nummer: {self.phone}\n")
 
-        # 2. Advanced Dorking & SoMe Spor
-        print(f"\n{C.YELLOW}[*] Graver efter sociale netværk og MobilePay links...{C.RESET}")
+        if not driver:
+            print(f"{C.RED}[!] Fejl: Modul 12 kræver en aktiv stealth driver.{C.RESET}")
+            return
+
+        # V7: Genererer formater
+        p = self.phone
+        formats = [
+            p,                                  # 12345678
+            f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:]}", # 12 34 56 78
+            f"+45 {p}",                         # +45 12345678
+            f"45{p}"                            # 4512345678 (WhatsApp format)
+        ]
+
+        print(f"{C.YELLOW}[*] Udfører Multi-Format OSINT Dorking...{C.RESET}")
         
-        wa_url = f"https://wa.me/45{self.raw_phone}"
-        mp_url = f"https://box.mobilepay.dk/pay?phone={self.raw_phone}"
+        search_query = " OR ".join([f'"{f}"' for f in formats[:3]])
+        # Rammer MobilePay bokse, Gule Sider, og sociale medier hvor numre ofte lækkes
+        dork = f"({search_query}) site:krak.dk OR site:degulesider.dk OR site:118.dk OR site:facebook.com"
         
-        print(f"{C.CYAN}    -> WhatsApp Direct: {wa_url} (Åbn på mobil for at se profilbillede){C.RESET}")
-        print(f"{C.CYAN}    -> MobilePay Check: {mp_url} (Åbn i app for at bekræfte navn){C.RESET}")
-        
-        self.data["Telefon_Efterretning"]["SoMe_Spor"].extend([wa_url, mp_url])
-        
-        # TrueCaller, Sync.me og 118.dk Dorking for at fange spam/hemmelige numre
-        print(f"\n{C.YELLOW}[*] Checker globale spam-databaser og 118...{C.RESET}")
-        dork = f'"{self.raw_phone}" OR "+45 {self.raw_phone}" site:truecaller.com OR site:sync.me OR site:118.dk'
-        links = omni_dork_search(driver, dork, max_links=3)
+        links = omni_dork_search(driver, dork, max_links=5)
         
         if links:
             for link in links:
-                print(f"{C.GREEN}    🔥 Eksternt database-hit fundet: {link['url']}{C.RESET}")
-                self.data["Telefon_Efterretning"]["Kilder"].append(link['url'])
+                url = link['url']
+                titel = link.get('title', '')
+                snippet = link.get('snippet', '')
+                print(f"{C.GREEN}    🔥 SPOR FUNDET: {url[:70]}...{C.RESET}")
+                
+                # V7 Auto-Identifikation fra Gule Sider / Krak
+                if any(x in url for x in ["krak.dk", "degulesider.dk", "118.dk"]):
+                    pot_navn = titel.split('-')[0].strip()
+                    if pot_navn and not self.data["Identificeret_Navn"]:
+                        self.data["Identificeret_Navn"] = pot_navn
+                        print(f"{C.MAGENTA}      -> Identitet detekteret ud fra nummer: {pot_navn}{C.RESET}")
+                
+                self.data["OSINT_Hits"].append(url)
         else:
-            print(f"{C.DIM}    [-] Ingen hits i globale telefon-databaser.{C.RESET}")
+            print(f"{C.DIM}    [-] Ingen resultater via åben OSINT-dorking.{C.RESET}")
+
+        # V7: WhatsApp Web API Tjek (Undersøger om nummeret er registreret på WhatsApp uden at logge ind)
+        print(f"\n{C.YELLOW}[*] Checker WhatsApp-registrering via Web API...{C.RESET}")
+        wa_url = f"https://api.whatsapp.com/send?phone=45{self.phone}"
+        if safe_get_with_retry(driver, wa_url, max_retries=1):
+            import time
+            time.sleep(2)
+            # Hvis nummeret IKKE findes, skriver WhatsApp det på siden.
+            page_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+            if "isn't on whatsapp" in page_text or "er ikke på whatsapp" in page_text:
+                self.data["WhatsApp_Status"] = "Ikke Registreret"
+                print(f"{C.DIM}    [-] Nummeret er IKKE registreret på WhatsApp.{C.RESET}")
+            else:
+                self.data["WhatsApp_Status"] = "Sandsynligvis Aktiv"
+                print(f"{C.RED}    [!] Nummeret ER sandsynligvis aktivt på WhatsApp!{C.RESET}")
 
         self.save()
 
     def save(self):
         os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = self.save_path if self.save_path else f"{session['loot_folder']}/12_REVERSE_PHONE_{self.raw_phone}.json"
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding='utf-8')
-        print(f"\n{C.GREEN}[✓] Data flettet og gemt i sagmappe: {filename}{C.RESET}")
+        filename = f"{session['loot_folder']}/12_REVPHONE_{self.phone}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Telefon rapport gemt: {filename}{C.RESET}")

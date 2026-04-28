@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 from selenium.webdriver.common.by import By
 from core.utils import C, session
-from core.network import safe_get_with_retry
+from core.network import safe_get_with_retry, omni_dork_search
 
 class DirectoryIntelligenceHunter:
     def __init__(self, name, city):
@@ -22,6 +22,8 @@ class DirectoryIntelligenceHunter:
             "Ejendom": {},
             "GPS_Koordinater": "",
             "DinGeo_Intelligence": {}, 
+            "Bofæller_Netværk": [], # NY V7
+            "Maps_Links": [],       # NY V7
             "Screenshots": [],
             "Timestamp": datetime.now().isoformat()
         }
@@ -36,8 +38,6 @@ class DirectoryIntelligenceHunter:
         print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS & DinGeo Deep-Scrape)\n{'='*60}{C.RESET}")
         
         # --- USYNLIGHEDS-TRICKET ---
-        # Vi skyder browseren langt uden for skærmen, så den ikke forstyrrer dig, 
-        # men Cloudflare tror stadig det er en "rigtig" synlig browser.
         try:
             driver.set_window_position(-2000, 0)
         except:
@@ -86,6 +86,11 @@ class DirectoryIntelligenceHunter:
                 except Exception as e:
                     print(f"{C.RED}    [!] Fejl: {e}{C.RESET}")
 
+        # --- NY V7: Udfør Bofælle-søgning og Map-Links HVIS vi fandt en adresse ---
+        if self.data.get("Ejendom"):
+            self._find_cohabitants(driver)
+            self._generate_map_links()
+
         # --- SMART CLEANUP ---
         if self.data["Telefonnumre"] or self.data.get("Ejendom"):
             final_screenshots = []
@@ -131,7 +136,7 @@ class DirectoryIntelligenceHunter:
                     self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
                     self._scrape_dingeo_deep(driver, vej, post, by)
 
-            # 3. ADRESSE BACKUP (Tabel) - DENNE MANGLERDE FØR!
+            # 3. ADRESSE BACKUP (Tabel) 
             if line == "Vejnavn" and i + 1 < len(lines) and not self.data.get("Ejendom"):
                 vej = lines[i+1]
                 post, by = "", ""
@@ -227,6 +232,38 @@ class DirectoryIntelligenceHunter:
                     if "5G-internet" in text: net["5G"] = "Ja"
                     if "god mobildækning" in text: net["Mobil"] = "God"
                     self.data["DinGeo_Intelligence"]["Infrastruktur"] = net
+
+    def _find_cohabitants(self, driver):
+        """NY V7: Dorker selve adressen for at finde andre personer (Familie/Medstiftere)"""
+        print(f"\n{C.YELLOW}[*] Deep OSINT: Scanner efter bofæller på adressen...{C.RESET}")
+        vej = self.data["Ejendom"].get("Vej", "")
+        if not vej: return
+
+        # Splitter vejnavnet fra for at fjerne etage/dør (Krak dorker bedst på ren adresse)
+        clean_addr = vej.split(',')[0].strip()
+        dork = f'site:krak.dk OR site:118.dk "{clean_addr}"'
+        
+        links = omni_dork_search(driver, dork, max_links=3)
+        for link in links:
+            title = link.get('title', '')
+            pot_navn = title.split('-')[0].strip()
+            # Sikrer at vi ikke bare fanger vores eget mål igen
+            if pot_navn and self.name.lower() not in pot_navn.lower() and "Krak" not in pot_navn:
+                if pot_navn not in self.data["Bofæller_Netværk"]:
+                    self.data["Bofæller_Netværk"].append(pot_navn)
+                    print(f"{C.MAGENTA}      -> Mulig bofælle/netværk fundet: {pot_navn}{C.RESET}")
+
+    def _generate_map_links(self):
+        """NY V7: Bygger direkte links til Satellit og Street View ud fra adressen"""
+        vej = self.data["Ejendom"].get("Vej", "")
+        by = self.data["Ejendom"].get("By", "")
+        if vej and by:
+            fuld_adresse = f"{vej}, {by}"
+            encoded_addr = urllib.parse.quote(fuld_adresse)
+            # Standard Maps og StreetView API links (virker uden API nøgle)
+            maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_addr}"
+            self.data["Maps_Links"].append(maps_url)
+            print(f"{C.CYAN}      -> Google Maps Link genereret.{C.RESET}")
 
     def save(self):
         has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence"))

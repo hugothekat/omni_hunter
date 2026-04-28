@@ -1,81 +1,88 @@
 # -*- coding: utf-8 -*-
-import os
-import json
 import sys
-from pathlib import Path
+import json
+import os
 from datetime import datetime
+from pathlib import Path
 from core.utils import C, session
 from core.network import omni_dork_search
 
 class EmailPatternGenerator:
-    """Generates and validates email address patterns from name"""
     def __init__(self, name):
-        parts = name.lower().split()
-        self.first = parts[0] if len(parts) > 0 else "unknown"
-        self.last = parts[-1] if len(parts) > 1 else self.first
+        parts = name.strip().split()
+        self.first = parts[0].lower() if len(parts) > 0 else "unknown"
+        self.last = parts[-1].lower() if len(parts) > 1 else self.first
+        self.middle = parts[1].lower() if len(parts) > 2 else ""
         self.name = name
         self.data = {
             "Navn": name,
             "Generated_Emails": [],
+            "Verified_Emails": [],
             "Timestamp": datetime.now().isoformat()
         }
 
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[06] E-mail-mønster Validering (OSINT Engine)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[06] E-mail-mønster Validering (GOLIATH V7)\n{'='*60}{C.RESET}")
         print(f"Target: {self.name}\n")
         
-        # Udvidet domæneliste for moderne trusselsbilleder
-        domains = ["gmail.com", "hotmail.com", "live.dk", "mail.dk", "outlook.dk", "yahoo.com", "icloud.com", "proton.me"]
-        
-        # Flere klassiske corporate og private mønstre
-        patterns = [
-            f"{self.first}.{self.last}", 
-            f"{self.first}{self.last}", 
-            f"{self.first[0]}{self.last}",
-            f"{self.first[0]}.{self.last}",
-            f"{self.last}.{self.first}",
-            f"{self.first}_{self.last}"
+        # Udvidet domæneliste for moderne trusselsbilleder og danske brugere
+        domains = [
+            "gmail.com", "hotmail.com", "live.dk", "mail.com", 
+            "yahoo.dk", "yahoo.com", "icloud.com", "me.com", 
+            "mac.com", "outlook.dk", "outlook.com", "protonmail.com"
         ]
         
-        all_emails = [f"{p}@{d}" for p in patterns for d in domains]
-        print(f"{C.YELLOW}[*] Genererede {len(all_emails)} potentielle email-mønstre. Udfører Dorking validering...{C.RESET}")
+        print(f"{C.YELLOW}[*] Genererer permutations-matrix for e-mails...{C.RESET}")
         
-        # Vi sender mønstrene afsted i "OR" søgninger via Anti-Ban motoren (5 ad gangen for ikke at knække url'en)
-        found_emails = set()
-        chunk_size = 5
+        # Standard Mønstre
+        patterns = [
+            f"{self.first}{self.last}", f"{self.first}.{self.last}",
+            f"{self.first}_{self.last}", f"{self.first[0]}{self.last}",
+            f"{self.first}{self.last[0]}", f"{self.last}{self.first}"
+        ]
         
-        for i in range(0, len(all_emails), chunk_size):
-            chunk = all_emails[i:i+chunk_size]
-            batch_query = " OR ".join([f'"{e}"' for e in chunk])
+        # V7: Udvidede danske mønstre (inkl. mellemnavn og fødselsår)
+        if self.middle:
+            patterns.extend([
+                f"{self.first}{self.middle[0]}{self.last}",
+                f"{self.first}.{self.middle[0]}.{self.last}"
+            ])
             
-            sys.stdout.write(f"\r{C.CYAN}    [*] Tester mønstre... {i}/{len(all_emails)}{C.RESET}")
-            sys.stdout.flush()
+        # V7: Tilføjer typiske danske tal-endelser
+        extended_patterns = list(patterns)
+        for p in patterns:
+            extended_patterns.extend([f"{p}88", f"{p}123", f"{p}1"])
             
-            links = omni_dork_search(driver, batch_query, max_links=5)
-            if links:
-                for link in links:
-                    text = link["text"].lower()
-                    url_text = link["url"].lower()
-                    for email in chunk:
-                        if email in text or email in url_text:
-                            found_emails.add(email)
-                            sys.stdout.write("\r" + " " * 80 + "\r")
-                            print(f"{C.GREEN}    🔥 BEKRÆFTET MØNSTER: {email}{C.RESET}")
-                            print(f"{C.DIM}      -> Kilde: {link['url']}{C.RESET}")
+        for domain in domains:
+            for pat in set(extended_patterns):
+                email = f"{pat}@{domain}"
+                self.data["Generated_Emails"].append(email)
 
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        self.data["Generated_Emails"] = list(found_emails)
-        if not found_emails:
-            print(f"{C.YELLOW}    [-] Ingen email-mønstre kunne bekræftes offentligt.{C.RESET}")
+        print(f"{C.GREEN}[+] Genererede {len(self.data['Generated_Emails'])} potentielle e-mails.{C.RESET}")
+        
+        # --- V7 INTELLIGENS: LIVE DORK VALIDERING ---
+        print(f"\n{C.YELLOW}[*] Udfører Live Dork-Validering af de mest sandsynlige e-mails...{C.RESET}")
+        if driver:
+            # Vi tager kun de mest 'normale' for ikke at spamme Google
+            top_targets = [f"{self.first}{self.last}@{d}" for d in ["gmail.com", "hotmail.com"]] + \
+                          [f"{self.first}.{self.last}@{d}" for d in ["gmail.com", "hotmail.com"]]
             
+            for target_email in top_targets:
+                dork = f'"{target_email}"'
+                hits = omni_dork_search(driver, dork, max_links=2)
+                if hits:
+                    print(f"{C.RED}    🔥 BEKRÆFTET E-MAIL FUNDET PÅ NETTET: {target_email}{C.RESET}")
+                    for h in hits:
+                        print(f"      -> {C.DIM}{h['url']}{C.RESET}")
+                    if target_email not in self.data["Verified_Emails"]:
+                        self.data["Verified_Emails"].append(target_email)
+        else:
+            print(f"{C.DIM}[-] Ingen stealth-driver givet. Skipper Live Dork-Validering.{C.RESET}")
+
         self.save()
 
     def save(self):
-        """Save findings to JSON"""
         os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/06_EMAILGEN_{self.first}_{self.last}.json"
-        Path(filename).write_text(
-            json.dumps(self.data, indent=4, ensure_ascii=False),
-            encoding="utf-8"
-        )
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+        filename = f"{session['loot_folder']}/06_EMAILGEN_{self.name.replace(' ', '_')}.json"
+        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] E-mail rapport gemt: {filename}{C.RESET}")
