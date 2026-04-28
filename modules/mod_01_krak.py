@@ -11,8 +11,8 @@ from selenium.webdriver.common.by import By
 from core.utils import C, session
 from core.network import safe_get_with_retry, omni_dork_search
 
-class DirectoryIntelligenceHunter:
-    def __init__(self, name, city):
+class KrakIntelligenceAnalyst: # Omdøbt for at matche Pivot-import i Modul 02
+    def __init__(self, name, city=""):
         self.name = name.strip()
         self.city = city.strip()
         self.data = {
@@ -22,8 +22,9 @@ class DirectoryIntelligenceHunter:
             "Ejendom": {},
             "GPS_Koordinater": "",
             "DinGeo_Intelligence": {}, 
-            "Bofæller_Netværk": [], # NY V7
-            "Maps_Links": [],       # NY V7
+            "Bofæller_Netværk": [], 
+            "Erhvervs_Netværk_CVR": [], # NY V8 TILFØJELSE: CVR ejerskab
+            "Maps_Links": [],       
             "Screenshots": [],
             "Timestamp": datetime.now().isoformat()
         }
@@ -35,7 +36,7 @@ class DirectoryIntelligenceHunter:
 
     def run(self, driver):
         from core.browser import zap_cookies 
-        print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS & DinGeo Deep-Scrape)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS, 118, OIS & DinGeo V8)\n{'='*60}{C.RESET}")
         
         # --- USYNLIGHEDS-TRICKET ---
         try:
@@ -86,13 +87,20 @@ class DirectoryIntelligenceHunter:
                 except Exception as e:
                     print(f"{C.RED}    [!] Fejl: {e}{C.RESET}")
 
-        # --- NY V7: Udfør Bofælle-søgning og Map-Links HVIS vi fandt en adresse ---
+        # --- NY V8: Udfør 118.dk Fallback Dorking ---
+        if not self.data["Telefonnumre"] and not self.data.get("Ejendom"):
+            self._fallback_118_dork(driver)
+
+        # --- NY V8: Udfør Erhvervs-tjek på personen (Ownr / Proff) ---
+        self._check_business_ownership(driver)
+
+        # --- EKSISTERENDE V7: Udfør Bofælle-søgning og Map-Links ---
         if self.data.get("Ejendom"):
             self._find_cohabitants(driver)
             self._generate_map_links()
 
         # --- SMART CLEANUP ---
-        if self.data["Telefonnumre"] or self.data.get("Ejendom"):
+        if self.data["Telefonnumre"] or self.data.get("Ejendom") or self.data.get("Erhvervs_Netværk_CVR"):
             final_screenshots = []
             for img in self.data["Screenshots"]:
                 if "DinGeo" not in img:
@@ -104,6 +112,37 @@ class DirectoryIntelligenceHunter:
         print(f"\n{C.GREEN}[✓] Intelligence opslag 100% færdig.{C.RESET}")
         self.save()
         return self.data
+
+    def _fallback_118_dork(self, driver):
+        """NY V8 TILFØJELSE: Hvis Krak fejler, dorker vi 118.dk direkte (Ofte gemmer de numre Krak sletter)"""
+        print(f"\n{C.YELLOW}[*] Krak fejlede - Udfører Fallback Dork mod 118.dk...{C.RESET}")
+        search_query = f'"{self.name}" {self.city}'.strip()
+        dork = f'site:118.dk {search_query}'
+        links = omni_dork_search(driver, dork, max_links=3)
+        if links:
+            for link in links:
+                snippet = link.get('snippet', '')
+                phones = re.findall(r'\b(?:[2-9]\d{7}|[2-9]\d{1}\s\d{2}\s\d{2}\s\d{2})\b', snippet)
+                for ph in set(phones):
+                    clean_ph = ph.replace(" ", "")
+                    if len(clean_ph) == 8 and clean_ph not in self.data["Telefonnumre"]:
+                        self.data["Telefonnumre"].append(clean_ph)
+                        print(f"{C.GREEN}      🔥 Telefon fundet via 118.dk Fallback: {clean_ph}{C.RESET}")
+
+    def _check_business_ownership(self, driver):
+        """NY V8 TILFØJELSE: Tjekker om personen ejer et firma"""
+        print(f"\n{C.YELLOW}[*] Scanner Proff.dk / Ownr.dk for skjulte virksomheds-ejerskaber...{C.RESET}")
+        search_query = f'"{self.name}" {self.city}'.strip()
+        dork = f'(site:ownr.dk OR site:proff.dk) {search_query}'
+        links = omni_dork_search(driver, dork, max_links=3)
+        if links:
+            for link in links:
+                snippet = link.get('snippet', '')
+                cvr_matches = re.findall(r'\b(?:CVR|cvr)[\s:-]*(\d{8})\b', snippet)
+                for cvr in cvr_matches:
+                    if cvr not in self.data["Erhvervs_Netværk_CVR"]:
+                        self.data["Erhvervs_Netværk_CVR"].append(cvr)
+                        print(f"{C.MAGENTA}      🔥 Målet er tilknyttet en virksomhed! CVR: {cvr}{C.RESET}")
 
     def _extract_profile_data(self, driver, provider_name):
         driver.execute_script("window.scrollBy(0, 400);")
@@ -266,7 +305,7 @@ class DirectoryIntelligenceHunter:
             print(f"{C.CYAN}      -> Google Maps Link genereret.{C.RESET}")
 
     def save(self):
-        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence"))
+        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence")) or bool(self.data.get("Erhvervs_Netværk_CVR"))
         if not has_data:
             gem = input(f"\n{C.YELLOW}[?] Intet fundet. Vil du gemme en tom rapport? (j/n): {C.RESET}").strip().lower()
             if gem != 'j':
@@ -275,5 +314,11 @@ class DirectoryIntelligenceHunter:
 
         os.makedirs(session["loot_folder"], exist_ok=True)
         filename = f"{session['loot_folder']}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
+        
+        # Slet gammel fil for skrivesikkerhed
+        if os.path.exists(filename):
+            try: os.remove(filename)
+            except: pass
+            
         Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")

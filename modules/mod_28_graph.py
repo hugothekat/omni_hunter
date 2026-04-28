@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import json
 import csv
@@ -6,68 +7,119 @@ from datetime import datetime
 from core.utils import C, session
 
 class GoliathGraphExporter:
-    """Samler alt loot data og genererer en Maltego/Gephi venlig CSV-fil."""
+    """GOLIATH V8: Universal Link Analysis Engine til Maltego, Gephi & Obsidian."""
     def __init__(self):
         self.loot_dir = session["loot_folder"]
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-        self.csv_file = f"GRAPH_EXPORT_{self.timestamp}.csv"
+        self.csv_file = f"GOLIATH_NETWORK_MAP_{self.timestamp}.csv"
+        self.edges = []
+        self.target_name = session.get('name', 'Hovedmål')
 
     def generate(self):
-        print(f"\n{C.CYAN}{'='*60}\n[28] Visual Graph Exporter (Maltego / Link Analyse)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[28] Visual Link Analysis Exporter (GOLIATH V8)\n{'='*60}{C.RESET}")
         files = list(Path(self.loot_dir).glob("*.json"))
         
         if not files:
-            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet i {self.loot_dir}.{C.RESET}")
+            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet. Kør nogle skanninger først!{C.RESET}")
             return
 
-        print(f"{C.YELLOW}[*] Støvsuger {len(files)} bevisfiler for relationer (Nodes & Edges)...{C.RESET}")
+        print(f"{C.YELLOW}[*] Konstruerer relations-matrix ud fra {len(files)} bevisfiler...{C.RESET}")
         
-        # Liste til vores netværks-links: [Kilde, Forbindelse_Type, Mål]
-        edges = []
-        target_name = session.get('name', 'Hovedmål')
-
         for file in files:
             try:
                 data = json.loads(file.read_text(encoding='utf-8'))
-                
-                # Hvis vi finder Email-mønstre
-                if "Email" in data:
-                    edges.append([target_name, "Har Email", data["Email"]])
-                    # Hvis emailen var med i datalæk
-                    if "Lækager" in data or "Free_Breach_Hits" in data:
-                        leaks = data.get("Lækager", []) + data.get("Free_Breach_Hits", [])
-                        for leak in leaks:
-                            edges.append([data["Email"], "Lækket I", leak])
-                
-                # Hvis vi finder Telefonnumre (Fra Krak)
-                if "Telefonnumre" in data:
-                    for tlf in data["Telefonnumre"]:
-                        edges.append([target_name, "Har Telefon", tlf])
-                        
-                # Fra TITAN mass-scan
-                if "Intelligence" in data:
-                    intel = data["Intelligence"]
-                    for e in intel.get("Emails", []): edges.append(["TITAN Mappe", "Indeholder Email", e])
-                    for k in intel.get("Krypto", []): edges.append(["TITAN Mappe", "Indeholder Wallet", k])
+                self._process_json_logic(data, file.name)
+            except Exception:
+                continue
 
-            except Exception: continue
+        if self.edges:
+            self._write_csv()
+        else:
+            print(f"{C.RED}[!] Ingen brugbare relationer fundet i dataen.{C.RESET}")
 
-        # Skriv til CSV
-        self._write_csv(edges)
+    def _process_json_logic(self, data, filename):
+        """Intelligent mapping af edges baseret på modul-output"""
+        
+        # 1. PERSONDATA & EMAILS (Modul 01, 04, 06, 09)
+        if "Email" in data or "Brugernavn" in data:
+            uid = data.get("Email") or data.get("Brugernavn")
+            self.edges.append([self.target_name, "Relateret_Til", uid])
+            
+            # Breach relationer
+            if "Data_Leaks" in data:
+                for leak in data["Data_Leaks"]:
+                    self.edges.append([uid, "Eksponeret_I", leak.get("Name", "Ukendt Læk")])
 
-    def _write_csv(self, edges):
-        # Fjern dubletter
+        # 2. TELEFON & VEJER (Modul 01, 12, 20)
+        if "Telefonnumre" in data:
+            for tlf in data["Telefonnumre"]:
+                self.edges.append([self.target_name, "Bruger_Telefon", tlf])
+        
+        if "Ejendom" in data and data["Ejendom"].get("Vej"):
+            addr = f"{data['Ejendom']['Vej']}, {data['Ejendom']['By']}"
+            self.edges.append([self.target_name, "Bopæl", addr])
+
+        # 3. NETVÆRK & IP (Modul 10, 21)
+        if "IP" in data:
+            ip = data["IP"]
+            self.edges.append([self.target_name, "Forbundet_Til_IP", ip])
+            if data.get("Reverse_DNS"):
+                self.edges.append([ip, "Opløser_Til", data["Reverse_DNS"]])
+            for vhost in data.get("Virtual_Hosts", []):
+                self.edges.append([ip, "Hoster_Domæne", vhost])
+
+        if "BSSID" in data:
+            bssid = data["BSSID"]
+            self.edges.append([self.target_name, "Set_Nær_BSSID", bssid])
+            if data.get("Producent_OUI"):
+                self.edges.append([bssid, "Hardware_Fra", data["Producent_OUI"]])
+
+        # 4. KØRETØJER (Modul 20)
+        if "RegNr" in data:
+            plate = data["RegNr"]
+            self.edges.append([self.target_name, "Ejer_Køretøj", plate])
+            if data.get("Stelnummer"):
+                self.edges.append([plate, "Har_VIN", data["Stelnummer"]])
+
+        # 5. BLOCKCHAIN (Modul 19)
+        if "Adresse" in data and "Valuta" in data:
+            wallet = data["Adresse"]
+            self.edges.append([self.target_name, "Kontrollerer_Wallet", wallet])
+            for tx in data.get("Seneste_Transaktioner", []):
+                if tx.get("TX_Hash"):
+                    self.edges.append([wallet, "Transaktion", tx["TX_Hash"][:15]])
+
+        # 6. TITAN MASS-SCAN (Modul 16)
+        if "Case_Intelligence" in data:
+            intel = data["Case_Intelligence"]
+            # Map emails fra mapper
+            for email in intel.get("Digital_Footprint", {}).get("Emails", {}):
+                self.edges.append(["TITAN_Dataset", "Fundet_Email", email])
+            # Map CVR/Bank
+            for bank in intel.get("Financial_Leads", {}).get("Bankkonti", []):
+                self.edges.append([self.target_name, "Tilknyttet_Bank", bank])
+
+    def _write_csv(self):
+        # Fjern dubletter via set-mønster
         unique_edges = []
-        for edge in edges:
-            if edge not in unique_edges:
+        seen = set()
+        for edge in self.edges:
+            edge_tuple = tuple(edge)
+            if edge_tuple not in seen:
                 unique_edges.append(edge)
+                seen.add(edge_tuple)
 
         file_path = os.path.join(self.loot_dir, self.csv_file)
+        
+        # Sikker overskrivning
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
         with open(file_path, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(["Source", "Relation", "Target"]) # Maltego format headers
+            writer.writerow(["Source", "Edge Type", "Target"]) # Standard Maltego format
             writer.writerows(unique_edges)
 
-        print(f"{C.GREEN}[✓] Data-netværk eksporteret succesfuldt!{C.RESET}")
-        print(f"{C.CYAN}    -> Fil klar til import i Maltego/Gephi: {file_path}{C.RESET}")
-        print(f"{C.YELLOW}    (Dette kortlægger {len(unique_edges)} forbindelser visuelt!){C.RESET}")
+        print(f"{C.GREEN}[✓] Relations-netværk eksporteret succesfuldt!{C.RESET}")
+        print(f"{C.CYAN}    -> Fil klar til professionel link-analyse: {file_path}{C.RESET}")
+        print(f"{C.MAGENTA}    [*] Kortlagte unikke relationer: {len(unique_edges)}{C.RESET}")

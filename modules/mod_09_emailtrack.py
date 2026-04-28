@@ -4,6 +4,7 @@ import os
 import hashlib
 import subprocess
 import requests
+import socket # NY V8 TILFØJELSE: Til DNS/Domæne opslag
 import sys
 import re
 from datetime import datetime
@@ -20,20 +21,32 @@ class EmailTracker:
         self.gravatar_hash = hashlib.md5(self.email.encode()).hexdigest()
         self.data = {
             "Email": self.email, 
+            "Email_Prefix": "",           # NY V8 TILFØJELSE: Til Alias-pivot
             "Gravatar_Data": {}, 
             "Holehe_Hits": [], 
             "Hunter_Data": {},
+            "Domain_Intel": {},           # NY V8 TILFØJELSE: Corporate Data
+            "Direct_OSINT_Links": {},     # NY V8 TILFØJELSE: Epieos / Skype
             "Timestamp": datetime.now().isoformat()
         }
 
     def run(self, _=None):
-        print(f"\n{C.CYAN}{'='*60}\n[09] E-mail Tracker (Hunter.io, Gravatar & Holehe)\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[09] E-mail Tracker (Hunter.io, Gravatar, Holehe & Epieos V8)\n{'='*60}{C.RESET}")
         
         if not re.match(REGEX_EMAIL, self.email):
             print(f"{C.RED}[!] Ugyldigt e-mail format angivet: {self.email}{C.RESET}")
             return
             
         print(f"Target Email: {self.email}\n")
+        
+        # --- NY V8 TILFØJELSE: Prefix Extraction (Brugernavn) ---
+        self._extract_prefix()
+
+        # --- NY V8 TILFØJELSE: Generer direkte Epieos og Skype OSINT links ---
+        self._generate_osint_links()
+
+        # --- NY V8 TILFØJELSE: Corporate Domain Intelligence ---
+        self._domain_intelligence()
         
         # 1. Hunter.io Intelligence
         self._check_hunter()
@@ -104,12 +117,43 @@ class EmailTracker:
 
         self.save()
 
+    def _extract_prefix(self):
+        """NY V8: Udtrækker prefix til brug som socialt alias"""
+        prefix = self.email.split('@')[0]
+        self.data["Email_Prefix"] = prefix
+        print(f"{C.YELLOW}[*] Udtrækker E-mail Prefix til Alias-søgning...{C.RESET}")
+        print(f"{C.GREEN}    -> Alias/Brugernavn: {prefix}{C.RESET}")
+
+    def _generate_osint_links(self):
+        """NY V8: Bygger direkte API og OSINT links"""
+        print(f"\n{C.YELLOW}[*] Genererer direkte OSINT og App-links for e-mailen...{C.RESET}")
+        epieos = f"https://epieos.com/?q={self.email}"
+        skype = f"skype:{self.email}?userinfo"
+        
+        self.data["Direct_OSINT_Links"] = {"Epieos": epieos, "Skype": skype}
+        print(f"{C.CYAN}    -> Epieos Dybde-Analyse: {epieos} (Tjek for Google Maps anmeldelser etc.){C.RESET}")
+        print(f"{C.CYAN}    -> Skype Profil-Tjek: {skype}{C.RESET}")
+
+    def _domain_intelligence(self):
+        """NY V8: Hvis e-mailen er corporate, slås domænet op for at finde serveren"""
+        domain = self.email.split('@')[1]
+        generic_domains = ["gmail.com", "hotmail.com", "yahoo.com", "outlook.com", "live.dk", "icloud.com", "me.com", "mac.com", "protonmail.com"]
+        
+        if domain.lower() not in generic_domains:
+            print(f"\n{C.YELLOW}[*] Corporate Domæne Detekteret: Udfører DNS opslag på {domain}...{C.RESET}")
+            try:
+                ip = socket.gethostbyname(domain)
+                print(f"{C.GREEN}    ✓ Server IP for domæne: {ip}{C.RESET}")
+                self.data["Domain_Intel"]["IP"] = ip
+            except Exception as e:
+                print(f"{C.DIM}    [-] Kunne ikke slå domæne op: {e}{C.RESET}")
+
     def _check_hunter(self):
         if not self.api_key:
-            print(f"{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
+            print(f"\n{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
             return
 
-        print(f"{C.YELLOW}[*] Kontakter Hunter.io for Corporate Intelligence...{C.RESET}")
+        print(f"\n{C.YELLOW}[*] Kontakter Hunter.io for Corporate Intelligence...{C.RESET}")
         
         ver_url = f"https://api.hunter.io/v2/email-verifier?email={self.email}&api_key={self.api_key}"
         try:
@@ -161,4 +205,12 @@ class EmailTracker:
     def save(self):
         os.makedirs(session["loot_folder"], exist_ok=True)
         filename = f"{session['loot_folder']}/09_EMAILTRACK_{self.email.replace('@', '_at_')}.json"
+        
+        # NY V8 TILFØJELSE: Sikrer overskrivning
+        if os.path.exists(filename):
+            try:
+                os.remove(filename)
+            except: pass
+            
         Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
+        print(f"\n{C.GREEN}[✓] Rapport gemt (Overskrevet succesfuldt): {filename}{C.RESET}")

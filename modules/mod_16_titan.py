@@ -5,6 +5,8 @@ import time
 import json
 import re
 import zipfile
+import tarfile # NY V8: Tilføjet tar/gz support
+import hashlib # NY V8: Til kryptografisk sikring
 import concurrent.futures
 from pathlib import Path
 from datetime import datetime
@@ -24,7 +26,7 @@ HAS_OCR = True
 HAS_PDF = True
 
 class AutoForensicMassScanner:
-    """TITAN Orchestrator: Den mest komplette kombination af OSINT og digital forensik."""
+    """TITAN Orchestrator: Den mest komplette kombination af OSINT og digital forensik (GOLIATH V8)."""
     def _convert_to_degrees(self, value):
         try:
             d, m, s = float(value[0]), float(value[1]), float(value[2])
@@ -39,32 +41,33 @@ class AutoForensicMassScanner:
             "Meta": {"Sagsmappe": self.folder_path, "Timestamp": datetime.now().isoformat(), "Filer_Behandlet": 0},
             "Case_Intelligence": {
                 "Verified_Identities": {}, 
-                "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set()},
-                "Financial_Leads": {"Bankkonti": set(), "Crypto_Seeds": [], "Keys_Secrets": [], "CVR": set()},
+                "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set(), "Telefonnumre": set()}, # NY V8: IPs og Telefoner
+                "Financial_Leads": {"Bankkonti": set(), "IBAN_Konti": set(), "Crypto_Seeds": [], "Keys_Secrets": [], "CVR": set()}, # NY V8: IBAN
                 "Physical_Leads": {"Adresser": set(), "Nummerplader": set(), "GPS_Data": []},
                 "ID_Documents": {"MRZ_Koder": [], "CPR_Numre": set(), "Pasnumre": set()},
                 "Timeline": {"Datoer_Fundet": set()}
             },
             "Metadata_Report": {}, 
+            "Forensic_Hashes": {}, # NY V8: Chain of custody
             "Source_Map": {},      
             "File_Integrity_Alerts": [], 
-            "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": []},
+            "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": [], "IP_Reports": []}, # NY V8: IP Reports
             "Raw_Text_Archive": {} 
         }
         self.noise_list = ["Matas", "Apple", "Google", "Lunar", "Faktura", "Store", "Support", "Maria Casino", "Gældsstyrelsen", "Danske Spil", "Danske Inkasso"]
 
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[16] GOLIATH TITAN: FULL SPECTRUM FORENSICS\n{'='*60}{C.RESET}")
+        print(f"\n{C.CYAN}{'='*60}\n[16] GOLIATH TITAN: FULL SPECTRUM FORENSICS V8\n{'='*60}{C.RESET}")
         if not os.path.exists(self.folder_path): 
             print(f"{C.RED}[!] Fejl: Stien {self.folder_path} findes ikke.{C.RESET}"); return
         
-        print(f"{C.YELLOW}[*] Step 1: Deep Unpacking af arkiver...{C.RESET}")
+        print(f"{C.YELLOW}[*] Step 1: Deep Unpacking af arkiver (.zip, .tar, .gz)...{C.RESET}")
         self._unpack_archives()
 
         files = [f for f in glob.glob(f"{self.folder_path}/**/*", recursive=True) if os.path.isfile(f)]
         self.master_data["Meta"]["Filer_Behandlet"] = len(files)
 
-        print(f"{C.YELLOW}[*] Step 2: Starter synkroniseret OCR/Tekst-analyse af {len(files)} enheder (Max 8 tråde)...{C.RESET}")
+        print(f"{C.YELLOW}[*] Step 2: Starter synkroniseret OCR/Tekst/Krypto-analyse af {len(files)} enheder (Max 8 tråde)...{C.RESET}")
         completed = 0
         
         # Vi tilføjer robusthed her: Hvis én proces fejler (Pga. en mystisk fil), fortsætter de 7 andre
@@ -79,14 +82,20 @@ class AutoForensicMassScanner:
                 except Exception as e:
                     pass # Skjuler specifikke tråd-fejl for brugeren for at holde konsollen ren
         
-        print(f"\n{C.GREEN}[✓] Forensic Pipeline komplet. Starter automatisk berigelse...{C.RESET}")
+        print(f"\n{C.GREEN}[✓] Forensic Pipeline komplet. Starter automatisk Omni-Berigelse...{C.RESET}")
         self._auto_pivot_engine(driver)
         self._save_master_file()
         
         print(f"\n{C.CYAN}--- TITAN MISSION SUMMARY ---{C.RESET}")
+        print(f"Filer Hashet (Krypto): {len(self.master_data['Forensic_Hashes'])}")
         print(f"Emails fundet: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['Emails'])}")
-        print(f"Bankkonti fundet: {len(self.master_data['Case_Intelligence']['Financial_Leads']['Bankkonti'])}")
+        print(f"Telefonnumre: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['Telefonnumre'])}")
+        print(f"IP-Adresser: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['IP_Adresser'])}")
+        print(f"Bankkonti/IBAN: {len(self.master_data['Case_Intelligence']['Financial_Leads']['Bankkonti']) + len(self.master_data['Case_Intelligence']['Financial_Leads']['IBAN_Konti'])}")
         print(f"CPR numre fundet: {len(self.master_data['Case_Intelligence']['ID_Documents']['CPR_Numre'])}")
+        
+        if self.master_data.get("File_Integrity_Alerts"):
+            print(f"{C.RED}Steganografi/Integrity Alerts: {len(self.master_data['File_Integrity_Alerts'])} filer flaget!{C.RESET}")
         
         if "Devices" in self.master_data["Case_Intelligence"]:
             print(f"Identificerede Enheder: {', '.join(self.master_data['Case_Intelligence']['Devices'].keys())}")
@@ -96,15 +105,27 @@ class AutoForensicMassScanner:
         fname = os.path.basename(f_path)
         res = {"file": fname, "path": f_path, "text": "", "meta": {}, "mime": "unknown", "entities": {}}
         
-        if f_path.lower().endswith('.zip'):
+        if f_path.lower().endswith('.zip') or f_path.lower().endswith('.tar.gz') or f_path.lower().endswith('.tar'):
             return res
 
         try:
+            # --- NY V8: Hash filen for retsgyldighed ---
+            with open(f_path, 'rb') as bin_f:
+                f_bytes = bin_f.read()
+                res["meta"]["MD5"] = hashlib.md5(f_bytes).hexdigest()
+                res["meta"]["SHA256"] = hashlib.sha256(f_bytes).hexdigest()
+
             mime_type = magic.from_file(f_path, mime=True)
             res["mime"] = mime_type if mime_type else "unknown"
 
             if "image" in res["mime"]:
-                res["meta"] = self._extract_exif(f_path)
+                # --- NY V8: Steganografi Check ---
+                if res["mime"] in ["image/jpeg", "image/jpg"]:
+                    eof_idx = f_bytes.rfind(b"\xff\xd9")
+                    if eof_idx != -1 and eof_idx + 2 < len(f_bytes):
+                        res["meta"]["Steganografi_Advarsel"] = f"Fundet {len(f_bytes) - (eof_idx + 2)} skjulte bytes!"
+
+                res["meta"].update(self._extract_exif(f_path))
                 if HAS_OCR: res["text"] = self._ocr_pro(f_path)
                 
             elif "pdf" in res["mime"] and HAS_PDF:
@@ -165,7 +186,7 @@ class AutoForensicMassScanner:
         except Exception: return ""
 
     def _scrub_all(self, text):
-        e = {"emails": [], "bank": [], "cpr": [], "mrz": [], "crypto": []}
+        e = {"emails": [], "bank": [], "cpr": [], "mrz": [], "crypto": [], "telefoner": [], "ips": [], "iban": []}
         
         for mail in REGEX_EMAIL.findall(text):
             clean_mail = self._sanitize_email(mail.lower())
@@ -174,6 +195,17 @@ class AutoForensicMassScanner:
         e["bank"] = REGEX_BANK.findall(text)
         e["cpr"] = REGEX_CPR.findall(text)
         
+        # --- NY V8 TILFØJELSE: IP, Tlf, IBAN ---
+        for ip in re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', text):
+            e["ips"].append(ip)
+            
+        for ph in re.findall(r'\b(?:\+45|0045|45)?\s*([2-9]\d{1}\s?\d{2}\s?\d{2}\s?\d{2})\b', text):
+            clean_ph = ph.replace(" ", "")
+            if len(clean_ph) == 8: e["telefoner"].append(clean_ph)
+            
+        for iban in re.findall(r'\b[a-zA-Z]{2}[0-9]{2}\s?[a-zA-Z0-9]{4}\s?[0-9]{4}\s?[0-9]{3}\s?[a-zA-Z0-9]{3}\b', text):
+            e["iban"].append(iban.replace(" ", ""))
+
         for m in REGEX_BTC.findall(text): e["crypto"].append({"type": "Bitcoin_Addr", "val": m})
         for m in REGEX_ETH.findall(text): e["crypto"].append({"type": "Ethereum_Addr", "val": m})
         return e
@@ -198,26 +230,64 @@ class AutoForensicMassScanner:
 
     def _auto_pivot_engine(self, driver):
         intel = self.master_data["Case_Intelligence"]
-        
-        if not intel["Digital_Footprint"]["Emails"]: return
-        
         print(f"\n{C.CYAN}{'='*60}\nBERIGELSE: GOLIATH TITAN ORCHESTRATOR\n{'='*60}{C.RESET}")
         
-        emails = [e for e, data in sorted(intel["Digital_Footprint"]["Emails"].items(), key=lambda x: x[1]['score'], reverse=True)[:5]]
-        for email in emails:
-            now = datetime.now().strftime("%H:%M:%S")
-            print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 03 (Breach): {email}...{C.RESET}")
-            mod = BreachIntelligenceAnalyst(email); mod.save = lambda: None
-            try: 
-                mod.run(driver)
-                if mod.data["Data_Leaks"] or mod.data["Paste_Sites"]:
-                    self.master_data["Berigelse_Resultater"]["Breach_Reports"].append(mod.data)
-            except Exception: pass
-            import random
-            time.sleep(random.uniform(3, 6))
+        # 1. PIVOT PÅ EMAILS
+        if intel["Digital_Footprint"]["Emails"]:
+            emails = [e for e, data in sorted(intel["Digital_Footprint"]["Emails"].items(), key=lambda x: x[1]['score'], reverse=True)[:5]]
+            for email in emails:
+                now = datetime.now().strftime("%H:%M:%S")
+                print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 03 (Breach): {email}...{C.RESET}")
+                try: 
+                    mod = BreachIntelligenceAnalyst(email); mod.save = lambda: None
+                    mod.run(driver)
+                    if mod.data["Data_Leaks"] or mod.data["Paste_Sites"]:
+                        self.master_data["Berigelse_Resultater"]["Breach_Reports"].append(mod.data)
+                except Exception: pass
+                import random
+                time.sleep(random.uniform(2, 4))
+                
+        # 2. PIVOT PÅ TELEFONNUMRE (NY V8)
+        if intel["Digital_Footprint"].get("Telefonnumre"):
+            phones = list(intel["Digital_Footprint"]["Telefonnumre"])[:3]
+            for ph in phones:
+                now = datetime.now().strftime("%H:%M:%S")
+                print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 12 (RevPhone): {ph}...{C.RESET}")
+                try:
+                    from modules.mod_12_revphone import ReversePhoneIntelligence
+                    mod_ph = ReversePhoneIntelligence(ph); mod_ph.save = lambda: None
+                    mod_ph.run(driver)
+                    self.master_data["Berigelse_Resultater"]["Phone_Data"].append(mod_ph.data)
+                except ImportError:
+                    print(f"{C.DIM}  [-] Modul 12 (RevPhone) ikke fundet.{C.RESET}")
+                except Exception: pass
+                time.sleep(1)
+
+        # 3. PIVOT PÅ IP-ADRESSER (NY V8)
+        if intel["Digital_Footprint"].get("IP_Adresser"):
+            ips = [ip for ip in list(intel["Digital_Footprint"]["IP_Adresser"]) if not ip.startswith(("192.168", "10.", "127.", "172."))]
+            for ip in ips[:3]:
+                now = datetime.now().strftime("%H:%M:%S")
+                print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 10 (IP Intel): {ip}...{C.RESET}")
+                try:
+                    from modules.mod_10_ip import IPNetworkAnalyzer
+                    mod_ip = IPNetworkAnalyzer(ip); mod_ip.save = lambda: None
+                    mod_ip.run(driver)
+                    self.master_data["Berigelse_Resultater"]["IP_Reports"].append(mod_ip.data)
+                except ImportError:
+                    print(f"{C.DIM}  [-] Modul 10 (IP Intel) ikke fundet.{C.RESET}")
+                except Exception: pass
 
     def _ingest_results(self, res):
         intel = self.master_data["Case_Intelligence"]
+        
+        # --- NY V8: Hash Register Ingestion ---
+        if "MD5" in res.get("meta", {}):
+            self.master_data["Forensic_Hashes"][res["file"]] = {
+                "MD5": res["meta"]["MD5"], "SHA256": res["meta"]["SHA256"]
+            }
+            if "Steganografi_Advarsel" in res["meta"]:
+                self.master_data["File_Integrity_Alerts"].append({"File": res["file"], "Alert": res["meta"]["Steganografi_Advarsel"]})
         
         for e in res["entities"].get("emails", []):
             email = e["val"]
@@ -238,6 +308,14 @@ class AutoForensicMassScanner:
             
         for sec in res.get("secrets", []):
             intel["Financial_Leads"]["Keys_Secrets"].append(sec)
+
+        # --- NY V8 Ingestion (Tlf, IP, IBAN) ---
+        for ip in res["entities"].get("ips", []):
+            intel["Digital_Footprint"]["IP_Adresser"].add(ip)
+        for ph in res["entities"].get("telefoner", []):
+            intel["Digital_Footprint"]["Telefonnumre"].add(ph)
+        for iban in res["entities"].get("iban", []):
+            intel["Financial_Leads"]["IBAN_Konti"].add(iban)
 
         if res.get("meta") and "Make" in res["meta"]:
             device = f"{res['meta'].get('Make', 'Unknown')} {res['meta'].get('Model', '')}".strip()
@@ -302,6 +380,11 @@ class AutoForensicMassScanner:
         mappe_navn = os.path.basename(os.path.normpath(self.folder_path))
         path = f"{session['loot_folder']}/16_TITAN_REPORT_{mappe_navn}_{datetime.now().strftime('%H%M%S')}.json"
         
+        # NY V8: Sikker overskrivning
+        if os.path.exists(path):
+            try: os.remove(path)
+            except: pass
+            
         try:
             Path(path).write_text(json.dumps(self.master_data, indent=4, ensure_ascii=False), encoding="utf-8")
             print(f"\n{C.GREEN}[✓✓✓] TITAN MISSION FULDFØRT! FIL GEMT: {path}{C.RESET}")
@@ -314,4 +397,12 @@ class AutoForensicMassScanner:
             if not os.path.exists(extract_dir):
                 try:
                     with zipfile.ZipFile(zf, 'r') as zip_ref: zip_ref.extractall(extract_dir)
+                except Exception: pass
+                
+        # --- NY V8 TILFØJELSE: TAR og GZ udpakning ---
+        for tf in glob.glob(f"{self.folder_path}/**/*.tar*", recursive=True):
+            extract_dir = os.path.join(self.folder_path, f"_extracted_{os.path.basename(tf).split('.')[0]}")
+            if not os.path.exists(extract_dir):
+                try:
+                    with tarfile.open(tf, 'r:*') as tar_ref: tar_ref.extractall(extract_dir)
                 except Exception: pass
