@@ -4,6 +4,7 @@ import json
 import urllib.parse
 import re
 import time
+import sys
 from pathlib import Path
 from datetime import datetime
 from selenium.webdriver.common.by import By 
