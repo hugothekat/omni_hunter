@@ -322,3 +322,5 @@ class KrakIntelligenceAnalyst: # Omdøbt for at matche Pivot-import i Modul 02
             
         Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
         print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+
+KrakIntelligenceAnalyst = DirectoryIntelligenceHunter

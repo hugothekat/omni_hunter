@@ -13,7 +13,7 @@ from core.network import omni_dork_search, safe_get_with_retry
 
 # NY V7: Omdøbt fra PhoneIntelligenceHunter til PhoneIntelligenceAnalyst 
 # Dette FIXER fejlen, hvor Modul 02 Pivoten ikke kunne importere modulet!
-class PhoneIntelligenceAnalyst:
+class PhoneIntelligenceHunter:
     """Deep web search for phone number occurrences (GOLIATH V8)"""
     def __init__(self, phone):
         self.phone = str(phone).replace(" ", "").replace("+45", "").replace("-", "")
