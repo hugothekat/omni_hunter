@@ -1,4 +1,4 @@
-# main.py
+# -*- coding: utf-8 -*-
 import os
 import sys
 import shutil
@@ -6,136 +6,127 @@ import argparse
 import json
 from pathlib import Path
 from datetime import datetime
-from core.utils import C, session, get_input
+
+# Importer Core-motoren
+from core.utils import C, session, get_input, load_session
 from core.browser import get_stealth_driver
 from core.logger import logger
-from modules.mod_30_person_intel import PersonIntelligenceOrchestrator
 
 def check_dependencies():
-    print(f"{C.CYAN}[*] Udfører system-tjek for OMNI-HUNTER v52.0...{C.RESET}")
-    tools = {"rg": "Ripgrep", "tesseract": "Tesseract OCR", "holehe": "Holehe Tracker"}
+    """Tjekker at maskinrummet er klar før opsendelse"""
+    tools = {"rg": "Ripgrep (Offline Databaser)", "tesseract": "Tesseract OCR (Billedtekst)", "exiftool": "ExifTool (OPSEC)"}
     for tool, desc in tools.items():
         if shutil.which(tool) is None:
-            print(f"{C.RED}    [!] ADVARSEL: {desc} mangler på systemet!{C.RESET}")
-        else:
-            print(f"{C.GREEN}    [✓] System-Værktøj OK: {tool}{C.RESET}")
+            print(f"{C.YELLOW}[!] System-advarsel: {desc} mangler. Nogle moduler vil have nedsat funktion.{C.RESET}")
 
 def setup_cli():
-    parser = argparse.ArgumentParser(description="OMNI-HUNTER OSINT Framework")
-    parser.add_argument("-t", "--target", help="Målets navn eller email")
-    parser.add_argument("-m", "--module", help="Modulnummer", type=str)
-    parser.add_argument("--headless", action="store_true", help="Kør uden menu")
+    parser = argparse.ArgumentParser(description="PETFE GOLIATH - Professionelt OSINT Værktøj")
+    parser.add_argument("-t", "--target", help="Målets navn, email eller IP")
+    parser.add_argument("-m", "--module", help="Modulnummer (00-29)", type=str)
+    parser.add_argument("--headless", action="store_true", help="Kør uden visuel menu")
     return parser.parse_args()
+
+def display_menu():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(f"{C.WHITE}{C.BOLD}")
+    print("=" * 75)
+    print(" PETFE GOLIATH V8 // CENTRAL EFTERRETNINGS-KONSOL")
+    print("=" * 75)
+    print(f"{C.RESET}")
+    
+    print(f"{C.BG_RED}{C.WHITE} [00] AUTONOM EFTERFORSKNING (Indtast navn -> Få alt data automatisk) {C.RESET}\n")
+    
+    print(f"{C.CYAN}--- [ PERSON & VIRKSOMHED ] -----------------------------------------------{C.RESET}")
+    print(f" {C.GREEN}[01]{C.RESET} Personopslag (Krak/Geo)        {C.GREEN}[02]{C.RESET} Virksomheds-OSINT (CVR/Proff)")
+    print(f" {C.GREEN}[04]{C.RESET} Sociale Medier (Profil-skan)   {C.GREEN}[23]{C.RESET} Global Brugernavn-søgning (300+)")
+    print(f" {C.GREEN}[07]{C.RESET} Telefonopslag (Offentlig)      {C.GREEN}[12]{C.RESET} Omvendt Telefonopslag (Skjult)")
+
+    print(f"\n{C.CYAN}--- [ CYBER & CREDENTIALS ] -----------------------------------------------{C.RESET}")
+    print(f" {C.GREEN}[03]{C.RESET} Lækkede Passwords & Databaser  {C.GREEN}[05]{C.RESET} Offline Database Søgning (Lokal)")
+    print(f" {C.GREEN}[06]{C.RESET} Gæt E-mailadresser (Mønstre)   {C.GREEN}[09]{C.RESET} E-mail Sporing (IP & Lokation)")
+    print(f" {C.GREEN}[17]{C.RESET} Generér Password-Wordlist      {C.GREEN}[18]{C.RESET} Tøm E-mailkonto (IMAP Ripper)")
+
+    print(f"\n{C.CYAN}--- [ TEKNISK & INFRASTRUKTUR ] -------------------------------------------{C.RESET}")
+    print(f" {C.GREEN}[10]{C.RESET} IP-adresse Analyse             {C.GREEN}[19]{C.RESET} Krypto-sporing (Blockchain)")
+    print(f" {C.GREEN}[20]{C.RESET} Køretøjs-opslag & Gæld         {C.GREEN}[21]{C.RESET} Find Fysisk Lokation via MAC/WiFi")
+    print(f" {C.GREEN}[22]{C.RESET} Chat & Discord Forensik        {C.GREEN}[26]{C.RESET} Virus/Malware Analyse (Threat Intel)")
+    print(f" {C.GREEN}[08]{C.RESET} Mørkenet Søgning (Darkweb)     {C.GREEN}[25]{C.RESET} Arkiv-søgning (Slettede sider)")
+
+    print(f"\n{C.CYAN}--- [ FORENSIK & ANALYSE ] ------------------------------------------------{C.RESET}")
+    print(f" {C.GREEN}[11]{C.RESET} Digital Forensik (Filer)       {C.GREEN}[13]{C.RESET} Omvendt Billedsøgning")
+    print(f" {C.GREEN}[16]{C.RESET} Masse-skanning af Mappe        {C.GREEN}[24]{C.RESET} Fjern Metadata (OPSEC)")
+    print(f" {C.GREEN}[27]{C.RESET} AI-Assisteret Profilering")
+
+    print(f"\n{C.CYAN}--- [ VISUALISERING & EKSPORT ] -------------------------------------------{C.RESET}")
+    print(f" {C.GREEN}[28]{C.RESET} Visuelt Netværkskort (Maltego) {C.GREEN}[29]{C.RESET} 3D GPS-Kortlægning (Google Earth)")
+    print(f" {C.GREEN}[14]{C.RESET} Generér HTML Sagsrapport")
+    
+    print(f"\n{C.DIM}" + "-" * 75 + f"{C.RESET}")
+    print(f" {C.RED}[99] Afslut System{C.RESET}")
 
 def main():
     os.makedirs(session["loot_folder"], exist_ok=True)
+    load_session() # Henter tidligere indtastede data
     check_dependencies()
     
     while True:
-        # --- OMNIPOTENT V7 BANNER ---
-        print(f"""{C.RED}
-   ____  ___  _     ___    _  _____ _   _ 
-  / ___|/ _ \\| |   |_ _|  / \\|_   _| | | |
- | |  _| | | | |    | |  / _ \\ | | | |_| |
- | |_| | |_| | |___ | | / ___ \\| | |  _  |
-  \\____|\\___/|_____|___/_/   \\_\\_| |_| |_|
-                                          
-{C.CYAN}  OSINT
-{C.RED}
-  [+] Værktøj: PETFE // Politi - Efterretningsværktøj{C.RESET}
-""")
+        display_menu()
         
-        print(f"  {C.GREEN}[00] TOTAL RECURSIVE RECON (GOLIATH OMNIPOTENT V7){C.RESET}")
-        print(f"{C.CYAN}{'-' * 70}{C.RESET}")
-
-        print(f"{C.CYAN}[01]{C.RESET} Personregister & Geo           {C.CYAN}[02]{C.RESET} Erhverv (CVR, Hunter, Proff V7)")
-        print(f"{C.CYAN}[03]{C.RESET} Breach & Email Leak Pivot      {C.CYAN}[04]{C.RESET} Social Media Monster (V7)")
-        print(f"{C.CYAN}[05]{C.RESET} Offline DB (Ripgrep)           {C.CYAN}[06]{C.RESET} E-mail Mønstre")
-        print(f"{C.CYAN}[07]{C.RESET} Telefon-efterretning           {C.CYAN}[08]{C.RESET} Mørkenet (Ahmia)")
-        print(f"{C.CYAN}[09]{C.RESET} E-mail Tracker (Dyb)           {C.CYAN}[10]{C.RESET} IP/Netværk (API)")
-        print(f"{C.CYAN}[11]{C.RESET} Udtræk data fra billeder       {C.CYAN}[12]{C.RESET} Omvendt Telefonopslag")
-        print(f"{C.CYAN}[13]{C.RESET} Omvendt Billedsøgning          {C.CYAN}[16]{C.RESET} Auto-Forensisk (TITAN)")
-        print(f"{C.CYAN}[17]{C.RESET} Goliath Final Strike           {C.CYAN}[18]{C.RESET} Mail-Ripper (IMAP)")
-        print(f"{C.CYAN}[19]{C.RESET} Crypto Ledger Tracker          {C.CYAN}[20]{C.RESET} Køretøjs-OSINT")
-        print(f"{C.CYAN}[21]{C.RESET} BSSID Geofencer (MAC -> GPS)   {C.CYAN}[22]{C.RESET} Chat App Intelligence")
-        print(f"{C.CYAN}[23]{C.RESET} Global Username Matrix         {C.CYAN}[24]{C.RESET} OPSEC Sanitizer")
-        print(f"{C.CYAN}[25]{C.RESET} Wayback Machine                {C.CYAN}[26]{C.RESET} VirusTotal Threat Intel")
-        print(f"{C.CYAN}[27]{C.RESET} AI Profilering (LLM)           {C.CYAN}[28]{C.RESET} Graph Exporter (Maltego)")
-        print(f"{C.CYAN}[29]{C.RESET} Google Earth (KML Eksport)")
-        
-        print(f"{C.CYAN}{'-' * 70}{C.RESET}")
-        print(f"{C.GREEN}[14]{C.RESET} Generer HTML Dashboard")
-        print(f"{C.RED}[15]{C.RESET} Afslut Session")
-        print(f"{C.CYAN}{'='*70}{C.RESET}")
-        
-        choice = input(f"\n{C.YELLOW}Vælg Modul [00-29]: {C.RESET}").strip()
-        
-        if choice == "15": 
-            print(f"\n{C.RED}[*] Session afsluttet. God jagt.{C.RESET}")
-            break
-
-        # --- DYNAMISK ROUTING MED INTELLIGENT BROWSER-STYRING ---
         try:
+            choice = input(f"\n{C.YELLOW}Vælg Handling [00-99]: {C.RESET}").strip()
+            
+            if choice == "99" or choice.lower() in ['q', 'exit', 'quit']: 
+                print(f"\n{C.RED}[*] Sletter midlertidige spor. System afsluttet.{C.RESET}")
+                break
+
+            # --- DYNAMISK ROUTING MED GOLIATH V8 ALIASER ---
+            
             if choice == "00" or choice == "0":
+                from modules.mod_30_person_intel import PersonIntelligenceOrchestrator
                 navn = get_input("Målets fulde navn", "name")
-                print(f"{C.CYAN}[*] Starter GOLIATH PIVOT ENGINE...{C.RESET}")
+                print(f"{C.CYAN}[*] Starter autonom efterforskning (Henter kaffe, dette kan tage tid)...{C.RESET}")
                 driver = get_stealth_driver()
-                try:
-                    PersonIntelligenceOrchestrator(navn).run(driver)
-                finally:
-                    driver.quit()
+                try: PersonIntelligenceOrchestrator(navn).run(driver)
+                finally: driver.quit()
 
             elif choice == "01":
                 from modules.mod_01_krak import DirectoryIntelligenceHunter
-                navn = get_input("Navn", "name")
-                by = get_input("By", "city")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: DirectoryIntelligenceHunter(navn, by).run(driver)
+                try: DirectoryIntelligenceHunter(get_input("Navn", "name"), get_input("By", "city")).run(driver)
                 finally: driver.quit()
 
             elif choice == "02":
                 from modules.mod_02_business import BusinessIntelligenceAnalyst
-                navn = get_input("Firma/CVR", "name")
-                print(f"{C.CYAN}[*] Starter sikker browser-session til Deep Scrape...{C.RESET}")
                 driver = get_stealth_driver()
-                try: BusinessIntelligenceAnalyst(navn).run(driver)
+                try: BusinessIntelligenceAnalyst(get_input("Firma eller CVR", "name")).run(driver)
                 finally: driver.quit()
 
             elif choice == "03":
                 from modules.mod_03_breach import BreachIntelligenceAnalyst
-                email = get_input("Email", "email")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: BreachIntelligenceAnalyst(email).run(driver)
+                try: BreachIntelligenceAnalyst(get_input("Email", "email")).run(driver)
                 finally: driver.quit()
 
             elif choice == "04":
                 from modules.mod_04_social import SocialMediaProfiler
-                username = get_input("Brugernavn", "username")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: SocialMediaProfiler(username).run(driver)
+                try: SocialMediaProfiler(get_input("Brugernavn", "username")).run(driver)
                 finally: driver.quit()
 
             elif choice == "05":
                 from modules.mod_05_offline import OfflineDatabaseAnalyzer
-                OfflineDatabaseAnalyzer(get_input("Søgeord", "db_target"), get_input("Sti til .txt", "db_path")).run()
+                OfflineDatabaseAnalyzer(get_input("Søgeord (Email/Navn)", "db_target"), get_input("Sti til .txt fil/mappe", "db_path")).run()
 
             elif choice == "06":
                 from modules.mod_06_emailgen import EmailPatternGenerator
-                navn = get_input("Navn", "name")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: EmailPatternGenerator(navn).run(driver)
+                try: EmailPatternGenerator(get_input("Navn", "name")).run(driver)
                 finally: driver.quit()
 
             elif choice == "07":
                 from modules.mod_07_phone import PhoneIntelligenceHunter
-                phone = get_input("Telefon (uden +45)", "phone")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: PhoneIntelligenceHunter(phone).run(driver)
+                try: PhoneIntelligenceHunter(get_input("Telefon (uden +45)", "phone")).run(driver)
                 finally: driver.quit()
 
             elif choice == "08":
@@ -156,40 +147,35 @@ def main():
 
             elif choice == "12":
                 from modules.mod_12_revphone import ReversePhoneIntelligence
-                phone = get_input("Ukendt Telefon (uden +45)", "phone")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: ReversePhoneIntelligence(phone).run(driver)
+                try: ReversePhoneIntelligence(get_input("Telefon (uden +45)", "phone")).run(driver)
                 finally: driver.quit()
 
             elif choice == "13":
                 from modules.mod_13_revimage import ReverseImageIntelligence
-                img_path = get_input("Sti til billede", "image_path")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: ReverseImageIntelligence(img_path).run(driver)
+                try: ReverseImageIntelligence(get_input("Sti til billede", "image_path")).run(driver)
                 finally: driver.quit()
 
             elif choice == "16":
                 from modules.mod_16_titan import AutoForensicMassScanner
                 folder = get_input("Sti til Mappe (f.eks. /home/user/leaks)", "dump_folder")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
                 try: AutoForensicMassScanner(folder).run(driver)
                 finally: driver.quit()
 
             elif choice == "17":
-                from modules.mod_17_sniper import GoliathSniperEngine
+                from modules.mod_17_sniper import SniperModule # V8 Navn
                 print(f"\n{C.YELLOW}--- GOLIATH SNIPER: KONFIGURATION ---{C.RESET}")
-                name = get_input("Målets fulde navn", "name")
-                city = get_input("By", "city")
-                cpr = get_input("CPR (DDMMYY-XXXX)", "cpr") if input(f"{C.CYAN}Brug CPR? (j/n): {C.RESET}").lower() == 'j' else ""
-                clues = get_input("Clues (f.eks. hund, børn)", "clues")
-                GoliathSniperEngine(name, city, cpr, clues, session["loot_folder"]).generate()
+                SniperModule(
+                    name=get_input("Målets fulde navn", "name"), 
+                    city=get_input("By", "city"), 
+                    cpr=get_input("CPR (DDMMYY-XXXX)", "cpr"), 
+                    clues=get_input("Clues (f.eks. hund, kone)", "clues")
+                ).run()
 
             elif choice == "18":
                 from modules.mod_18_mailrip import GoliathMailRipper
-                print(f"\n{C.YELLOW}--- GOLIATH MAIL-RIPPER ---{C.RESET}")
                 GoliathMailRipper(get_input("Email", "email"), get_input("App Password", "password")).run()
 
             elif choice == "19":
@@ -198,44 +184,40 @@ def main():
 
             elif choice == "20":
                 from modules.mod_20_vehicle import VehicleIntelligence
-                regnr = get_input("Nummerplade (f.eks. AB12345)", "regnr")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: VehicleIntelligence(regnr).run(driver)
+                try: VehicleIntelligence(get_input("Nummerplade (f.eks. AB12345)", "regnr")).run(driver)
                 finally: driver.quit()
 
             elif choice == "21":
                 from modules.mod_21_bssid import BSSIDGeofencer
-                BSSIDGeofencer(get_input("MAC Adresse / BSSID (xx:xx:xx:xx:xx)", "bssid")).run(None)
+                BSSIDGeofencer(get_input("MAC Adresse / BSSID", "bssid")).run(None)
 
             elif choice == "22":
                 from modules.mod_22_chatapp import ChatAppIntelligence
-                chat_query = get_input("Søgeord/Brugernavn", "chat_query")
-                print(f"{C.CYAN}[*] Starter sikker browser-session...{C.RESET}")
                 driver = get_stealth_driver()
-                try: ChatAppIntelligence(chat_query).run(driver)
+                try: ChatAppIntelligence(get_input("Søgeord/Discord ID", "chat_query")).run(driver)
                 finally: driver.quit()
 
             elif choice == "23":
-                from modules.mod_23_matrix import UsernameMatrixAnalyzer
-                UsernameMatrixAnalyzer(get_input("Brugernavn", "username")).run(None)
+                from modules.mod_23_matrix import MatrixAnalyzer # V8 Navn
+                MatrixAnalyzer(get_input("Brugernavn", "username")).run(None)
 
             elif choice == "24":
                 from modules.mod_24_opsec import OpsecSanitizer
-                OpsecSanitizer(get_input("Sti til fil", "file_path")).run(None)
+                OpsecSanitizer(get_input("Sti til fil for rensning", "file_path")).run(None)
 
             elif choice == "25":
                 from modules.mod_25_wayback import WaybackMachineIntelligence
-                WaybackMachineIntelligence(get_input("URL", "url")).run(None)
+                WaybackMachineIntelligence(get_input("URL til arkivering", "url")).run(None)
 
             elif choice == "26":
                 from modules.mod_26_virustotal import VirusTotalAnalyzer
-                VirusTotalAnalyzer(get_input("IP eller Hash", "ip")).run(None)
+                VirusTotalAnalyzer(get_input("IP, Domæne, URL eller Hash", "ip")).run(None)
 
             elif choice == "27":
                 from modules.mod_27_ai import TitanAIEnrichment
                 ai = TitanAIEnrichment()
-                res = ai.analyze_text(get_input("Tekst der skal analyseres", "ai_text"))
+                res = ai.analyze_text(get_input("Tekst der skal AI-analyseres", "ai_text"))
                 print(f"\n{C.GREEN}[✓] AI Resultat:\n{json.dumps(res, indent=4, ensure_ascii=False)}{C.RESET}")
 
             elif choice == "28":
@@ -250,77 +232,120 @@ def main():
                 AutomatedCaseReporter().generate()
 
             else:
-                print(f"{C.YELLOW}[!] Modul {choice} er tomt pt. eller findes ikke.{C.RESET}")
+                print(f"{C.RED}[!] Ukendt kommando.{C.RESET}")
+                
+            input(f"\n{C.DIM}Tryk ENTER for at vende tilbage til hovedmenuen...{C.RESET}")
 
+        except KeyboardInterrupt:
+            print(f"\n{C.RED}[!] Proces afbrudt af operatør (Ctrl+C).{C.RESET}")
+            time.sleep(1)
         except Exception as e:
-            print(f"\n{C.RED}[!] Fejl i modul: {str(e)}{C.RESET}")
+            logger.error(f"Kritisk systemfejl i menuen: {e}")
+            print(f"\n{C.BG_RED}{C.WHITE}[!] KRITISK FEJL:{C.RESET} {str(e)}")
+            input(f"\n{C.DIM}Tryk ENTER for at fortsætte...{C.RESET}")
 
 class AutomatedCaseReporter:
-    """Genererer et professionelt interaktivt HTML Dashboard over alle beviser"""
+    """GOLIATH V8: Genererer et professionelt interaktivt HTML Dashboard over sagen"""
     def __init__(self):
-        self.loot_dir = session["loot_folder"]
+        self.loot_dir = session.get("loot_folder", "loot_evidence")
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-        self.report_file = f"FINAL_REPORT_{self.timestamp}.html"
+        self.report_file = os.path.join(self.loot_dir, f"SAGSRAPPORT_{self.timestamp}.html")
 
     def generate(self):
+        print(f"\n{C.CYAN}[*] Kompilerer Sagsrapport...{C.RESET}")
         files = list(Path(self.loot_dir).glob("*.json"))
-        all_cpr, all_bank, all_emails = set(), set(), set()
+        
+        # Samledata
+        all_cpr, all_bank, all_emails, all_phones, all_usernames = set(), set(), set(), set(), set()
+        master_score = "Ikke beregnet"
         
         for file in files:
             try:
                 data = json.loads(file.read_text(encoding='utf-8'))
-                if "Intelligence" in data:
-                    intel = data["Intelligence"]
-                    all_cpr.update(intel.get("CPR", []))
-                    all_bank.update(intel.get("Bank_Accounts", []))
-                    all_emails.update(intel.get("Emails", []))
-                if "HIBP_Breaches" in data or "Data_Leaks" in data:
+                
+                # Hvis vi fanger Modul 30 Master filen
+                if "Confidence_Score" in data:
+                    master_score = f"{data['Confidence_Score']}/100"
+                    all_emails.update(data.get("Emails", []))
+                    all_usernames.update(data.get("Brugernavne", []))
+                    all_phones.update(data.get("Telefonnumre", []))
+                    all_cpr.update(data.get("CPR_Fragments", []))
+                    
+                # Fra Modul 16 (TITAN)
+                if "Case_Intelligence" in data:
+                    intel = data["Case_Intelligence"]
+                    all_cpr.update(intel.get("ID_Documents", {}).get("CPR_Numre", []))
+                    all_bank.update(intel.get("Financial_Leads", {}).get("Bankkonti", []))
+                    all_emails.update(intel.get("Digital_Footprint", {}).get("Emails", {}).keys())
+                    
+                # Fra Modul 03 (Breach)
+                if "Eksponerede_Passwords" in data:
                     all_emails.add(data.get("Email", ""))
             except Exception: continue
 
         html_content = f"""
+        <!DOCTYPE html>
         <html>
         <head>
-            <title>OSINT MISSION REPORT</title>
+            <meta charset="UTF-8">
+            <title>SAGSRAPPORT // PETFE</title>
             <style>
-                body {{ font-family: 'Courier New', Courier, monospace; background-color: #0d1117; color: #c9d1d9; margin: 40px; }}
-                h1 {{ color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }}
-                h2 {{ color: #ff7b72; margin-top: 30px; }}
-                .box {{ background-color: #161b22; border: 1px solid #30363d; padding: 20px; border-radius: 6px; margin-bottom: 20px; }}
-                .badge {{ background-color: #238636; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; }}
-                ul {{ list-style-type: square; }}
-                li {{ margin-bottom: 8px; }}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 40px; line-height: 1.6; }}
+                h1 {{ color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; font-weight: 600; letter-spacing: 1px; }}
+                h2 {{ color: #2980b9; margin-top: 30px; font-size: 1.2em; border-bottom: 1px solid #ecf0f1; padding-bottom: 5px; }}
+                .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+                .box {{ background-color: #ffffff; border: 1px solid #ddd; padding: 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }}
+                .badge {{ background-color: #34495e; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px; }}
+                .badge-red {{ background-color: #e74c3c; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px; }}
+                ul {{ list-style-type: none; padding-left: 0; }}
+                li {{ margin-bottom: 8px; background: #ecf0f1; padding: 8px; border-radius: 4px; border-left: 3px solid #3498db; }}
+                .header-stats {{ display: flex; justify-content: space-between; background: #ffffff; padding: 15px; border-radius: 6px; margin-bottom: 30px; border: 1px solid #ddd; }}
             </style>
         </head>
         <body>
-            <h1>OMNI-HUNTER // INTELLIGENCE DASHBOARD</h1>
-            <p><strong>Genereret:</strong> {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}</p>
-            <p><strong>Mål/Sag:</strong> {session.get('name', 'Ukendt')}</p>
+            <h1>SAGSRAPPORT // DIGITAL EFTERFORSKNING</h1>
             
-            <div class="box">
-                <h2>🚨 KRITISKE IDENTIFIKATORER</h2>
-                <p><strong>CPR Numre <span class="badge">{len(all_cpr)}</span></strong></p>
-                <ul>{''.join([f"<li>{c}</li>" for c in all_cpr]) if all_cpr else "<li>Ingen fundet</li>"}</ul>
-                
-                <p><strong>Bankkonti <span class="badge">{len(all_bank)}</span></strong></p>
-                <ul>{''.join([f"<li>{b}</li>" for b in all_bank]) if all_bank else "<li>Ingen fundet</li>"}</ul>
-                
-                <p><strong>Email Adresser <span class="badge">{len(all_emails)}</span></strong></p>
-                <ul>{''.join([f"<li>{e}</li>" for e in all_emails]) if all_emails else "<li>Ingen fundet</li>"}</ul>
+            <div class="header-stats">
+                <div><strong>Udskrevet:</strong> {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}</div>
+                <div><strong>Mål:</strong> <span style="color: #c0392b; font-weight: bold;">{session.get('name', 'Ikke angivet').upper()}</span></div>
+                <div><strong>Datamatch Score:</strong> <span class="badge-red">{master_score}</span></div>
             </div>
             
-            <div class="box">
-                <h2>📁 RÅ BEVIS-FILER I SAGSMAPPEN</h2>
-                <ul>{''.join([f"<li>{f.name}</li>" for f in files])}</ul>
+            <div class="grid">
+                <div class="box">
+                    <h2>Kritiske Identifikatorer</h2>
+                    <p><strong>Personnumre (CPR) <span class="badge">{len(all_cpr)}</span></strong></p>
+                    <ul>{''.join([f"<li>{c}</li>" for c in all_cpr]) if all_cpr else "<li>Ingen data</li>"}</ul>
+                    
+                    <p><strong>Telefonnumre <span class="badge">{len(all_phones)}</span></strong></p>
+                    <ul>{''.join([f"<li>+45 {b}</li>" for b in all_phones]) if all_phones else "<li>Ingen data</li>"}</ul>
+                </div>
+                
+                <div class="box">
+                    <h2>Digitalt Fodspor</h2>
+                    <p><strong>Email Adresser <span class="badge">{len(all_emails)}</span></strong></p>
+                    <ul>{''.join([f"<li>{e}</li>" for e in all_emails]) if all_emails else "<li>Ingen data</li>"}</ul>
+                    
+                    <p><strong>Brugernavne / Aliaser <span class="badge">{len(all_usernames)}</span></strong></p>
+                    <ul>{''.join([f"<li>@{u}</li>" for u in all_usernames]) if all_usernames else "<li>Ingen data</li>"}</ul>
+                </div>
+            </div>
+            
+            <div class="box" style="margin-top: 20px;">
+                <h2>Bevismateriale i Sagsmappen ({len(files)} filer)</h2>
+                <ul style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    {''.join([f"<li style='border-left: 3px solid #2ecc71; font-size: 0.9em;'>{f.name}</li>" for f in files])}
+                </ul>
             </div>
         </body>
         </html>
         """
 
         Path(self.report_file).write_text(html_content, encoding='utf-8')
-        print(f"\n{C.GREEN}[✓✓✓] MISSION DASHBOARD GENERERET! Åbn denne fil i din browser: {self.report_file}{C.RESET}")
+        print(f"{C.GREEN}[✓] Sagsrapport genereret succesfuldt!{C.RESET}")
+        print(f"{C.CYAN}    -> Åbn filen: {self.report_file}{C.RESET}")
 
 if __name__ == "__main__":
     args = setup_cli()
-    if args.headless: print("Headless mode aktiveret.")
+    if args.headless: print("Kører i baggrunden uden menu.")
     else: main()

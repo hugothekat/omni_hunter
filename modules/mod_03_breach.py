@@ -1,252 +1,279 @@
 # -*- coding: utf-8 -*-
-import requests
 import json
 import os
-import sys
 import time
+import requests
 import re
 from datetime import datetime
 from pathlib import Path
-from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
 
 from core.utils import C, session
-from core.network import omni_dork_search, CONFIG
+from core.network import http, omni_dork_search
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 class BreachIntelligenceAnalyst:
+    """PETFE GOLIATH V12 - Syndicated Breach & Credential Leak Hunter"""
+    
     def __init__(self, email):
-        self.email = email.strip()
+        self.email = email.strip().lower()
         self.data = {
-            "Email": self.email, 
-            "Paste_Sites": [], 
-            "Andre_Læk_Kilder": [],          
-            "Telegram_Hits": [],             # NY V8 TILFØJELSE: Telegram Leaks
-            "Eksponerede_Passwords": [],     
-            "Data_Leaks": [],
+            "Target": self.email,
+            "Total_Breaches": 0,
+            "Breach_Sources": [],
+            "Eksponerede_Data_Typer": set(),
+            "Lækkede_Passwords_Fundet": False,
+            "Database_Hits": {
+                "HIBP": [],
+                "XposedOrNot": [],
+                "BreachDirectory": []
+            },
+            "Underground_Hits": {
+                "Paste_Leaks": [],
+                "GitHub_Dev_Leaks": [],
+                "Telegram_Hacker_Dumps": [],
+                "Cloud_Trello_Exposures": []
+            },
             "Timestamp": datetime.now().isoformat()
         }
 
     def _update_progress(self, pct, message):
-        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write("\r" + " " * 85 + "\r")
         sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
         sys.stdout.flush()
 
     def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[03] Breach Analyse (XposedOrNot & Credential Harvest V8)\n{'='*60}{C.RESET}")
-        print(f"Target Email: {self.email}\n")
-        
-        self._update_progress(10, "Forbinder til gratis OSINT API (XposedOrNot)")
+        print(f"\n{C.BG_RED}{C.WHITE} {'='*80} {C.RESET}")
+        print(f"{C.BG_RED}{C.WHITE} [03] BREACH & LEAK SYNDICATE HUNTER (GOLIATH V12) {'='*29} {C.RESET}")
+        print(f"[*] Initierer massiv lækage-analyse for e-mail: {C.WHITE}{self.email}{C.RESET}\n")
+
+        # 1. XposedOrNot API
+        self._update_progress(10, "Forespørger globale hacker-databaser (XposedOrNot)")
         self._check_xposedornot()
-        
-        # NY V8 TILFØJELSE: Ekstra HIBP tjek via Frontend
-        self._update_progress(20, "Bekræfter mod HaveIBeenPwned (Frontend)")
-        self._check_hibp_frontend(driver)
-        
-        # HVIS DER ER LEAKS, GÅ DIREKTE PÅ AHMIA/TOR!
-        if self.data["Data_Leaks"]:
-            self._search_darkweb_for_leaks(self.data["Data_Leaks"])
-            
-        self._update_progress(40, "Søger i Cloud Leaks (GitHub, Trello, GDocs)")
-        self._check_cloud_leaks(driver)
 
-        # NY V8 TILFØJELSE: Scanner åbne hacker Telegram-grupper
-        self._update_progress(50, "Scanner Telegram API for hacker-dumps")
-        self._check_telegram_leaks()
-
-        self._update_progress(70, "Bygger massiv Paste-Dork")
-        print(f"\n{C.YELLOW}[*] Udfører High-Speed Dorking mod Paste-sites...{C.RESET}")
-        
-        sites = ["pastebin.com", "throwbin.io", "ghostbin.co", "rentry.co", "controlc.com", "justpaste.it"]
-        sites_query = " OR ".join([f"site:{site}" for site in sites])
-        dork = f'({sites_query}) "{self.email}"'
-        
-        links = omni_dork_search(driver, dork, max_links=5)
-        
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        if links:
-            for link in links:
-                print(f"{C.GREEN}    🔥 PASTE FUNDET: {link['url'][:80]}{C.RESET}")
-                if link["url"] not in self.data["Paste_Sites"]:
-                    self.data["Paste_Sites"].append(link["url"])
-                    
-                snippet = link.get('snippet', '')
-                self._extract_credentials_from_text(snippet, "Google Snippet")
+        # 2. HaveIBeenPwned Live Scrape
+        if driver:
+            self._update_progress(30, "Infiltrerer HaveIBeenPwned Frontend (Stealth Mode)")
+            self._scrape_hibp_frontend(driver)
         else:
-            print(f"{C.DIM}    [-] Ingen Paste-lækager fundet via Google.{C.RESET}")
+            print(f"\n{C.RED}[!] Ingen browser-driver tilgængelig. Springer dyb HIBP-scanning over.{C.RESET}")
 
-        if self.data["Paste_Sites"]:
-            self._update_progress(90, "Udfører Deep Scrape for at høste Passwords")
-            self._deep_scrape_pastes(driver)
+        # 3. BreachDirectory API
+        self._update_progress(45, "Krydstjekker data mod BreachDirectory API")
+        self._check_breach_directory()
 
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        print(f"\n{C.GREEN}[✓] Breach-analyse 100% fuldført.{C.RESET}")
-        
-        if self.data["Eksponerede_Passwords"]:
-            print(f"\n{C.RED}--- 🚨 KRITISKE CREDENTIALS FUNDET 🚨 ---{C.RESET}")
-            for pwd in self.data["Eksponerede_Passwords"]:
-                masked_pwd = pwd[:3] + "*" * (len(pwd)-5) + pwd[-2:] if len(pwd) > 5 else "***"
-                print(f"{C.RED}    [!] Muligt Password Lækket: {masked_pwd}{C.RESET}")
-            print(f"{C.YELLOW}    (Fulde passwords er gemt i JSON-rapporten){C.RESET}")
+        # 4. GitHub & GitLab Leaks
+        if driver:
+            self._update_progress(60, "Skanner GitHub/GitLab for Hardcodede Passwords")
+            self._hunt_github_leaks(driver)
 
+        # 5. Telegram & Dark-Forums
+        if driver:
+            self._update_progress(75, "Skanner Telegram (t.me) for russiske Combo-Dumps")
+            self._hunt_telegram_dumps(driver)
+
+        # 6. Cloud & Trello Boards
+        if driver:
+            self._update_progress(85, "Skanner åbne Trello-boards og Google Docs")
+            self._hunt_cloud_trello(driver)
+
+        # 7. Paste Sites
+        if driver:
+            self._update_progress(95, "Dorker Pastebin/Ghostbin for rå log-filer")
+            self._dork_pastes(driver)
+
+        sys.stdout.write("\r" + " " * 85 + "\r")
+        print(f"{C.GREEN}[✓] Breach & Leak Analyse 100% fuldført.{C.RESET}")
+
+        # Sammenfatning og gem
+        self._summarize_results()
         self.save()
 
     def _check_xposedornot(self):
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        print(f"{C.YELLOW}[*] Slår op i globale Hacker-databaser (XposedOrNot API)...{C.RESET}")
-        
-        url = f"https://api.xposedornot.com/v1/check-email/{self.email}"
+        """Tjekker XposedOrNot API for lynhurtige hits"""
+        print(f"\n{C.YELLOW}    [*] XposedOrNot Intelligence:{C.RESET}")
         try:
+            url = f"https://api.xposedornot.com/v1/checkbacklink?email={self.email}"
             res = requests.get(url, timeout=10)
             if res.status_code == 200:
                 data = res.json()
-                breaches = data.get("breaches", [])
-                if breaches:
-                    print(f"{C.RED}    🔥 KRITISK: Emailen findes i {len(breaches)} datalæk!{C.RESET}")
-                    for b in breaches[:10]:
-                        print(f"{C.YELLOW}      -> Lækket i (XposedOrNot): {b}{C.RESET}")
-                        if b not in self.data["Data_Leaks"]:
-                            self.data["Data_Leaks"].append(b)
-                    if len(breaches) > 10:
-                        print(f"{C.DIM}      -> ... og {len(breaches)-10} mere.{C.RESET}")
+                breaches = data.get("Breaches", [])
+                for b in breaches:
+                    name = b[0] if isinstance(b, list) else b
+                    if name not in self.data["Database_Hits"]["XposedOrNot"]:
+                        self.data["Database_Hits"]["XposedOrNot"].append(name)
+                        self.data["Breach_Sources"].append(name)
+                print(f"{C.GREEN}      ✓ XposedOrNot bekræfter {len(breaches)} lækager.{C.RESET}")
             elif res.status_code == 404:
-                print(f"{C.GREEN}    ✓ Ingen hits i XposedOrNot databasen.{C.RESET}")
+                print(f"{C.DIM}      [-] E-mail ikke fundet i XposedOrNot databasen.{C.RESET}")
             else:
-                print(f"{C.DIM}    [-] API gav ukendt statuskode: {res.status_code}{C.RESET}")
+                print(f"{C.DIM}      [-] XposedOrNot returnerede ukendt status: {res.status_code}.{C.RESET}")
         except Exception as e:
-            print(f"{C.RED}    [-] Forbindelsesfejl til XposedOrNot: {e}{C.RESET}")
+            print(f"{C.RED}      [!] Fejl ved kontakt til XposedOrNot: {e}{C.RESET}")
 
-    def _check_hibp_frontend(self, driver):
-        """NY V8 TILFØJELSE: Frontend bypass tjek af HaveIBeenPwned (Kræver ingen API nøgle)"""
-        print(f"\n{C.YELLOW}[*] Udfører Frontend Bypass-tjek på HaveIBeenPwned...{C.RESET}")
-        if not driver: return
-        
-        # Vi dorker HIBP indirekte, da direkte opslag blockes uden API
-        dork = f'site:haveibeenpwned.com "{self.email}"'
-        links = omni_dork_search(driver, dork, max_links=2)
-        if links:
-            print(f"{C.RED}    [!] ADVARSEL: Muligt HIBP Index fundet!{C.RESET}")
-            for l in links:
-                print(f"{C.DIM}      -> {l['url']}{C.RESET}")
-        else:
-            print(f"{C.GREEN}    ✓ Ingen åbne HIBP indekseringer fundet på Google.{C.RESET}")
-
-    def _search_darkweb_for_leaks(self, breaches):
-        """Søger direkte efter specifikke leaks (f.eks Jefit) + e-mail på Ahmia (Tor)"""
-        print(f"\n{C.YELLOW}[*] INITIERER DARKWEB LEAK-JAGT (Søger efter rå dumps for de fundne leaks)...{C.RESET}")
-        req_session = requests.Session()
-        
-        ahmia_onion = "http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion/search/"
-        ahmia_clear = "https://ahmia.fi/search/"
-        
-        if CONFIG.get("use_tor_proxy"):
-            print(f"{C.CYAN}    -> Ruter gennem TOR proxy for maksimal dækning...{C.RESET}")
-            req_session.proxies = {
-                'http': CONFIG.get("tor_proxy_url", "socks5h://127.0.0.1:9050"), 
-                'https': CONFIG.get("tor_proxy_url", "socks5h://127.0.0.1:9050")
-            }
-            base_url = ahmia_onion
-        else:
-            base_url = ahmia_clear
-            
-        for leak in breaches[:3]: 
-            query = f'"{leak}" AND "{self.email}" AND (password OR dump OR sql)'
-            print(f"{C.DIM}    -> Graver i The Deep Web for: {query}{C.RESET}")
-            
-            search_url = f"{base_url}?q={requests.utils.quote(query)}"
-            try:
-                res = req_session.get(search_url, timeout=20)
-                if "searchResultsItem" in res.text:
-                    print(f"{C.RED}    🔥 DARKWEB HIT: Fandt mulige raw dumps for {leak}!{C.RESET}")
-                    soup = BeautifulSoup(res.text, 'html.parser')
-                    for item in soup.find_all('li', class_='searchResultsItem')[:2]:
-                        link_tag = item.find('cite')
-                        if link_tag:
-                            onion_link = link_tag.text.strip()
-                            print(f"{C.CYAN}      -> Link: {onion_link}{C.RESET}")
-                            self.data["Andre_Læk_Kilder"].append(onion_link)
-                else:
-                    print(f"{C.DIM}      [-] Ingen offentlige .onion dumps fundet for denne combo.{C.RESET}")
-            except Exception as e:
-                print(f"{C.DIM}      [-] Darkweb/Tor timeout eller fejl: {e}{C.RESET}")
-
-    def _check_cloud_leaks(self, driver):
-        print(f"\n{C.YELLOW}[*] Dorking Cloud & Dev miljøer for fejlkonfigurationer...{C.RESET}")
-        if not driver: return
-        
-        dork = f'(site:gist.github.com OR site:trello.com OR site:docs.google.com) "{self.email}"'
-        links = omni_dork_search(driver, dork, max_links=3)
-        
-        if links:
-            for link in links:
-                print(f"{C.RED}    🔥 LÆK I CLOUD/DEV MILJØ: {link['url'][:80]}{C.RESET}")
-                if link["url"] not in self.data["Andre_Læk_Kilder"]:
-                    self.data["Andre_Læk_Kilder"].append(link["url"])
-                self._extract_credentials_from_text(link.get('snippet', ''), "Cloud Snippet")
-        else:
-            print(f"{C.DIM}    [-] Ingen hits i Cloud/Dev miljøer.{C.RESET}")
-
-    def _check_telegram_leaks(self):
-        """NY V8 TILFØJELSE: Direkte API-kald mod Telegram Web via søgning for at finde dumps"""
-        print(f"\n{C.YELLOW}[*] Tjekker Telegram (t.me) for hacker-groups via søgemaskiner...{C.RESET}")
-        url = f"https://html.duckduckgo.com/html/?q=site:t.me {requests.utils.quote(self.email)} password"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    def _scrape_hibp_frontend(self, driver):
+        """V12: Stealth Scraping der fanger de allernyeste leaks som Internet Archive"""
+        print(f"\n{C.YELLOW}    [*] HaveIBeenPwned Live Scraper:{C.RESET}")
         try:
-            res = requests.get(url, headers=headers, timeout=10)
-            links = re.findall(r'href="([^"]+)"', res.text)
-            clean_links = [urllib.parse.unquote(l.split('uddg=')[1].split('&')[0]) for l in links if 'uddg=' in l and 't.me' in l]
+            driver.get("https://haveibeenpwned.com/")
+            time.sleep(3) # Tillad Cloudflare at validere os
             
-            if clean_links:
-                print(f"{C.RED}    🔥 ADVARSEL: E-mail nævnt i åbne Telegram-grupper!{C.RESET}")
-                for cl in clean_links[:3]:
-                    print(f"{C.DIM}      -> {cl}{C.RESET}")
-                    if cl not in self.data["Telegram_Hits"]:
-                        self.data["Telegram_Hits"].append(cl)
-            else:
-                print(f"{C.DIM}    [-] Ingen hits på Telegram.{C.RESET}")
-        except Exception:
-            pass
-
-    def _deep_scrape_pastes(self, driver):
-        print(f"\n{C.YELLOW}[*] Credential Harvest: Scraper Paste-sites for rå passwords...{C.RESET}")
-        if not driver: return
-        
-        for url in self.data["Paste_Sites"][:3]: 
-            print(f"{C.DIM}    -> Åbner Paste: {url}{C.RESET}")
             try:
-                driver.get(url)
-                time.sleep(2)
-                try:
-                    for btn in driver.find_elements(By.TAG_NAME, "button"):
-                        if any(x in btn.text.lower() for x in ["agree", "accept", "got it", "tillad"]):
-                            btn.click(); time.sleep(1); break
-                except: pass
-                
-                page_text = driver.find_element(By.TAG_NAME, "body").text
-                self._extract_credentials_from_text(page_text, url)
-            except Exception as e:
-                print(f"{C.DIM}    [-] Fejl ved deep-scrape af {url}: {e}{C.RESET}")
+                search_box = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.ID, "Account"))
+                )
+                search_box.clear()
+                search_box.send_keys(self.email)
+                search_box.send_keys(Keys.ENTER)
+            except TimeoutException:
+                print(f"{C.RED}      [!] Kunne ikke finde HIBP søgefelt (Cloudflare blokering mulig).{C.RESET}")
+                return
 
-    def _extract_credentials_from_text(self, text, source):
-        # NY V8 TILFØJELSE: Regex tager nu både :, ; og | som separator!
-        safe_email = re.escape(self.email)
-        pattern = re.compile(rf'{safe_email}[:;\|]([^\s<>"\'/]+)')
-        matches = pattern.findall(text)
+            # Vent på at AJAX requestet henter resultaterne frem
+            time.sleep(5) 
+            source = driver.page_source
+            
+            if "pwnedCompanyTitle" in source or "Oh no — pwned!" in source:
+                breach_elements = driver.find_elements(By.CSS_SELECTOR, ".pwnedCompanyTitle")
+                count = 0
+                for el in breach_elements:
+                    breach_name = el.text.strip()
+                    if breach_name and breach_name not in self.data["Breach_Sources"]:
+                        self.data["Database_Hits"]["HIBP"].append(breach_name)
+                        self.data["Breach_Sources"].append(breach_name)
+                        print(f"{C.RED}      🔥 KRITISK LÆKAGE BEKRÆFTET LOKALT: {breach_name}{C.RESET}")
+                        count += 1
+                
+                # Udtræk kompromitterede datatyper (Passwords, IP, etc)
+                data_points = driver.find_elements(By.CSS_SELECTOR, ".dataClasses")
+                for dp in data_points:
+                    for tag in dp.text.split(','):
+                        clean_tag = tag.strip()
+                        self.data["Eksponerede_Data_Typer"].add(clean_tag)
+                        if "password" in clean_tag.lower():
+                            self.data["Lækkede_Passwords_Fundet"] = True
+                            
+                if count == 0:
+                    print(f"{C.DIM}      [-] Fandt 'Pwned' markør, men kunne ikke parse firmanavne.{C.RESET}")
+            else:
+                print(f"{C.GREEN}      ✓ HaveIBeenPwned melder e-mailen ren for offentlige lækager.{C.RESET}")
+        except Exception as e:
+            print(f"{C.DIM}      [-] Scraping afbrudt uventet: {e}{C.RESET}")
+
+    def _check_breach_directory(self):
+        """V12: Gendannet logik. Sender uofficielt request til deres free-tier."""
+        print(f"\n{C.YELLOW}    [*] BreachDirectory Intelligence:{C.RESET}")
+        try:
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"}
+            url = f"https://breachdirectory.org/api/search?key=free&term={self.email}"
+            res = requests.get(url, headers=headers, timeout=10)
+            
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("success") and data.get("found", 0) > 0:
+                    sources = data.get("sources", [])
+                    print(f"{C.RED}      🔥 BreachDirectory fandt {data.get('found')} kilder!{C.RESET}")
+                    for src in sources:
+                        name = src.get("name", "Ukendt")
+                        if name not in self.data["Breach_Sources"]:
+                            self.data["Database_Hits"]["BreachDirectory"].append(name)
+                            self.data["Breach_Sources"].append(name)
+                            print(f"{C.CYAN}        -> Kilde: {name}{C.RESET}")
+                else:
+                    print(f"{C.DIM}      [-] Ingen hits hos BreachDirectory.{C.RESET}")
+            else:
+                print(f"{C.DIM}      [-] BreachDirectory API afviste requestet (HTTP {res.status_code}).{C.RESET}")
+        except Exception as e: 
+            print(f"{C.DIM}      [-] Kunne ikke forbinde til BreachDirectory: {e}{C.RESET}")
+
+    def _hunt_github_leaks(self, driver):
+        """Søger efter e-mailen i kildekode for at finde hardcodede passwords/tokens"""
+        print(f"\n{C.YELLOW}    [*] GitHub/GitLab Leak Scanner:{C.RESET}")
+        dork = f'site:github.com OR site:gitlab.com "{self.email}" (password OR secret OR API_KEY OR token)'
+        hits = omni_dork_search(driver, dork, max_links=4)
+        if hits:
+            print(f"{C.RED}      [!] ADVARSEL: Målets e-mail optræder i kildekode (Potentielt Hardcoded Credential)!{C.RESET}")
+            for h in hits:
+                print(f"        -> {h['url']}")
+                self.data["Underground_Hits"]["GitHub_Dev_Leaks"].append(h['url'])
+        else:
+            print(f"{C.DIM}      [-] Ingen åbenlyse kode-leaks fundet.{C.RESET}")
+
+    def _hunt_telegram_dumps(self, driver):
+        """Jagt på russiske/underground Telegram combo-lister"""
+        print(f"\n{C.YELLOW}    [*] Telegram Combo-Dump Scanner:{C.RESET}")
+        dork = f'site:t.me "{self.email}" (combo OR dump OR leak OR password OR log)'
+        hits = omni_dork_search(driver, dork, max_links=3)
+        if hits:
+            print(f"{C.RED}      🔥 KRITISK: E-mailen optræder i offentlige Telegram Hacker-grupper!{C.RESET}")
+            for h in hits:
+                print(f"        -> {h['url']}")
+                self.data["Underground_Hits"]["Telegram_Hacker_Dumps"].append(h['url'])
+        else:
+            print(f"{C.DIM}      [-] Ingen Telegram hacker-spor fundet via søgemaskiner.{C.RESET}")
+
+    def _hunt_cloud_trello(self, driver):
+        """Tjekker fejlkonfigurerede Trello boards og Google Docs"""
+        print(f"\n{C.YELLOW}    [*] Cloud Misconfiguration Scanner:{C.RESET}")
+        dork = f'site:trello.com OR site:docs.google.com/document/d/ "{self.email}"'
+        hits = omni_dork_search(driver, dork, max_links=3)
+        if hits:
+            print(f"{C.YELLOW}      [!] E-mail eksponeret i åbne Cloud/Trello dokumenter!{C.RESET}")
+            for h in hits:
+                print(f"        -> {h['url']}")
+                self.data["Underground_Hits"]["Cloud_Trello_Exposures"].append(h['url'])
+        else:
+            print(f"{C.DIM}      [-] Ingen åbne Cloud/Trello eksponeringer fundet.{C.RESET}")
+
+    def _dork_pastes(self, driver):
+        """Søger efter e-mailen i rå paste-dumps"""
+        print(f"\n{C.YELLOW}    [*] Pastebin/Raw Dump Scanner:{C.RESET}")
+        dork = f'site:pastebin.com OR site:ghostbin.co OR site:paste.ee OR site:controlc.com "{self.email}"'
+        hits = omni_dork_search(driver, dork, max_links=5)
+        if hits:
+            print(f"{C.RED}      [!] E-MAIL FUNDET I RÅ PASTE DUMPS (Sandsynlig Combo-liste):{C.RESET}")
+            for h in hits:
+                print(f"        -> {h['url']}")
+                self.data["Underground_Hits"]["Paste_Leaks"].append(h['url'])
+        else:
+            print(f"{C.DIM}      [-] Ingen Paste-lækager fundet via Google.{C.RESET}")
+
+    def _summarize_results(self):
+        # Rens og fjern dubletter på tværs af de 3 databaser
+        unique_sources = set(self.data["Breach_Sources"])
+        self.data["Total_Breaches"] = len(unique_sources)
+        self.data["Breach_Sources"] = list(unique_sources)
+        self.data["Eksponerede_Data_Typer"] = list(self.data["Eksponerede_Data_Typer"])
         
-        for pwd in matches:
-            if pwd.lower() not in ["http", "https"] and len(pwd) > 3:
-                if pwd not in self.data["Eksponerede_Passwords"]:
-                    self.data["Eksponerede_Passwords"].append(pwd)
-                    print(f"{C.MAGENTA}      ✓ Credential udtræk lykkedes fra {source}!{C.RESET}")
+        print(f"\n{C.CYAN}--- [ GOLIATH V12: BREACH SUMMARY FOR {self.email} ] ---{C.RESET}")
+        
+        if self.data["Total_Breaches"] > 0:
+            print(f"{C.BG_RED}{C.WHITE} !!! MÅLET ER EKSPONERET I {self.data['Total_Breaches']} VERIFICEREDE DATALÆKAGER !!! {C.RESET}")
+            print(f"{C.MAGENTA}[+] Lækage-kilder: {', '.join(self.data['Breach_Sources'])}{C.RESET}")
+            
+            if self.data["Eksponerede_Data_Typer"]:
+                print(f"{C.MAGENTA}[+] Kompromitterede Typer: {', '.join(self.data['Eksponerede_Data_Typer'])}{C.RESET}")
+                
+            if self.data["Lækkede_Passwords_Fundet"]:
+                print(f"{C.RED}🔥 ALARM: Passwords er bekræftet lækket i et eller flere af disse breaches!{C.RESET}")
+                print(f"{C.RED}   -> Kør Modul 17 (Sniper) eller Modul 18 (IMAP Ripper) for at udnytte dette.{C.RESET}")
+        else:
+            print(f"{C.GREEN}[✓] Ingen verificerede lækager fundet i de store databaser.{C.RESET}")
+
+        # Opsummering af Underground Hits
+        total_ug = sum(len(v) for v in self.data["Underground_Hits"].values())
+        if total_ug > 0:
+            print(f"\n{C.YELLOW}[!] Der blev fundet {total_ug} undergrunds/Cloud eksponeringer!{C.RESET}")
+            print(f"{C.DIM}    Se den gemte JSON-rapport for direkte links.{C.RESET}")
 
     def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/03_BREACH_{self.email.replace('@', '_at_')}.json"
+        os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
+        safe_email = self.email.replace("@", "_at_").replace(".", "_")
+        filename = f"{session.get('loot_folder', 'loot_evidence')}/03_BREACH_{safe_email}.json"
         
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)
+        print(f"\n{C.GREEN}[✓] Udvidet Breach-rapport gemt sikkert: {filename}{C.RESET}")

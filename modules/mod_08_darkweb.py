@@ -45,7 +45,7 @@ class DarkwebScanner:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0"}
         
         try:
-            res = req_session.get(url, headers=headers, timeout=20)
+            res = req_session.get(url, headers=headers, timeout=60)
             
             soup = BeautifulSoup(res.text, 'html.parser')
             results = soup.find_all('li', class_='searchResultsItem')
@@ -143,3 +143,5 @@ class DarkwebScanner:
                 
         Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
         print(f"\n{C.GREEN}[✓] Dark Web rapport gemt ({len(self.data['Onion_Hits'])} Ahmia-fund, {len(self.data['Clearnet_Onion_Spor'])} Clearnet-fund): {filename}{C.RESET}")
+
+DarkWebIntelligence = DarkwebScanner

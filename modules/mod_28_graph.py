@@ -9,7 +9,7 @@ from core.utils import C, session
 class GoliathGraphExporter:
     """GOLIATH V8: Universal Link Analysis Engine til Maltego, Gephi & Obsidian."""
     def __init__(self):
-        self.loot_dir = session["loot_folder"]
+        self.loot_dir = session.get("loot_folder", "loot_evidence")
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
         self.csv_file = f"GOLIATH_NETWORK_MAP_{self.timestamp}.csv"
         self.edges = []
@@ -20,7 +20,7 @@ class GoliathGraphExporter:
         files = list(Path(self.loot_dir).glob("*.json"))
         
         if not files:
-            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet. Kør nogle skanninger først!{C.RESET}")
+            print(f"{C.YELLOW}[!] Ingen JSON-rapporter fundet i {self.loot_dir}. Kør nogle skanninger først!{C.RESET}")
             return
 
         print(f"{C.YELLOW}[*] Konstruerer relations-matrix ud fra {len(files)} bevisfiler...{C.RESET}")
@@ -38,19 +38,19 @@ class GoliathGraphExporter:
             print(f"{C.RED}[!] Ingen brugbare relationer fundet i dataen.{C.RESET}")
 
     def _process_json_logic(self, data, filename):
-        """Intelligent mapping af edges baseret på modul-output"""
+        """Intelligent mapping af edges baseret på tværgående modul-output"""
         
-        # 1. PERSONDATA & EMAILS (Modul 01, 04, 06, 09)
+        # 1. PERSONDATA & EMAILS
         if "Email" in data or "Brugernavn" in data:
             uid = data.get("Email") or data.get("Brugernavn")
             self.edges.append([self.target_name, "Relateret_Til", uid])
             
-            # Breach relationer
+            # Breach relationer (Modul 03 / Modul 05)
             if "Data_Leaks" in data:
                 for leak in data["Data_Leaks"]:
                     self.edges.append([uid, "Eksponeret_I", leak.get("Name", "Ukendt Læk")])
 
-        # 2. TELEFON & VEJER (Modul 01, 12, 20)
+        # 2. TELEFONNUMRE & BOPÆL
         if "Telefonnumre" in data:
             for tlf in data["Telefonnumre"]:
                 self.edges.append([self.target_name, "Bruger_Telefon", tlf])
@@ -59,19 +59,17 @@ class GoliathGraphExporter:
             addr = f"{data['Ejendom']['Vej']}, {data['Ejendom']['By']}"
             self.edges.append([self.target_name, "Bopæl", addr])
 
-        # 3. NETVÆRK & IP (Modul 10, 21)
+        # 3. NETVÆRK & IP (Modul 10 / Modul 21)
         if "IP" in data:
             ip = data["IP"]
             self.edges.append([self.target_name, "Forbundet_Til_IP", ip])
             if data.get("Reverse_DNS"):
                 self.edges.append([ip, "Opløser_Til", data["Reverse_DNS"]])
-            for vhost in data.get("Virtual_Hosts", []):
-                self.edges.append([ip, "Hoster_Domæne", vhost])
 
         if "BSSID" in data:
             bssid = data["BSSID"]
             self.edges.append([self.target_name, "Set_Nær_BSSID", bssid])
-            if data.get("Producent_OUI"):
+            if data.get("Producent_OUI") and data["Producent_OUI"] != "Ukendt":
                 self.edges.append([bssid, "Hardware_Fra", data["Producent_OUI"]])
 
         # 4. KØRETØJER (Modul 20)
@@ -92,15 +90,13 @@ class GoliathGraphExporter:
         # 6. TITAN MASS-SCAN (Modul 16)
         if "Case_Intelligence" in data:
             intel = data["Case_Intelligence"]
-            # Map emails fra mapper
             for email in intel.get("Digital_Footprint", {}).get("Emails", {}):
                 self.edges.append(["TITAN_Dataset", "Fundet_Email", email])
-            # Map CVR/Bank
             for bank in intel.get("Financial_Leads", {}).get("Bankkonti", []):
                 self.edges.append([self.target_name, "Tilknyttet_Bank", bank])
 
     def _write_csv(self):
-        # Fjern dubletter via set-mønster
+        # Fjern dubletter via set-mønster for at undgå "spaghetti-graf"
         unique_edges = []
         seen = set()
         for edge in self.edges:
@@ -111,13 +107,15 @@ class GoliathGraphExporter:
 
         file_path = os.path.join(self.loot_dir, self.csv_file)
         
-        # Sikker overskrivning
+        # Sikker fil-overskrivning
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try: os.remove(file_path)
+            except: pass
 
         with open(file_path, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(["Source", "Edge Type", "Target"]) # Standard Maltego format
+            # Standard headers for Maltego og Gephi import
+            writer.writerow(["Source", "Edge Type", "Target"]) 
             writer.writerows(unique_edges)
 
         print(f"{C.GREEN}[✓] Relations-netværk eksporteret succesfuldt!{C.RESET}")
