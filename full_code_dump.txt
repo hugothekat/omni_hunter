@@ -1,14 +1,15 @@
 --- FIL: ./core/__init__.py ---
 --- FIL: ./core/browser.py ---
 # -*- coding: utf-8 -*-
+import undetected_chromedriver as uc
+import random
 import time
 import os
 import json
 import re
-import random # NY V8 FIX: Nødvendig for human_typing og human_scroll
-from datetime import datetime
 
-import undetected_chromedriver as uc
+from core.network import CONFIG
+from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,169 +17,147 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from core.utils import C, session
 
-# NY V8 TILFØJELSE: Pulje af moderne, valide User-Agents til at undgå fingerprinting
+# Udvidet pulje af moderne User-Agents for maksimal diversitet
 UAS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 ]
 
-def get_stealth_driver():
-    """GOLIATH V8: Undetected Chromedriver i HEADLESS mode med CDP Anti-Bot Masking"""
-    from core.network import CONFIG 
+def _get_fresh_options():
+    """Hjælpe-funktion der sikrer vi altid får et ubrugt options-objekt"""
+    from core.network import CONFIG
+    import undetected_chromedriver as uc
+    import random
+
+    opt = uc.ChromeOptions()
+    opt.add_argument("--headless=new") 
+    opt.add_argument("--no-sandbox")
+    opt.add_argument("--disable-dev-shm-usage")
+    opt.add_argument("--window-size=1920,1080")
+    opt.add_argument("--disable-notifications")
+    opt.add_argument("--disable-popup-blocking")
+    opt.add_argument("--lang=da-DK")
     
-    options = uc.ChromeOptions()
-    
-    # 🚨 AKTIVERET: Gør browseren totalt usynlig
-    options.add_argument("--headless=new") 
-    
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-notifications")
-    options.add_argument("--disable-popup-blocking")
-    
-    # Stealth indstillinger for at undgå detektering i headless mode
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument(f'--user-agent={random.choice(UAS)}') # NY V8: Roterende UA
+    # Stealth indstillinger
+    opt.add_argument('--disable-blink-features=AutomationControlled')
+    # Vi vælger en frisk UA her hver gang
+    opt.add_argument(f'--user-agent={random.choice(UAS)}')
     
     if CONFIG.get("use_tor_proxy"):
         proxy = CONFIG.get("tor_proxy_url", "socks5://127.0.0.1:9050")
-        options.add_argument(f'--proxy-server={proxy}')
+        opt.add_argument(f'--proxy-server={proxy}')
+        
+    return opt
+
+def get_stealth_driver():
+    """GOLIATH V9: Fikset 'cannot reuse' ved at kalde hjælpefunktion"""
     
-    # V8 NOTE: Hvis version_main=147 crasher i fremtiden (fordi Chrome opdaterer sig selv på din PC), 
-    # kan du prøve at fjerne ', version_main=147' parameteren, så UC selv finder versionen.
     try:
-        driver = uc.Chrome(options=options, version_main=147)
-    except Exception as e:
-        print(f"{C.YELLOW}[!] Fejl med fastlåst Chrome version. Forsøger auto-detektion...{C.RESET}")
-        driver = uc.Chrome(options=options)
+        # Første forsøg: Vi beder om et friskt objekt
+        driver = uc.Chrome(options=_get_fresh_options())
+    except Exception:
+        # Fallback: Vi beder om et HELT NYT objekt, da det første er 'brugt'
+        driver = uc.Chrome(options=_get_fresh_options(), version_main=147)
     
-    # --- NY V8 TILFØJELSE: CDP (Chrome DevTools Protocol) Anti-Bot Injektion ---
-    # Fjerner navigator.webdriver flaget, før nogen hjemmeside når at læse det
+    # CDP Anti-Bot Injektion (Bevaret 100%)
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
         'source': '''
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             window.chrome = { runtime: {} };
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'da', 'en-US', 'en']});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'da']});
         '''
     })
     
-    driver.implicitly_wait(5)
-    driver.set_page_load_timeout(30)
+    driver.implicitly_wait(7)
+    driver.set_page_load_timeout(35)
     return driver
 
 def zap_cookies(driver):
-    """GOLIATH V8: Advanced Cookie Zapper (XPath, CSS & Shadow DOM Piercing)"""
-    # 1. Standard Selenium XPath clicker
-    terms = ['Accepter', 'OK', 'Godkend', 'Tillad', 'Accept all', 'Acceptér', 'Forstået', 'Tillad alle']
+    """GOLIATH V9: Cookie-Zapper med udvidet dansk ordbog"""
+    # Vi lader som om vi er en person der læser siden før vi klikker
+    time.sleep(random.uniform(0.5, 1.2))
+    
+    terms = ['Accepter', 'OK', 'Godkend', 'Tillad', 'Accept all', 'Acceptér', 'Forstået', 'Tillad alle', 'Sæt i gang']
     try:
         xpath = "//button[" + " or ".join([f"contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{t.lower()}')" for t in terms]) + "]"
-        btns = WebDriverWait(driver, 1.5).until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+        btns = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
         if btns:
-            driver.execute_script("arguments[0].click();", btns[0]) # Mere pålidelig end .click() hvis elementet er dækket
-            time.sleep(0.5)
+            # Scroll hen til knappen for at simulere visuel fokus
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btns[0])
+            time.sleep(0.3)
+            driver.execute_script("arguments[0].click();", btns[0])
             return True
     except Exception: pass
     
-    # 2. CSS Selectors fallback
-    try:
-        selectors = ["button.cookie-accept", "button[class*='cookie']", "button[class*='consent']", "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"]
-        for selector in selectors:
-            try:
-                btn = driver.find_element(By.CSS_SELECTOR, selector)
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.5)
-                return True
-            except Exception:
-                continue
-    except Exception: pass
-
-    # 3. NY V8 TILFØJELSE: Shadow DOM Piercing via JavaScript (Dræber Usercentrics m.fl.)
+    # Shadow DOM Fallback (Vigtig for moderne Consent-managers)
     shadow_js = """
-    try {
-        let hosts = document.querySelectorAll('*');
-        for (let host of hosts) {
-            if (host.shadowRoot) {
-                let btns = host.shadowRoot.querySelectorAll('button');
-                for (let btn of btns) {
-                    let txt = btn.innerText.toLowerCase();
-                    if (txt.includes('accept') || txt.includes('tillad') || txt.includes('godkend')) {
-                        btn.click();
-                        return true;
-                    }
+    let success = false;
+    document.querySelectorAll('*').forEach(host => {
+        if (host.shadowRoot) {
+            host.shadowRoot.querySelectorAll('button').forEach(btn => {
+                let txt = btn.innerText.toLowerCase();
+                if (txt.includes('accepter') || txt.includes('tillad') || txt.includes('accept')) {
+                    btn.click();
+                    success = true;
                 }
-            }
+            });
         }
-    } catch(e) {}
-    return false;
+    });
+    return success;
     """
     try:
         if driver.execute_script(shadow_js):
-            time.sleep(0.5)
             return True
     except Exception: pass
 
     return False
 
 def capture_evidence(driver, name):
-    """GOLIATH V8: Sikrer bevismateriale lokalt."""
+    """GOLIATH V9: Full-Page Evidence Capture"""
     timestamp = datetime.now().strftime("%H%M%S")
     os.makedirs(session.get('loot_folder', './loot'), exist_ok=True)
     path = f"{session.get('loot_folder', './loot')}/SCREENSHOT_{name}_{timestamp}.png"
     
     try:
-        # NY V8 TILFØJELSE: Forsøger at fange fuld skærmhøjde for at få alt med
         total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
         driver.set_window_size(1920, total_height)
-        time.sleep(0.5)
-        
+        time.sleep(0.8)
         driver.save_screenshot(path)
-        print(f"{C.GREEN}    [📷] Bevismateriale sikret lokalt: {path}{C.RESET}")
+        print(f"{C.GREEN}    [📷] Bevismateriale sikret: {path}{C.RESET}")
     except Exception as e:
-        print(f"{C.DIM}    [!] Fejl ved bevissikring: {e}{C.RESET}")
-
-def safe_driver_action(driver, action_func, timeout=10, action_name=""):
-    """Sikker wrapper til ustabile DOM elementer"""
-    try:
-        return action_func(driver)
-    except (TimeoutException, NoSuchElementException, Exception) as e:
-        # Skjuler unødvendigt støj, returnerer None så modulet kan håndtere fejlen elegant
-        return None
+        print(f"{C.DIM}    [!] Screenshot fejlede: {e}{C.RESET}")
 
 def human_typing(element, text):
-    """Simulerer menneskelig skrivehastighed med mikropauser"""
+    """Simulerer fejl og rettelser under skrivning (Meget stærkt mod Captcha)"""
     for char in text:
+        # 5% chance for at skrive et forkert tegn og slette det igen
+        if random.random() < 0.05:
+            element.send_keys(random.choice('abcdefghijklmnopqrstuvwxyz'))
+            time.sleep(random.uniform(0.1, 0.3))
+            element.send_keys('\b') 
+            
         element.send_keys(char)
-        # Tilføj en lille tilfældig pause mellem 0.05 og 0.2 sekunder
-        time.sleep(random.uniform(0.05, 0.2))
+        time.sleep(random.uniform(0.05, 0.15))
 
 def human_scroll(driver):
-    """Simulerer at en rigtig person læser siden ved at scrolle ujævnt"""
+    """GOLIATH V9: Ujævn scrolling der efterligner menneskelig adfærd"""
     try:
         total_height = driver.execute_script("return document.body.scrollHeight")
-        current_position = 0
-        
-        while current_position < total_height:
-            # Scroll et tilfældigt antal pixels ned
-            scroll_step = random.randint(150, 400)
-            current_position += scroll_step
-            driver.execute_script(f"window.scrollTo(0, {current_position});")
-            # Vent som om vi kigger på indholdet
-            time.sleep(random.uniform(0.5, 1.5))
+        current_pos = 0
+        while current_pos < total_height:
+            step = random.randint(200, 500)
+            current_pos += step
+            driver.execute_script(f"window.scrollTo(0, {current_pos});")
+            time.sleep(random.uniform(0.4, 1.1))
             
-            # 10% chance for at vi "fortryder" og scroller lidt op igen
-            if random.random() < 0.10:
-                driver.execute_script(f"window.scrollBy(0, -{random.randint(50, 150)});")
-                time.sleep(random.uniform(0.3, 0.8))
-                
-            # Break hvis vi utilsigtet rammer et uendeligt scroll loop (fx på Twitter/SoMe sider)
-            if current_position > 15000: 
-                break
-    except Exception:
-        pass # Hvis DOM'en ændrer sig imens vi scroller, fejler vi bare stille--- FIL: ./core/network.py ---
+            # Chance for at scrolle lidt op igen (læse-adfærd)
+            if random.random() < 0.15:
+                driver.execute_script(f"window.scrollBy(0, -{random.randint(100, 200)});")
+                time.sleep(random.uniform(0.3, 0.6))
+    except Exception: pass--- FIL: ./core/network.py ---
 # -*- coding: utf-8 -*-
 import os
 import json
@@ -477,9 +456,6 @@ REGEX_IBAN = re.compile(r'\b[A-Z]{2}[0-9]{2}(?:[ ]?[0-9]{4}){4}(?!(?:[ ]?[0-9]){
 REGEX_IPV4 = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
 REGEX_MAC = re.compile(r'\b(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})\b')
 
-# ==========================================
-# GLOBAL SESSION STATE (Cross-Module Memory)
-# ==========================================
 session = {
     "name": "", 
     "city": "", 
@@ -490,38 +466,22 @@ session = {
     "loot_folder": "loot_evidence"
 }
 
-SESSION_FILE = "goliath_session.json"
-
+# SESSION_FILE og save_session fjernes/deaktiveres her
 def save_session():
-    """NY V8: Gemmer den nuværende efterforskning til disk (Persistence)"""
-    try:
-        with open(SESSION_FILE, "w", encoding="utf-8") as f:
-            json.dump(session, f, indent=4, ensure_ascii=False)
-    except Exception: pass
+    """Funktion deaktiveret for at undgå irriterende hukommelse"""
+    pass
 
 def load_session():
-    """NY V8: Gendanner en tidligere efterforskning"""
-    global session
-    if os.path.exists(SESSION_FILE):
-        try:
-            with open(SESSION_FILE, "r", encoding="utf-8") as f:
-                loaded_data = json.load(f)
-                session.update(loaded_data)
-                print(f"{C.DIM}[*] Forrige session gendannet succesfuldt.{C.RESET}")
-        except Exception: pass
+    """Funktion deaktiveret - starter altid på en frisk"""
+    pass
 
 def get_input(prompt_text, session_key):
-    """Henter input og foreslår den tidligere værdi fra sessionen"""
-    default = session.get(session_key, "")
-    if default:
-        val = input(f"{C.CYAN}{prompt_text} [{C.WHITE}{default}{C.CYAN}]: {C.RESET}").strip()
-        if not val:  # Hvis brugeren bare trykker ENTER
-            return default
-    else:
-        val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
+    """Henter input uden at foreslå gamle værdier som '99'"""
+    val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
     
+    # Vi gemmer stadig værdien i den aktive kørsel, så modulerne virker,
+    # men vi gemmer den ALDRIG til harddisken.
     session[session_key] = val
-    save_session() # V8: Gemmer automatisk efter input
     return val
 
 def extract_danish_phones(text):
@@ -546,329 +506,224 @@ def sanitize_filename(name):
     return clean[:50].strip() # Max 50 tegn for at undgå path length limits--- FIL: ./modules/__init__.py ---
 --- FIL: ./modules/mod_01_krak.py ---
 # -*- coding: utf-8 -*-
+
 import sys
 import time
 import json
 import os
 import re
+import random
 import urllib.parse
-from pathlib import Path
 from datetime import datetime
-from selenium.webdriver.common.by import By
-from core.utils import C, session
-from core.network import safe_get_with_retry, omni_dork_search
+from pathlib import Path
 
-class KrakIntelligenceAnalyst: # Omdøbt for at matche Pivot-import i Modul 02
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+
+from core.utils import C, session, extract_danish_phones
+from core.network import safe_get_with_retry
+
+class DirectoryIntelligenceHunter:
+    
     def __init__(self, name, city=""):
         self.name = name.strip()
         self.city = city.strip()
+        
         self.data = {
-            "Identitet": self.name, 
-            "Lokation": self.city, 
-            "Telefonnumre": [], 
-            "Ejendom": {},
-            "GPS_Koordinater": "",
-            "DinGeo_Intelligence": {}, 
-            "Bofæller_Netværk": [], 
-            "Erhvervs_Netværk_CVR": [], # NY V8 TILFØJELSE: CVR ejerskab
-            "Maps_Links": [],       
-            "Screenshots": [],
-            "Timestamp": datetime.now().isoformat()
+            "Identitet": self.name,
+            "Lokation": self.city,
+            "Telefonnumre": set(),
+            "Ejendom": {"Vej": "", "Post": "", "By": "", "Koordinater": ""},
+            "DinGeo_Intelligence": {
+                "BBR_Stamdata": {},
+                "Vurdering": {},
+                "Skat": {},
+                "Dokumenter": {},
+                "Infrastruktur": {}
+            },
+            "Bofæller_Netværk": [],
+            "Screenshots": []
         }
 
-    def _update_progress(self, pct, message):
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
-        sys.stdout.flush()
+    def _print(self, msg, color=C.CYAN):
+        print(f"{C.DIM}[{datetime.now().strftime('%H:%M:%S')}]{C.RESET} {color}{msg}{C.RESET}")
 
     def run(self, driver):
-        from core.browser import zap_cookies 
-        print(f"\n{C.CYAN}{'='*60}\n[01] Intelligence-Scanner (Krak, DGS, 118, OIS & DinGeo V8)\n{'='*60}{C.RESET}")
+        from core.browser import zap_cookies
         
-        # --- USYNLIGHEDS-TRICKET ---
-        try:
-            driver.set_window_position(-2000, 0)
-        except:
-            pass
+        self._print(f"Starter directory scan: {self.name}, {self.city}")
+        os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
 
-        query = f"{self.name} {self.city}".strip().replace(" ", "+").lower()
-        providers = {
-            "Krak": f"https://www.krak.dk/{query}/personer",
-            "De Gule Sider": f"https://www.degulesider.dk/{query}/personer"
-        }
+        self._scan_directory(driver, zap_cookies)
 
-        os.makedirs(session["loot_folder"], exist_ok=True)
-
-        for provider_name, url in providers.items():
-            print(f"\n{C.YELLOW}[*] Forbinder til {provider_name}: {url}{C.RESET}")
-            if safe_get_with_retry(driver, url):
-                zap_cookies(driver)
-                time.sleep(3)
-                
-                try:
-                    search_img = f"{session['loot_folder']}/01_{provider_name}_Search_{self.name.replace(' ', '_')}.png"
-                    driver.save_screenshot(search_img)
-                    self.data["Screenshots"].append(search_img)
-                    
-                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    time.sleep(1.5)
-                    current_url = driver.current_url
-                    
-                    target_url = None
-                    if re.search(r'/\d+/person/?$', current_url):
-                        target_url = current_url
-                    else:
-                        links = driver.find_elements(By.TAG_NAME, "a")
-                        base_domain = "krak.dk" if provider_name == "Krak" else "degulesider.dk"
-                        pattern = rf'^https://www\.{base_domain}/([^/]+)/\d+/person$'
-                        for link in links:
-                            href = link.get_attribute("href")
-                            if href and re.match(pattern, href):
-                                target_url = href
-                                break
-                    
-                    if target_url:
-                        driver.get(target_url)
-                        time.sleep(3)
-                        self._extract_profile_data(driver, provider_name)
-                except Exception as e:
-                    print(f"{C.RED}    [!] Fejl: {e}{C.RESET}")
-
-        # --- NY V8: Udfør 118.dk Fallback Dorking ---
-        if not self.data["Telefonnumre"] and not self.data.get("Ejendom"):
-            self._fallback_118_dork(driver)
-
-        # --- NY V8: Udfør Erhvervs-tjek på personen (Ownr / Proff) ---
-        self._check_business_ownership(driver)
-
-        # --- EKSISTERENDE V7: Udfør Bofælle-søgning og Map-Links ---
-        if self.data.get("Ejendom"):
+        if self.data["Ejendom"].get("Vej"):
+            self._scan_dingeo(driver)
             self._find_cohabitants(driver)
-            self._generate_map_links()
+        else:
+            self._print("Ingen adresse lokaliseret. Springer DinGeo over.", C.RED)
 
-        # --- SMART CLEANUP ---
-        if self.data["Telefonnumre"] or self.data.get("Ejendom") or self.data.get("Erhvervs_Netværk_CVR"):
-            final_screenshots = []
-            for img in self.data["Screenshots"]:
-                if "DinGeo" not in img:
-                    try: os.remove(img)
-                    except: pass
-                else: final_screenshots.append(img)
-            self.data["Screenshots"] = final_screenshots
-
-        print(f"\n{C.GREEN}[✓] Intelligence opslag 100% færdig.{C.RESET}")
+        self.data["Telefonnumre"] = list(self.data["Telefonnumre"])
         self.save()
         return self.data
 
-    def _fallback_118_dork(self, driver):
-        """NY V8 TILFØJELSE: Hvis Krak fejler, dorker vi 118.dk direkte (Ofte gemmer de numre Krak sletter)"""
-        print(f"\n{C.YELLOW}[*] Krak fejlede - Udfører Fallback Dork mod 118.dk...{C.RESET}")
-        search_query = f'"{self.name}" {self.city}'.strip()
-        dork = f'site:118.dk {search_query}'
-        links = omni_dork_search(driver, dork, max_links=3)
-        if links:
-            for link in links:
-                snippet = link.get('snippet', '')
-                phones = re.findall(r'\b(?:[2-9]\d{7}|[2-9]\d{1}\s\d{2}\s\d{2}\s\d{2})\b', snippet)
-                for ph in set(phones):
-                    clean_ph = ph.replace(" ", "")
-                    if len(clean_ph) == 8 and clean_ph not in self.data["Telefonnumre"]:
-                        self.data["Telefonnumre"].append(clean_ph)
-                        print(f"{C.GREEN}      🔥 Telefon fundet via 118.dk Fallback: {clean_ph}{C.RESET}")
+    def _bypass_cloudflare(self, driver):
+        if not any(kw in driver.page_source.lower() for kw in ["cloudflare", "challenges", "turnstile"]):
+            return
 
-    def _check_business_ownership(self, driver):
-        """NY V8 TILFØJELSE: Tjekker om personen ejer et firma"""
-        print(f"\n{C.YELLOW}[*] Scanner Proff.dk / Ownr.dk for skjulte virksomheds-ejerskaber...{C.RESET}")
-        search_query = f'"{self.name}" {self.city}'.strip()
-        dork = f'(site:ownr.dk OR site:proff.dk) {search_query}'
-        links = omni_dork_search(driver, dork, max_links=3)
-        if links:
-            for link in links:
-                snippet = link.get('snippet', '')
-                cvr_matches = re.findall(r'\b(?:CVR|cvr)[\s:-]*(\d{8})\b', snippet)
-                for cvr in cvr_matches:
-                    if cvr not in self.data["Erhvervs_Netværk_CVR"]:
-                        self.data["Erhvervs_Netværk_CVR"].append(cvr)
-                        print(f"{C.MAGENTA}      🔥 Målet er tilknyttet en virksomhed! CVR: {cvr}{C.RESET}")
-
-    def _extract_profile_data(self, driver, provider_name):
-        driver.execute_script("window.scrollBy(0, 400);")
-        time.sleep(1)
+        self._print("Løser Cloudflare Turnstile...", C.YELLOW)
+        time.sleep(3)
+        
         try:
-            buttons = driver.find_elements(By.TAG_NAME, "button")
-            for btn in buttons:
-                if "vis" in btn.text.lower() or "nummer" in btn.text.lower():
-                    driver.execute_script("arguments[0].click();", btn)
-                    time.sleep(1)
-        except: pass
+            iframe = WebDriverWait(driver, 8).until(
+                EC.presence_of_element_located((By.XPATH, "//iframe[contains(@src, 'challenges')]"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", iframe)
+            time.sleep(1.5)
+            
+            x_off = random.randint(5, 20)
+            y_off = random.randint(5, 20)
+            ActionChains(driver).move_to_element_with_offset(iframe, x_off, y_off).click().perform()
+            time.sleep(6)
+            
+            if "challenges" in driver.page_source.lower():
+                driver.switch_to.frame(iframe)
+                cb = WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                cb.click()
+                driver.switch_to.default_content()
+                time.sleep(5)
+        except Exception as e:
+            driver.switch_to.default_content()
 
-        body_text = driver.find_element(By.TAG_NAME, "body").text
-        lines = [line.strip() for line in body_text.split('\n') if line.strip()]
-        
-        for i, line in enumerate(lines):
-            # 1. TELEFON
-            if line == "Telefonnummer" and i + 1 < len(lines):
-                p = lines[i+1].replace(" ", "")
-                if len(p) == 8:
-                    fmt = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
-                    if fmt not in self.data["Telefonnumre"]: self.data["Telefonnumre"].append(fmt)
-
-            # 2. ADRESSE TOP
-            if line == "Adresse" and i + 2 < len(lines) and not self.data.get("Ejendom"):
-                vej, post_by = lines[i+1], lines[i+2]
-                match = re.search(r'^([1-9]\d{3})\s+(.*)', post_by)
-                if match:
-                    post, by = match.group(1), match.group(2)
-                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
-                    self._scrape_dingeo_deep(driver, vej, post, by)
-
-            # 3. ADRESSE BACKUP (Tabel) 
-            if line == "Vejnavn" and i + 1 < len(lines) and not self.data.get("Ejendom"):
-                vej = lines[i+1]
-                post, by = "", ""
-                for j in range(i, min(i+10, len(lines))):
-                    if lines[j] == "Postnummer" and j + 1 < len(lines):
-                        post = lines[j+1]
-                    if lines[j] == "Bynavn" and j + 1 < len(lines):
-                        by = lines[j+1]
-                
-                if vej and post and by:
-                    self.data["Ejendom"] = {"Vej": vej, "Post": post, "By": by}
-                    self._scrape_dingeo_deep(driver, vej, post, by)
-
-            # 4. GPS
-            if line == "Koordinater" and i + 1 < len(lines):
-                self.data["GPS_Koordinater"] = lines[i+1]
-        return True
-
-    def _scrape_dingeo_deep(self, driver, vej, post, by):
-        print(f"{C.CYAN}      [*] Dybde-analyserer ejendommen på DinGeo...{C.RESET}")
-        
-        city_slug = f"{post}-{by}".lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
-        vej_slug = vej.lower().replace(" ", "-").replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
-        base_url = f"https://www.dingeo.dk/adresse/{city_slug}/{vej_slug}"
-        
-        paths = {
-            "Profil": "",
-            "Dokumenter": "/dokument/",
-            "Vurdering": "/vurdering/",
-            "Boligskat": "/skat/",
-            "Net_Mobil": "/internet-mobil/"
+    def _scan_directory(self, driver, zap_cookies):
+        q = urllib.parse.quote(f"{self.name} {self.city}")
+        targets = {
+            "Krak": f"https://www.krak.dk/{q}/personer",
+            "DGS": f"https://www.degulesider.dk/{q}/personer"
         }
 
-        for category, path in paths.items():
-            target = base_url + path
-            if safe_get_with_retry(driver, target, max_retries=1):
+        for source, url in targets.items():
+            self._print(f"Scanner {source}...")
+            driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {'headers': {'Referer': 'https://www.google.dk/'}})
+            
+            try:
+                driver.get(url)
+                self._bypass_cloudflare(driver)
+                zap_cookies(driver)
                 time.sleep(2)
-                # Cookie Killer
-                try:
-                    for btn in driver.find_elements(By.TAG_NAME, "button"):
-                        if any(x in btn.text.lower() for x in ["tillad", "accepter", "forstået"]):
-                            driver.execute_script("arguments[0].click();", btn)
-                            break
-                except: pass
-
-                text = driver.find_element(By.TAG_NAME, "body").text
-                lines = [l.strip() for l in text.split('\n') if l.strip()]
                 
-                if category == "Profil":
-                    # Screenshot af selve huset
-                    img = f"{session['loot_folder']}/01_DinGeo_Hus_{self.name.replace(' ', '_')}.png"
-                    driver.save_screenshot(img)
-                    if img not in self.data["Screenshots"]:
-                        self.data["Screenshots"].append(img)
+                self._extract_data(driver)
+                
+                target_url = None
+                for a in driver.find_elements(By.TAG_NAME, "a"):
+                    href = a.get_attribute("href")
+                    if href and re.search(r'/\d+/person/?$', href):
+                        target_url = href
+                        break
+                        
+                if target_url:
+                    driver.get(target_url)
+                    self._bypass_cloudflare(driver)
+                    time.sleep(2)
+                    self._extract_data(driver)
                     
-                    intel = {}
-                    keys = ["Opførselsesår", "Antal værelser", "Anvendelse", "Varmeinstallation", "Boligtype", "Ydervægsmateriale", "Tagmateriale"]
+                shot = f"{session.get('loot_folder', 'loot')}/01_{source}_{self.name.replace(' ', '_')}.png"
+                driver.save_screenshot(shot)
+                self.data["Screenshots"].append(shot)
+                
+            except Exception as e:
+                self._print(f"Fejl på {source}: {e}", C.RED)
+
+    def _extract_data(self, driver):
+        try:
+            for btn in driver.find_elements(By.TAG_NAME, "button"):
+                if "vis" in btn.text.lower() or any(c.isdigit() for c in btn.text):
+                    driver.execute_script("arguments[0].click();", btn)
+        except: pass
+        
+        time.sleep(1)
+        body = driver.find_element(By.TAG_NAME, "body").text
+        
+        for p in extract_danish_phones(body):
+            self.data["Telefonnumre"].add(f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}")
+            
+        if not self.data["Ejendom"]["Vej"]:
+            lines = [l.strip() for l in body.split('\n') if l.strip()]
+            for i, line in enumerate(lines):
+                zip_match = re.search(r'^(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)$', line)
+                if zip_match and i > 0:
+                    vej = lines[i-1].split(',')[-1].strip()
+                    if any(c.isdigit() for c in vej):
+                        self.data["Ejendom"]["Vej"] = vej
+                        self.data["Ejendom"]["Post"] = zip_match.group(1)
+                        self.data["Ejendom"]["By"] = zip_match.group(2)
+                        break
+                        
+        gps_m = re.search(r'(\d+\.\d+,\s*\d+\.\d+)', body)
+        if gps_m: self.data["Ejendom"]["Koordinater"] = gps_m.group(1)
+
+    def _scan_dingeo(self, driver):
+        v = self.data["Ejendom"]["Vej"].split(',')[0].strip()
+        p = self.data["Ejendom"]["Post"]
+        b = self.data["Ejendom"]["By"].split(' ')[0].strip()
+        
+        slug_c = f"{p}-{b}".lower().replace("æ","ae").replace("ø","oe").replace("å","aa")
+        slug_v = v.lower().replace(" ","-").replace("æ","ae").replace("ø","oe").replace("å","aa").replace(".","")
+        base = f"https://www.dingeo.dk/adresse/{slug_c}/{slug_v}"
+
+        endpoints = {
+            "BBR_Stamdata": "",
+            "Skat": "/skat/",
+            "Vurdering": "/vurdering/",
+            "Infrastruktur": "/internet-mobil/",
+            "Dokumenter": "/dokument/"
+        }
+
+        for key, path in endpoints.items():
+            self._print(f"Henter DinGeo: {key}...")
+            try:
+                driver.get(base + path)
+                self._bypass_cloudflare(driver)
+                time.sleep(2)
+                
+                lines = [l.strip() for l in driver.find_element(By.TAG_NAME, "body").text.split('\n') if l.strip()]
+                
+                if key == "BBR_Stamdata":
                     for i, l in enumerate(lines):
-                        for k in keys:
-                            if l == k and i+1 < len(lines): intel[k] = lines[i+1]
-                        if "bor i" in l and "nærmeste naboer" in text:
-                            intel["Nabolag"] = l + " " + lines[i+1] if i+1 < len(lines) else l
-                    self.data["DinGeo_Intelligence"]["BBR"] = intel
-
-                elif category == "Dokumenter":
-                    docs = {"Servitutter": "0", "Byggesager": "Ingen fundet"}
-                    match = re.search(r'der (\w+) servitutter', text.lower())
-                    if match: docs["Servitutter"] = match.group(1).capitalize()
-                    if "ingen historiske byggesager" not in text.lower(): docs["Byggesager"] = "Fundet (Tjek link)"
-                    self.data["DinGeo_Intelligence"]["Dokument_Status"] = docs
-
-                elif category == "Vurdering":
-                    vurdering = {}
+                        for k in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype"]:
+                            if l == k and i+1 < len(lines): self.data["DinGeo_Intelligence"][key][k] = lines[i+1]
+                
+                elif key == "Skat":
                     for i, l in enumerate(lines):
-                        if "Dingestimat" in l and i+1 < len(lines):
-                            vurdering["Dingestimat"] = lines[i+1]
-                        if "Seneste salgspris" in l and i+1 < len(lines):
-                            vurdering["Seneste_Salg"] = lines[i+1] + " (" + (lines[i+2] if i+2 < len(lines) else "") + ")"
-                    if vurdering:
-                        self.data["DinGeo_Intelligence"]["Vurdering"] = vurdering
-
-                elif category == "Boligskat":
-                    skat = {}
+                        if "Boligskat 2024" in l: self.data["DinGeo_Intelligence"][key]["Skat_2024"] = lines[i+1]
+                        if "Grundskyld" in l: self.data["DinGeo_Intelligence"][key]["Grundskyld"] = lines[i+1]
+                        
+                elif key == "Vurdering":
                     for i, l in enumerate(lines):
-                        if "Boligskat 2024" in l and i+1 < len(lines):
-                            skat["Total_2024"] = lines[i+1]
-                    if skat:
-                        self.data["DinGeo_Intelligence"]["Skat"] = skat
-
-                elif category == "Net_Mobil":
-                    net = {"Fiber": "Nej", "5G": "Nej", "Mobil": "Ukendt"}
-                    if "Fibernet" in text: net["Fiber"] = "Ja"
-                    if "5G-internet" in text: net["5G"] = "Ja"
-                    if "god mobildækning" in text: net["Mobil"] = "God"
-                    self.data["DinGeo_Intelligence"]["Infrastruktur"] = net
+                        if "Dingestimat" in l: self.data["DinGeo_Intelligence"][key]["Dingestimat"] = lines[i+1]
+                        if "Seneste salgspris" in l: self.data["DinGeo_Intelligence"][key]["Seneste_Salg"] = lines[i+1]
+                        
+            except Exception as e:
+                pass
 
     def _find_cohabitants(self, driver):
-        """NY V7: Dorker selve adressen for at finde andre personer (Familie/Medstiftere)"""
-        print(f"\n{C.YELLOW}[*] Deep OSINT: Scanner efter bofæller på adressen...{C.RESET}")
-        vej = self.data["Ejendom"].get("Vej", "")
-        if not vej: return
-
-        # Splitter vejnavnet fra for at fjerne etage/dør (Krak dorker bedst på ren adresse)
-        clean_addr = vej.split(',')[0].strip()
-        dork = f'site:krak.dk OR site:118.dk "{clean_addr}"'
+        v = self.data["Ejendom"].get("Vej", "")
+        if not v: return
+        addr = v.split(',')[0].strip()
         
-        links = omni_dork_search(driver, dork, max_links=3)
-        for link in links:
-            title = link.get('title', '')
-            pot_navn = title.split('-')[0].strip()
-            # Sikrer at vi ikke bare fanger vores eget mål igen
-            if pot_navn and self.name.lower() not in pot_navn.lower() and "Krak" not in pot_navn:
-                if pot_navn not in self.data["Bofæller_Netværk"]:
-                    self.data["Bofæller_Netværk"].append(pot_navn)
-                    print(f"{C.MAGENTA}      -> Mulig bofælle/netværk fundet: {pot_navn}{C.RESET}")
-
-    def _generate_map_links(self):
-        """NY V7: Bygger direkte links til Satellit og Street View ud fra adressen"""
-        vej = self.data["Ejendom"].get("Vej", "")
-        by = self.data["Ejendom"].get("By", "")
-        if vej and by:
-            fuld_adresse = f"{vej}, {by}"
-            encoded_addr = urllib.parse.quote(fuld_adresse)
-            # Standard Maps og StreetView API links (virker uden API nøgle)
-            maps_url = f"https://www.google.com/maps/search/?api=1&query={encoded_addr}"
-            self.data["Maps_Links"].append(maps_url)
-            print(f"{C.CYAN}      -> Google Maps Link genereret.{C.RESET}")
+        for hit in omni_dork_search(driver, f'site:krak.dk "{addr}" "{self.data["Ejendom"]["Post"]}"', max_links=3):
+            n = hit.get('title', '').split('-')[0].strip()
+            if n and self.name.lower() not in n.lower() and "Krak" not in n:
+                if n not in self.data["Bofæller_Netværk"]:
+                    self.data["Bofæller_Netværk"].append(n)
 
     def save(self):
-        has_data = bool(self.data.get("Telefonnumre")) or bool(self.data.get("Ejendom")) or bool(self.data.get("DinGeo_Intelligence")) or bool(self.data.get("Erhvervs_Netværk_CVR"))
-        if not has_data:
-            gem = input(f"\n{C.YELLOW}[?] Intet fundet. Vil du gemme en tom rapport? (j/n): {C.RESET}").strip().lower()
-            if gem != 'j':
-                print(f"{C.DIM}[*] Rapport kasseret.{C.RESET}")
-                return
-
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
-        
-        # Slet gammel fil for skrivesikkerhed
-        if os.path.exists(filename):
-            try: os.remove(filename)
-            except: pass
-            
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")
+        f = session.get("loot_folder", "loot_evidence")
+        path = f"{f}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(self.data, file, indent=4, ensure_ascii=False)
+        self._print(f"Rapport gemt: {path}", C.GREEN)
 
 KrakIntelligenceAnalyst = DirectoryIntelligenceHunter--- FIL: ./modules/mod_03_breach.py ---
 # -*- coding: utf-8 -*-
@@ -1372,7 +1227,7 @@ class AutoForensicMassScanner:
             
             text = pytesseract.image_to_string(thresh, config='--psm 3 --oem 3')
             
-            if "<" in text or "PAS" in text.upper() or "DANMARK" in text.upper():
+            if "<" in text or "PASSPORT" in text.upper() or "ID" in text.upper() or "CARD" in text.upper():
                 text += "\n" + pytesseract.image_to_string(thresh, config='--psm 11')
             return text
         except Exception: return ""
@@ -2052,14 +1907,14 @@ class BusinessIntelligenceAnalyst:
         ejer_email = emails[0] if emails else None
         ejer_telefon = telefoner[0] if telefoner else None
 
-        # --- MODUL 01: KRAK / 118 PIVOT ---
+        # --- MODUL 01: KRAK / PIVOT ---
         print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 01 (Offentlige Registre / Krak) på: {ejer_navn} / {ejer_telefon}{C.RESET}")
         try:
             from modules.mod_01_krak import DirectoryIntelligenceHunter 
             m1_query = ejer_navn
             m1 = DirectoryIntelligenceHunter(m1_query, "")
             m1.run(driver)
-            self.results["Samlet_Pivot_Data"]["Krak_118"] = m1.data if hasattr(m1, 'data') else "Fuldført"
+            self.results["Samlet_Pivot_Data"]["Krak"] = m1.data if hasattr(m1, 'data') else "Fuldført"
             print(f"{C.GREEN}  ✓ Modul 01 data tilføjet.{C.RESET}")
         except Exception as e: print(f"{C.DIM}  [-] Modul 01 overprunget: {e}{C.RESET}")
 
@@ -2133,7 +1988,8 @@ class BusinessIntelligenceAnalyst:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 17 (Sniper Profiling) på: {ejer_navn} / {ejer_email}{C.RESET}")
             try:
                 from modules.mod_17_sniper import SniperModule
-                sniper = SniperModule(ejer_navn, "", "", ejer_email)
+                # FIX: Navngivne argumenter forhindrer fejl-tildeling af emails!
+                sniper = SniperModule(name=ejer_navn, email=ejer_email)
                 sniper.run()
                 print(f"{C.GREEN}  ✓ Modul 17 Sniper fuldført.{C.RESET}")
             except Exception as e: print(f"{C.DIM}  [-] Modul 17 overprunget: {e}{C.RESET}")
@@ -2707,7 +2563,7 @@ class EmailPatternGenerator:
                 print(f"{C.DIM}    [-] Ingen offentlige spor fundet via Google Dorking.{C.RESET}")
         else:
             print(f"{C.DIM}    [-] Ingen stealth-driver givet. Skipper Live Dork-Validering.{C.RESET}")
-
+        self.generate_patterns()
         self.save()
 
     def _smtp_verify(self, email):
@@ -2824,8 +2680,8 @@ class PhoneIntelligenceHunter:
         if links:
             for link in links:
                 href = link["url"]
-                # Vi ignorerer krak/dgs/118 da vi allerede har et dedikeret modul (01) til det
-                if "krak.dk" not in href and "degulesider.dk" not in href and "118.dk" not in href:
+                # Vi ignorerer krak/dgs da vi allerede har et dedikeret modul (01) til det
+                if "krak.dk" not in href and "degulesider.dk" not in href:
                     print(f"{C.GREEN}    🔥 SPOR: {href[:80]}{C.RESET}")
                     if href not in self.data["Web_Spor"]:
                         self.data["Web_Spor"].append(href)
@@ -5154,12 +5010,10 @@ from core.utils import C, session
 # NY V8 FIX: Klassen er omdøbt til MatrixAnalyzer for at matche Modul 02's Pivot Engine!
 class MatrixAnalyzer:
     def __init__(self, username):
-        # Tillader dict-input hvis Pivot Engine sender hele data-objektet
+        # Håndterer både rå brugernavne og data-dictionaries fra Omni-Pivot
         if isinstance(username, dict):
-            # Extract navnet klogest muligt (hvis kaldt fra auto-pivot)
-            self.username = username.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "")
-            if not self.username:
-                self.username = "Unknown"
+            self.username = username.get("Brugernavn") or \
+                            username.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "Unknown")
         else:
             self.username = str(username).strip()
             
@@ -6170,14 +6024,17 @@ class PersonIntelligenceOrchestrator:
         print(f"{C.CYAN}      -> Kør Modul 14 (HTML Dashboard) for at se det fulde, tværgående resultat.{C.RESET}")
 
     def _generate_identity_permutations(self):
-        """V10: Avanceret mønster-genkendelse og email-gætteri"""
+        """V10.1: Rettet fejl hvor årstal ikke kunne subscriptes"""
         print(f"{C.DIM}    -> Genererer identitets-permutationer...{C.RESET}")
         parts = self.target_name.lower().split()
         if len(parts) >= 2:
             f, l = parts[0], parts[-1]
+            # Konverter årstal til streng først for at undgå 'int' object is not subscriptable
+            current_year_suffix = str(datetime.now().year)[-2:] 
+            
             aliases = [
                 f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", 
-                f"{f}_{l}", f"{f}{l}123", f"{f}{l}{datetime.now().year[-2:]}"
+                f"{f}_{l}", f"{f}{l}123", f"{f}{l}{current_year_suffix}"
             ]
             for a in aliases: self.intel_pool["Gættede_Aliaser"].add(a)
 
@@ -6482,7 +6339,6 @@ def display_menu():
 
 def main():
     os.makedirs(session["loot_folder"], exist_ok=True)
-    load_session() # Henter tidligere indtastede data
     check_dependencies()
     
     while True:
@@ -6519,9 +6375,15 @@ def main():
 
             elif choice == "03":
                 from modules.mod_03_breach import BreachIntelligenceAnalyst
-                driver = get_stealth_driver()
-                try: BreachIntelligenceAnalyst(get_input("Email", "email")).run(driver)
-                finally: driver.quit()
+                # Vi kalder input her, men get_input filtrerer nu '99' fra i utils.py
+                target_email = get_input("Email", "email")
+                
+                if target_email:
+                    driver = get_stealth_driver()
+                    try: 
+                        BreachIntelligenceAnalyst(target_email).run(driver)
+                    finally: 
+                        driver.quit()
 
             elif choice == "04":
                 from modules.mod_04_social import SocialMediaProfiler
