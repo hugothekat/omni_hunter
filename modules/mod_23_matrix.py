@@ -11,12 +11,10 @@ from core.utils import C, session
 # NY V8 FIX: Klassen er omdøbt til MatrixAnalyzer for at matche Modul 02's Pivot Engine!
 class MatrixAnalyzer:
     def __init__(self, username):
-        # Tillader dict-input hvis Pivot Engine sender hele data-objektet
+        # Håndterer både rå brugernavne og data-dictionaries fra Omni-Pivot
         if isinstance(username, dict):
-            # Extract navnet klogest muligt (hvis kaldt fra auto-pivot)
-            self.username = username.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "")
-            if not self.username:
-                self.username = "Unknown"
+            self.username = username.get("Brugernavn") or \
+                            username.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "Unknown")
         else:
             self.username = str(username).strip()
             

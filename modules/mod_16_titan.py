@@ -180,7 +180,7 @@ class AutoForensicMassScanner:
             
             text = pytesseract.image_to_string(thresh, config='--psm 3 --oem 3')
             
-            if "<" in text or "PAS" in text.upper() or "DANMARK" in text.upper():
+            if "<" in text or "PASSPORT" in text.upper() or "ID" in text.upper() or "CARD" in text.upper():
                 text += "\n" + pytesseract.image_to_string(thresh, config='--psm 11')
             return text
         except Exception: return ""

@@ -452,14 +452,14 @@ class BusinessIntelligenceAnalyst:
         ejer_email = emails[0] if emails else None
         ejer_telefon = telefoner[0] if telefoner else None
 
-        # --- MODUL 01: KRAK / 118 PIVOT ---
+        # --- MODUL 01: KRAK / PIVOT ---
         print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 01 (Offentlige Registre / Krak) på: {ejer_navn} / {ejer_telefon}{C.RESET}")
         try:
             from modules.mod_01_krak import DirectoryIntelligenceHunter 
             m1_query = ejer_navn
             m1 = DirectoryIntelligenceHunter(m1_query, "")
             m1.run(driver)
-            self.results["Samlet_Pivot_Data"]["Krak_118"] = m1.data if hasattr(m1, 'data') else "Fuldført"
+            self.results["Samlet_Pivot_Data"]["Krak"] = m1.data if hasattr(m1, 'data') else "Fuldført"
             print(f"{C.GREEN}  ✓ Modul 01 data tilføjet.{C.RESET}")
         except Exception as e: print(f"{C.DIM}  [-] Modul 01 overprunget: {e}{C.RESET}")
 
@@ -533,7 +533,8 @@ class BusinessIntelligenceAnalyst:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 17 (Sniper Profiling) på: {ejer_navn} / {ejer_email}{C.RESET}")
             try:
                 from modules.mod_17_sniper import SniperModule
-                sniper = SniperModule(ejer_navn, "", "", ejer_email)
+                # FIX: Navngivne argumenter forhindrer fejl-tildeling af emails!
+                sniper = SniperModule(name=ejer_navn, email=ejer_email)
                 sniper.run()
                 print(f"{C.GREEN}  ✓ Modul 17 Sniper fuldført.{C.RESET}")
             except Exception as e: print(f"{C.DIM}  [-] Modul 17 overprunget: {e}{C.RESET}")

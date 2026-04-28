@@ -105,14 +105,17 @@ class PersonIntelligenceOrchestrator:
         print(f"{C.CYAN}      -> Kør Modul 14 (HTML Dashboard) for at se det fulde, tværgående resultat.{C.RESET}")
 
     def _generate_identity_permutations(self):
-        """V10: Avanceret mønster-genkendelse og email-gætteri"""
+        """V10.1: Rettet fejl hvor årstal ikke kunne subscriptes"""
         print(f"{C.DIM}    -> Genererer identitets-permutationer...{C.RESET}")
         parts = self.target_name.lower().split()
         if len(parts) >= 2:
             f, l = parts[0], parts[-1]
+            # Konverter årstal til streng først for at undgå 'int' object is not subscriptable
+            current_year_suffix = str(datetime.now().year)[-2:] 
+            
             aliases = [
                 f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", 
-                f"{f}_{l}", f"{f}{l}123", f"{f}{l}{datetime.now().year[-2:]}"
+                f"{f}_{l}", f"{f}{l}123", f"{f}{l}{current_year_suffix}"
             ]
             for a in aliases: self.intel_pool["Gættede_Aliaser"].add(a)
 

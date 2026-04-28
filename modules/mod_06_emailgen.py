@@ -115,7 +115,7 @@ class EmailPatternGenerator:
                 print(f"{C.DIM}    [-] Ingen offentlige spor fundet via Google Dorking.{C.RESET}")
         else:
             print(f"{C.DIM}    [-] Ingen stealth-driver givet. Skipper Live Dork-Validering.{C.RESET}")
-
+        self.generate_patterns()
         self.save()
 
     def _smtp_verify(self, email):

@@ -37,9 +37,6 @@ REGEX_IBAN = re.compile(r'\b[A-Z]{2}[0-9]{2}(?:[ ]?[0-9]{4}){4}(?!(?:[ ]?[0-9]){
 REGEX_IPV4 = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
 REGEX_MAC = re.compile(r'\b(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})\b')
 
-# ==========================================
-# GLOBAL SESSION STATE (Cross-Module Memory)
-# ==========================================
 session = {
     "name": "", 
     "city": "", 
@@ -50,38 +47,22 @@ session = {
     "loot_folder": "loot_evidence"
 }
 
-SESSION_FILE = "goliath_session.json"
-
+# SESSION_FILE og save_session fjernes/deaktiveres her
 def save_session():
-    """NY V8: Gemmer den nuværende efterforskning til disk (Persistence)"""
-    try:
-        with open(SESSION_FILE, "w", encoding="utf-8") as f:
-            json.dump(session, f, indent=4, ensure_ascii=False)
-    except Exception: pass
+    """Funktion deaktiveret for at undgå irriterende hukommelse"""
+    pass
 
 def load_session():
-    """NY V8: Gendanner en tidligere efterforskning"""
-    global session
-    if os.path.exists(SESSION_FILE):
-        try:
-            with open(SESSION_FILE, "r", encoding="utf-8") as f:
-                loaded_data = json.load(f)
-                session.update(loaded_data)
-                print(f"{C.DIM}[*] Forrige session gendannet succesfuldt.{C.RESET}")
-        except Exception: pass
+    """Funktion deaktiveret - starter altid på en frisk"""
+    pass
 
 def get_input(prompt_text, session_key):
-    """Henter input og foreslår den tidligere værdi fra sessionen"""
-    default = session.get(session_key, "")
-    if default:
-        val = input(f"{C.CYAN}{prompt_text} [{C.WHITE}{default}{C.CYAN}]: {C.RESET}").strip()
-        if not val:  # Hvis brugeren bare trykker ENTER
-            return default
-    else:
-        val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
+    """Henter input uden at foreslå gamle værdier som '99'"""
+    val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
     
+    # Vi gemmer stadig værdien i den aktive kørsel, så modulerne virker,
+    # men vi gemmer den ALDRIG til harddisken.
     session[session_key] = val
-    save_session() # V8: Gemmer automatisk efter input
     return val
 
 def extract_danish_phones(text):

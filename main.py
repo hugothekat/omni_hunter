@@ -66,7 +66,6 @@ def display_menu():
 
 def main():
     os.makedirs(session["loot_folder"], exist_ok=True)
-    load_session() # Henter tidligere indtastede data
     check_dependencies()
     
     while True:
@@ -103,9 +102,15 @@ def main():
 
             elif choice == "03":
                 from modules.mod_03_breach import BreachIntelligenceAnalyst
-                driver = get_stealth_driver()
-                try: BreachIntelligenceAnalyst(get_input("Email", "email")).run(driver)
-                finally: driver.quit()
+                # Vi kalder input her, men get_input filtrerer nu '99' fra i utils.py
+                target_email = get_input("Email", "email")
+                
+                if target_email:
+                    driver = get_stealth_driver()
+                    try: 
+                        BreachIntelligenceAnalyst(target_email).run(driver)
+                    finally: 
+                        driver.quit()
 
             elif choice == "04":
                 from modules.mod_04_social import SocialMediaProfiler

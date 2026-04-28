@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
+import undetected_chromedriver as uc
+import random
 import time
 import os
 import json
 import re
-import random # NY V8 FIX: Nødvendig for human_typing og human_scroll
-from datetime import datetime
 
-import undetected_chromedriver as uc
+from core.network import CONFIG
+from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -14,166 +15,144 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from core.utils import C, session
 
-# NY V8 TILFØJELSE: Pulje af moderne, valide User-Agents til at undgå fingerprinting
+# Udvidet pulje af moderne User-Agents for maksimal diversitet
 UAS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
 ]
 
-def get_stealth_driver():
-    """GOLIATH V8: Undetected Chromedriver i HEADLESS mode med CDP Anti-Bot Masking"""
-    from core.network import CONFIG 
+def _get_fresh_options():
+    """Hjælpe-funktion der sikrer vi altid får et ubrugt options-objekt"""
+    from core.network import CONFIG
+    import undetected_chromedriver as uc
+    import random
+
+    opt = uc.ChromeOptions()
+    opt.add_argument("--headless=new") 
+    opt.add_argument("--no-sandbox")
+    opt.add_argument("--disable-dev-shm-usage")
+    opt.add_argument("--window-size=1920,1080")
+    opt.add_argument("--disable-notifications")
+    opt.add_argument("--disable-popup-blocking")
+    opt.add_argument("--lang=da-DK")
     
-    options = uc.ChromeOptions()
-    
-    # 🚨 AKTIVERET: Gør browseren totalt usynlig
-    options.add_argument("--headless=new") 
-    
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-notifications")
-    options.add_argument("--disable-popup-blocking")
-    
-    # Stealth indstillinger for at undgå detektering i headless mode
-    options.add_argument('--disable-blink-features=AutomationControlled')
-    options.add_argument(f'--user-agent={random.choice(UAS)}') # NY V8: Roterende UA
+    # Stealth indstillinger
+    opt.add_argument('--disable-blink-features=AutomationControlled')
+    # Vi vælger en frisk UA her hver gang
+    opt.add_argument(f'--user-agent={random.choice(UAS)}')
     
     if CONFIG.get("use_tor_proxy"):
         proxy = CONFIG.get("tor_proxy_url", "socks5://127.0.0.1:9050")
-        options.add_argument(f'--proxy-server={proxy}')
+        opt.add_argument(f'--proxy-server={proxy}')
+        
+    return opt
+
+def get_stealth_driver():
+    """GOLIATH V9: Fikset 'cannot reuse' ved at kalde hjælpefunktion"""
     
-    # V8 NOTE: Hvis version_main=147 crasher i fremtiden (fordi Chrome opdaterer sig selv på din PC), 
-    # kan du prøve at fjerne ', version_main=147' parameteren, så UC selv finder versionen.
     try:
-        driver = uc.Chrome(options=options, version_main=147)
-    except Exception as e:
-        print(f"{C.YELLOW}[!] Fejl med fastlåst Chrome version. Forsøger auto-detektion...{C.RESET}")
-        driver = uc.Chrome(options=options)
+        # Første forsøg: Vi beder om et friskt objekt
+        driver = uc.Chrome(options=_get_fresh_options())
+    except Exception:
+        # Fallback: Vi beder om et HELT NYT objekt, da det første er 'brugt'
+        driver = uc.Chrome(options=_get_fresh_options(), version_main=147)
     
-    # --- NY V8 TILFØJELSE: CDP (Chrome DevTools Protocol) Anti-Bot Injektion ---
-    # Fjerner navigator.webdriver flaget, før nogen hjemmeside når at læse det
+    # CDP Anti-Bot Injektion (Bevaret 100%)
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
         'source': '''
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             window.chrome = { runtime: {} };
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'da', 'en-US', 'en']});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'da']});
         '''
     })
     
-    driver.implicitly_wait(5)
-    driver.set_page_load_timeout(30)
+    driver.implicitly_wait(7)
+    driver.set_page_load_timeout(35)
     return driver
 
 def zap_cookies(driver):
-    """GOLIATH V8: Advanced Cookie Zapper (XPath, CSS & Shadow DOM Piercing)"""
-    # 1. Standard Selenium XPath clicker
-    terms = ['Accepter', 'OK', 'Godkend', 'Tillad', 'Accept all', 'Acceptér', 'Forstået', 'Tillad alle']
+    """GOLIATH V9: Cookie-Zapper med udvidet dansk ordbog"""
+    # Vi lader som om vi er en person der læser siden før vi klikker
+    time.sleep(random.uniform(0.5, 1.2))
+    
+    terms = ['Accepter', 'OK', 'Godkend', 'Tillad', 'Accept all', 'Acceptér', 'Forstået', 'Tillad alle', 'Sæt i gang']
     try:
         xpath = "//button[" + " or ".join([f"contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{t.lower()}')" for t in terms]) + "]"
-        btns = WebDriverWait(driver, 1.5).until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+        btns = WebDriverWait(driver, 2).until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
         if btns:
-            driver.execute_script("arguments[0].click();", btns[0]) # Mere pålidelig end .click() hvis elementet er dækket
-            time.sleep(0.5)
+            # Scroll hen til knappen for at simulere visuel fokus
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btns[0])
+            time.sleep(0.3)
+            driver.execute_script("arguments[0].click();", btns[0])
             return True
     except Exception: pass
     
-    # 2. CSS Selectors fallback
-    try:
-        selectors = ["button.cookie-accept", "button[class*='cookie']", "button[class*='consent']", "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"]
-        for selector in selectors:
-            try:
-                btn = driver.find_element(By.CSS_SELECTOR, selector)
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.5)
-                return True
-            except Exception:
-                continue
-    except Exception: pass
-
-    # 3. NY V8 TILFØJELSE: Shadow DOM Piercing via JavaScript (Dræber Usercentrics m.fl.)
+    # Shadow DOM Fallback (Vigtig for moderne Consent-managers)
     shadow_js = """
-    try {
-        let hosts = document.querySelectorAll('*');
-        for (let host of hosts) {
-            if (host.shadowRoot) {
-                let btns = host.shadowRoot.querySelectorAll('button');
-                for (let btn of btns) {
-                    let txt = btn.innerText.toLowerCase();
-                    if (txt.includes('accept') || txt.includes('tillad') || txt.includes('godkend')) {
-                        btn.click();
-                        return true;
-                    }
+    let success = false;
+    document.querySelectorAll('*').forEach(host => {
+        if (host.shadowRoot) {
+            host.shadowRoot.querySelectorAll('button').forEach(btn => {
+                let txt = btn.innerText.toLowerCase();
+                if (txt.includes('accepter') || txt.includes('tillad') || txt.includes('accept')) {
+                    btn.click();
+                    success = true;
                 }
-            }
+            });
         }
-    } catch(e) {}
-    return false;
+    });
+    return success;
     """
     try:
         if driver.execute_script(shadow_js):
-            time.sleep(0.5)
             return True
     except Exception: pass
 
     return False
 
 def capture_evidence(driver, name):
-    """GOLIATH V8: Sikrer bevismateriale lokalt."""
+    """GOLIATH V9: Full-Page Evidence Capture"""
     timestamp = datetime.now().strftime("%H%M%S")
     os.makedirs(session.get('loot_folder', './loot'), exist_ok=True)
     path = f"{session.get('loot_folder', './loot')}/SCREENSHOT_{name}_{timestamp}.png"
     
     try:
-        # NY V8 TILFØJELSE: Forsøger at fange fuld skærmhøjde for at få alt med
         total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
         driver.set_window_size(1920, total_height)
-        time.sleep(0.5)
-        
+        time.sleep(0.8)
         driver.save_screenshot(path)
-        print(f"{C.GREEN}    [📷] Bevismateriale sikret lokalt: {path}{C.RESET}")
+        print(f"{C.GREEN}    [📷] Bevismateriale sikret: {path}{C.RESET}")
     except Exception as e:
-        print(f"{C.DIM}    [!] Fejl ved bevissikring: {e}{C.RESET}")
-
-def safe_driver_action(driver, action_func, timeout=10, action_name=""):
-    """Sikker wrapper til ustabile DOM elementer"""
-    try:
-        return action_func(driver)
-    except (TimeoutException, NoSuchElementException, Exception) as e:
-        # Skjuler unødvendigt støj, returnerer None så modulet kan håndtere fejlen elegant
-        return None
+        print(f"{C.DIM}    [!] Screenshot fejlede: {e}{C.RESET}")
 
 def human_typing(element, text):
-    """Simulerer menneskelig skrivehastighed med mikropauser"""
+    """Simulerer fejl og rettelser under skrivning (Meget stærkt mod Captcha)"""
     for char in text:
+        # 5% chance for at skrive et forkert tegn og slette det igen
+        if random.random() < 0.05:
+            element.send_keys(random.choice('abcdefghijklmnopqrstuvwxyz'))
+            time.sleep(random.uniform(0.1, 0.3))
+            element.send_keys('\b') 
+            
         element.send_keys(char)
-        # Tilføj en lille tilfældig pause mellem 0.05 og 0.2 sekunder
-        time.sleep(random.uniform(0.05, 0.2))
+        time.sleep(random.uniform(0.05, 0.15))
 
 def human_scroll(driver):
-    """Simulerer at en rigtig person læser siden ved at scrolle ujævnt"""
+    """GOLIATH V9: Ujævn scrolling der efterligner menneskelig adfærd"""
     try:
         total_height = driver.execute_script("return document.body.scrollHeight")
-        current_position = 0
-        
-        while current_position < total_height:
-            # Scroll et tilfældigt antal pixels ned
-            scroll_step = random.randint(150, 400)
-            current_position += scroll_step
-            driver.execute_script(f"window.scrollTo(0, {current_position});")
-            # Vent som om vi kigger på indholdet
-            time.sleep(random.uniform(0.5, 1.5))
+        current_pos = 0
+        while current_pos < total_height:
+            step = random.randint(200, 500)
+            current_pos += step
+            driver.execute_script(f"window.scrollTo(0, {current_pos});")
+            time.sleep(random.uniform(0.4, 1.1))
             
-            # 10% chance for at vi "fortryder" og scroller lidt op igen
-            if random.random() < 0.10:
-                driver.execute_script(f"window.scrollBy(0, -{random.randint(50, 150)});")
-                time.sleep(random.uniform(0.3, 0.8))
-                
-            # Break hvis vi utilsigtet rammer et uendeligt scroll loop (fx på Twitter/SoMe sider)
-            if current_position > 15000: 
-                break
-    except Exception:
-        pass # Hvis DOM'en ændrer sig imens vi scroller, fejler vi bare stille
+            # Chance for at scrolle lidt op igen (læse-adfærd)
+            if random.random() < 0.15:
+                driver.execute_script(f"window.scrollBy(0, -{random.randint(100, 200)});")
+                time.sleep(random.uniform(0.3, 0.6))
+    except Exception: pass

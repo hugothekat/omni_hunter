@@ -58,8 +58,8 @@ class PhoneIntelligenceHunter:
         if links:
             for link in links:
                 href = link["url"]
-                # Vi ignorerer krak/dgs/118 da vi allerede har et dedikeret modul (01) til det
-                if "krak.dk" not in href and "degulesider.dk" not in href and "118.dk" not in href:
+                # Vi ignorerer krak/dgs da vi allerede har et dedikeret modul (01) til det
+                if "krak.dk" not in href and "degulesider.dk" not in href:
                     print(f"{C.GREEN}    🔥 SPOR: {href[:80]}{C.RESET}")
                     if href not in self.data["Web_Spor"]:
                         self.data["Web_Spor"].append(href)
