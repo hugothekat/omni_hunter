@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 # Sikrer at modulet altid kan finde 'core', selv hvis det køres direkte!
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-
+import tools
 import os
 import glob
 import time
@@ -20,8 +20,7 @@ import hashlib
 import math
 import concurrent.futures
 from datetime import datetime
-from typing import Dict, Any, Optional
-
+from typing import Dict, Any, Optional, List
 import magic
 import cv2
 import pytesseract
