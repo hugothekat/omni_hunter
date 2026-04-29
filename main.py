@@ -1,366 +1,341 @@
 # -*- coding: utf-8 -*-
 """
-🚀 OMNI_HUNTER - THE APEX ORCHESTRATOR (main.py) v3.0
-📌 Formål: Centralt kontrolcenter der integrerer Vault, Nexus, Async Netværk og Dynamiske Moduler.
+🚀 OMNI_HUNTER - THE APEX ORCHESTRATOR & TUI SHELL (main.py) v5.0 (PET-FE EXECUTIVE)
+📌 Formål: Asynkront, professionelt kontrolcenter for PETFE OSINT operationer.
 🔧 Features:
-   - Dynamic Module Loading (Auto-Discovery menu)
-   - Async Event Loop Bootstrapping (Forhindrer thread-crashes)
-   - Secure Vault Initialization (Indlæser API nøgler i RAM før start)
-   - Advanced CLI Pipeline (Kør flere moduler i kæde via terminal)
-   - Interactive D3.js / Vis.js Case Reporter (Visuel Graf)
-   - Graceful Degradation & Global Exception Hooking
+   - Clean Government-Grade Interface (Rød / Klinisk)
+   - Alias Engine (Nemme 1-ords kommandoer)
+   - Cryptographic Compliance Audit Logging
+   - Background Job Manager & Operational Workspaces
+   - Bulletproof Exception Handling
 """
 
 import os
 import sys
 import shutil
 import argparse
-import json
-import asyncio
 import threading
 import time
+import requests
 from pathlib import Path
 from datetime import datetime
 import traceback
+import uuid
+import importlib.util
+import inspect
 
 # --- GOLIATH CORE INTEGRATIONER ---
 try:
-    from core.utils import C, session, get_input, military_sanitize_input
+    from core.utils import C, session, military_sanitize_input
     from core.browser import OmniHunterBrowser, BrowserConfig
     from core.logger import logger
+    from core.reporter import AutomatedCaseReporter  
     
-    # Nye systemer (Sikrer graceful fallback hvis de ikke er oprettet endnu)
-    try:
-        from core.config_vault import vault
-    except ImportError:
-        vault = None
-        logger.warning("Vault system ikke fundet. Kører i legacy mode.")
-
-    try:
-        from core.module_manager import ModuleManager
-    except ImportError:
-        ModuleManager = None
-
-    try:
-        from core.nexus import nexus
-    except ImportError:
-        nexus = None
+    try: from core.config_vault import vault
+    except ImportError: vault = None
+    
+    try: from core.module_manager import ModuleManager
+    except ImportError: ModuleManager = None
+    
+    try: from core.nexus import nexus
+    except ImportError: nexus = None
 
 except ImportError as e:
     print(f"\033[91m[!] KRITISK FEJL: Core-komponenter mangler. Fejl: {e}\033[0m")
     sys.exit(1)
 
 # ==========================================
-# 🔹 SYSTEM BOOTSTRAPPER & VALIDATOR
+# 🔹 COMPLIANCE AUDIT LOGGER
 # ==========================================
-class GoliathCommandCenter:
+class ComplianceAuditLogger:
     def __init__(self):
-        self.loot_dir = Path("loot_evidence")
-        self.loot_dir.mkdir(exist_ok=True)
-        session["loot_folder"] = str(self.loot_dir)
-        
-        self.module_manager = ModuleManager("modules") if ModuleManager else None
-        if self.module_manager:
-            self.module_manager.discover()
+        self.log_file = Path("compliance_audit.log")
+        if not self.log_file.exists():
+            self._write_log("SYSTEM BOOT", "Audit Log Initialized")
+
+    def _write_log(self, action: str, details: str):
+        timestamp = datetime.now().isoformat()
+        operator = os.getlogin() if hasattr(os, 'getlogin') else "UNKNOWN_OPERATOR"
+        raw_entry = f"[{timestamp}] OP:{operator} | ACT:{action} | DET:{details}"
+        checksum = uuid.uuid5(uuid.NAMESPACE_OID, raw_entry).hex[:8]
+        with open(self.log_file, "a", encoding="utf-8") as f:
+            f.write(f"{raw_entry} | CHK:{checksum}\n")
+
+    def log_command(self, cmd: str):
+        self._write_log("COMMAND_EXECUTION", f"Command: '{cmd}'")
+
+audit_logger = ComplianceAuditLogger()
+
+# ==========================================
+# 🔹 FALLBACK MODULE MANAGER
+# ==========================================
+class FallbackModuleManager:
+    def __init__(self):
+        self.modules = {}
+        self.discover()
+
+    def discover(self):
+        mod_dir = Path("modules")
+        if not mod_dir.exists(): return
+        for file in mod_dir.glob("mod_*.py"):
+            self.modules[file.name.split('_')[1]] = file.name
+
+    def display_dynamic_menu(self):
+        print(f"\n{C.RED}--- [ VÆRKTØJSOVERSIGT (FALLBACK) ] ---{C.RESET}")
+        for mod_id, name in sorted(self.modules.items()):
+            print(f" {C.WHITE}[{mod_id}]{C.RESET} {name}")
             
-        self._check_dependencies()
-        self._init_async_loop()
+    def get_module(self, mod_id: str):
+        print(f"{C.RED}[!] System kører i Fallback Mode. Tjek core/module_manager.py.{C.RESET}")
+        return None
 
-    def _check_dependencies(self):
-        """Militært tjek af maskinrummet før opsendelse."""
-        tools = {
-            "rg": "Ripgrep (Offline Databaser)", 
-            "tesseract": "Tesseract OCR (Billedtekst)", 
-            "exiftool": "ExifTool (OPSEC)",
-            "nmap": "Nmap (Aktiv Netværksscanning)"
-        }
-        missing = []
-        for tool, desc in tools.items():
-            if shutil.which(tool) is None:
-                missing.append(desc)
-        
-        if missing:
-            print(f"\n{C.YELLOW}[!] ADVARSEL: Følgende systemværktøjer mangler:{C.RESET}")
-            for m in missing:
-                print(f"{C.YELLOW}    - {m}{C.RESET}")
-            print(f"{C.DIM}    Nogle moduler vil have nedsat funktionalitet. Kør install_deps.sh{C.RESET}\n")
-            time.sleep(2)
+# ==========================================
+# 🔹 DIAGNOSTICS & SYSTEM BOOT
+# ==========================================
+class GoliathDiagnostics:
+    @staticmethod
+    def run_pre_flight_checks():
+        print(f"\n{C.RED}[*] Initialiserer PET FE Systemdiagnostik...{C.RESET}")
+        tools = {"rg": "Ripgrep", "tesseract": "Tesseract OCR", "exiftool": "ExifTool", "nmap": "Nmap"}
+        missing = [desc for tool, desc in tools.items() if shutil.which(tool) is None]
+        if missing: print(f"{C.YELLOW} [!] Advarsel: Manglende systemværktøjer: {', '.join(missing)}{C.RESET}")
+        else: print(f"{C.WHITE} [✓] Systemværktøjer verificeret.{C.RESET}")
 
-    def _init_async_loop(self):
-        """Sikrer at alle moduler har adgang til et validt event loop, selv i tråde."""
         try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        self.loop = loop
+            proxies = {'http': 'socks5h://127.0.0.1:9050', 'https': 'socks5h://127.0.0.1:9050'}
+            res = requests.get("https://check.torproject.org/api/ip", proxies=proxies, timeout=5).json()
+            if res.get("IsTor"): print(f"{C.WHITE} [✓] Sikker routing aktiv (Exit: {res.get('IP')}){C.RESET}")
+            else: print(f"{C.RED} [!] Sikker routing DEAKTIVERET. Tjek Tor proxy.{C.RESET}")
+        except Exception:
+            print(f"{C.RED} [!] Proxy-forbindelse fejlede.{C.RESET}")
 
-    def execute_module(self, mod_id: str, target: str):
-        """Dynamisk eksekvering af moduler med isolation."""
-        if not self.module_manager:
-            print(f"{C.RED}[!] ModuleManager er ikke aktiv. Gå til manuel routing.{C.RESET}")
-            return False
+        if vault: print(f"{C.WHITE} [✓] Kryptografisk Vault online.{C.RESET}")
+        else: print(f"{C.RED} [!] Vault Offline. Opererer usikret.{C.RESET}")
+        time.sleep(1)
+
+# ==========================================
+# 🔹 BACKGROUND JOB MANAGER
+# ==========================================
+class BackgroundJobManager:
+    def __init__(self):
+        self.jobs = {}
+        self.lock = threading.Lock()
+
+    def start_job(self, mod_id: str, target: str, module_instance, is_background: bool = False):
+        job_id = str(uuid.uuid4())[:8]
+        
+        def job_runner():
+            with self.lock:
+                self.jobs[job_id] = {"status": "Aktiv", "module": module_instance.name, "target": target, "start": datetime.now()}
+            try:
+                browser_cfg = BrowserConfig(headless=True, anti_detection=True)
+                browser = OmniHunterBrowser(browser_cfg)
+                browser.start()
+                try: module_instance.run(browser, target)
+                finally: browser.close()
+                
+                with self.lock: self.jobs[job_id]["status"] = "Fuldført"
+                if is_background: print(f"\n{C.GREEN}[+] Opgave [{job_id}] fuldført!{C.RESET}")
+            except Exception as e:
+                with self.lock: self.jobs[job_id]["status"] = f"Fejl: {str(e)}"
+                logger.error(f"Job {job_id} fejlede: {e}\n{traceback.format_exc()}")
+                print(f"\n{C.RED}[!] Opgave [{job_id}] afbrudt: {str(e)}{C.RESET}")
+
+        thread = threading.Thread(target=job_runner, daemon=True)
+        thread.start()
+        
+        if is_background: print(f"{C.RED}[*] Opgave startet asynkront. ID: {job_id}{C.RESET}")
+        else: thread.join()
+
+    def list_jobs(self):
+        print(f"\n{C.RED}--- [ OPERATIONSOVERSIGT ] ---{C.RESET}")
+        with self.lock:
+            if not self.jobs: print(f"{C.DIM}Ingen aktive opgaver.{C.RESET}")
+            for j_id, j_data in self.jobs.items():
+                col = C.GREEN if j_data["status"] == "Fuldført" else (C.WHITE if j_data["status"] == "Aktiv" else C.RED)
+                print(f"[{j_id}] {j_data['module']} -> {j_data['target']} | Status: {col}{j_data['status']}{C.RESET}")
+
+# ==========================================
+# 🔹 WORKSPACE MANAGER
+# ==========================================
+class WorkspaceManager:
+    def __init__(self):
+        self.base_dir = Path("workspaces")
+        self.base_dir.mkdir(exist_ok=True)
+        self.current_workspace = "standard_sag"
+        self._set_workspace("standard_sag")
+
+    def _set_workspace(self, name: str):
+        safe_name = military_sanitize_input(name).replace(" ", "_").lower()
+        self.current_workspace = safe_name
+        ws_dir = self.base_dir / safe_name
+        ws_dir.mkdir(exist_ok=True)
+        session["loot_folder"] = str(ws_dir)
+        session["workspace"] = safe_name
+        print(f"{C.RED}[+] Operativ sag sat til: {safe_name.upper()}{C.RESET}")
+
+    def list_workspaces(self):
+        print(f"\n{C.RED}--- [ AKTIVE SAGER ] ---{C.RESET}")
+        for ws in self.base_dir.iterdir():
+            if ws.is_dir():
+                marker = "*" if ws.name == self.current_workspace else " "
+                print(f" [{marker}] {ws.name.upper()}")
+
+# ==========================================
+# 🔹 APEX COMMAND SHELL (PET FE EXECUTIVE)
+# ==========================================
+class GoliathShell:
+    def __init__(self):
+        if ModuleManager:
+            self.module_manager = ModuleManager("modules")
+            self.module_manager.discover()
+        else:
+            self.module_manager = FallbackModuleManager()
+            
+        self.job_manager = BackgroundJobManager()
+        self.workspace_manager = WorkspaceManager()
+        self.current_target = None
+
+    def prompt(self):
+        target_str = f" {C.WHITE}[{self.current_target}]{C.RESET}" if self.current_target else ""
+        return f"\n{C.RED}PETFE{C.RESET}({C.DIM}{self.workspace_manager.current_workspace}{C.RESET}){target_str} > "
+
+    def print_banner(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        # Klinisk, autoritært PET FE banner (Ingen ASCII kunst)
+        banner = f"""{C.RED}████████████████████████████████████████████████████████████████████████
+[ PET FE ] POLITIETS EFTERRETNINGSTJENESTE - FREMSKUDT EFTERFORSKNING
+========================================================================
+SYSTEM: OMNI_HUNTER ORCHESTRATOR 
+STATUS: RESTRICTED // AUTHORIZED PERSONNEL ONLY
+████████████████████████████████████████████████████████████████████████{C.RESET}"""
+        print(banner)
+
+    def cmd_loop(self):
+        self.print_banner()
+        GoliathDiagnostics.run_pre_flight_checks()
+        
+        while True:
+            try:
+                cmd_raw = input(self.prompt()).strip()
+                if not cmd_raw: continue
+                
+                audit_logger.log_command(cmd_raw)
+                
+                cmd_input = cmd_raw.split()
+                cmd = cmd_input[0].lower()
+                args = cmd_input[1:]
+
+                # --- ALIAS ENGINE (NEMMERE KOMMANDOER) ---
+                if cmd in ["exit", "quit", "q"]:
+                    print(f"{C.RED}[*] Sikrer databaser og afslutter system...{C.RESET}")
+                    break
+                elif cmd == "help":
+                    self.show_help()
+                elif cmd == "clear":
+                    self.print_banner()
+                elif cmd in ["modules", "tools", "ls"]:
+                    self.module_manager.display_dynamic_menu()
+                elif cmd == "target":
+                    if not args:
+                        print(f"{C.YELLOW}[!] Fejl: Angiv et mål. Eksempel: target John Doe{C.RESET}")
+                        continue
+                    self.current_target = military_sanitize_input(" ".join(args))
+                    session["name"] = self.current_target
+                    print(f"{C.RED}[+] Mål fastlåst: {self.current_target}{C.RESET}")
+                elif cmd == "case" or cmd == "workspace":
+                    if args: self.workspace_manager._set_workspace(args[0])
+                    else: self.workspace_manager.list_workspaces()
+                elif cmd == "jobs":
+                    self.job_manager.list_jobs()
+                elif cmd == "scan":
+                    # Alias for 'run auto'
+                    args.insert(0, "auto")
+                    self.execute_cmd(args)
+                elif cmd == "run":
+                    self.execute_cmd(args)
+                elif cmd == "report":
+                    print(f"{C.RED}[*] Genererer analyserapport for sag: {self.workspace_manager.current_workspace}...{C.RESET}")
+                    AutomatedCaseReporter().generate()
+                else:
+                    print(f"{C.YELLOW}[!] Ukendt kommando. Skriv 'help'.{C.RESET}")
+
+            except KeyboardInterrupt:
+                print(f"\n{C.YELLOW}[*] Afbrudt. Skriv 'exit' for at lukke ned.{C.RESET}")
+            except Exception as e:
+                logger.error(f"Shell Fejl: {e}\n{traceback.format_exc()}")
+                print(f"{C.RED}[!] Systemfejl: {e}{C.RESET}")
+
+    def show_help(self):
+        print(f"\n{C.RED}--- [ KOMMANDOOVERSIGT ] ---{C.RESET}")
+        print(f" {C.WHITE}target <navn>{C.RESET}  Fastlås mål (Navn, IP, CVR, Email)")
+        print(f" {C.WHITE}scan{C.RESET}           Start autonom kortlægning på fastlåst mål")
+        print(f" {C.WHITE}scan -bg{C.RESET}       Kør scanning asynkront i baggrunden")
+        print(f" {C.WHITE}modules{C.RESET}        Viser alle manuelle indsamlingsværktøjer")
+        print(f" {C.WHITE}run <id>{C.RESET}       Start specifikt modul (eks: 'run 04')")
+        print(f" {C.WHITE}case <navn>{C.RESET}    Opret eller skift sagsmappe (workspace)")
+        print(f" {C.WHITE}jobs{C.RESET}           Se status på baggrundsopgaver")
+        print(f" {C.WHITE}report{C.RESET}         Generér interaktiv efterretningsrapport (HTML)")
+
+    def execute_cmd(self, args):
+        if not args:
+            print(f"{C.YELLOW}[!] Angiv hvad der skal køres.{C.RESET}")
+            return
+
+        mod_id = args[0]
+        is_bg = "-bg" in args or "--bg" in args
+
+        if not self.current_target:
+            print(f"{C.YELLOW}[!] Intet mål valgt. Brug 'target <navn>' først.{C.RESET}")
+            return
+
+        if mod_id.lower() == "auto": mod_id = "30"
+
+        if isinstance(self.module_manager, FallbackModuleManager):
+            print(f"{C.RED}[!] Fallback Mode: Modul-eksekvering kræver core/module_manager.py.{C.RESET}")
+            return
 
         module = self.module_manager.get_module(mod_id)
         if not module:
-            print(f"{C.RED}[!] Modul {mod_id} findes ikke i systemet.{C.RESET}")
-            return False
+            print(f"{C.YELLOW}[!] Værktøj '{mod_id}' findes ikke.{C.RESET}")
+            return
+        if not module.check_requirements(): return
 
-        if not module.check_requirements():
-            return False
-
-        try:
-            sanitized_target = military_sanitize_input(target)
-            print(f"\n{C.MAGENTA}[*] Initialiserer [{mod_id}] {module.name} mod: {sanitized_target}{C.RESET}")
-            
-            # Klargør Browser (Headless som standard for moduler der skal bruge det)
-            browser_cfg = BrowserConfig(headless=True, anti_detection=True)
-            browser = OmniHunterBrowser(browser_cfg)
-            browser.start()
-            
-            try:
-                # Moduler skal designes til at modtage (browser_instance, target)
-                module.run(browser, sanitized_target)
-            finally:
-                browser.close()
-                
-            return True
-            
-        except Exception as e:
-            logger.error(f"Kritisk fejl i modul {mod_id}", error=str(e), traceback=traceback.format_exc())
-            print(f"\n{C.BG_RED}{C.WHITE} [!] NEDBRUD I MODUL {mod_id}: {str(e)} {C.RESET}")
-            return False
+        self.job_manager.start_job(mod_id, self.current_target, module, is_background=is_bg)
 
 # ==========================================
-# 🔹 INTERACTIVE HTML CASE REPORTER (V3)
+# 🔹 CLI PIPELINE
 # ==========================================
-class AutomatedCaseReporter:
-    """GOLIATH V3: Genererer et interaktivt HTML Dashboard med D3.js netværksgrafer!"""
-    def __init__(self):
-        self.loot_dir = Path(session.get("loot_folder", "loot_evidence"))
-        self.timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-        self.report_file = self.loot_dir / f"SAGSRAPPORT_{self.timestamp}.html"
-
-    def _build_graph_data(self, files) -> str:
-        """Bygger Nodes og Edges til Vis.js baseret på JSON dumps og Nexus-data."""
-        nodes = []
-        edges = []
-        node_ids = set()
+def run_pipeline(args):
+    ws = WorkspaceManager()
+    jm = BackgroundJobManager()
+    mm = ModuleManager("modules") if ModuleManager else None
+    if not mm: return
         
-        def add_node(n_id, label, group):
-            if n_id not in node_ids:
-                nodes.append({"id": n_id, "label": label, "group": group})
-                node_ids.add(n_id)
+    mm.discover()
+    target = military_sanitize_input(args.target)
+    session["name"] = target
 
-        # Hvis Nexus er aktiv (Fase 2), brug dens data direkte
-        if nexus and nexus.graph:
-            for node_val, meta in nexus.graph.items():
-                add_node(node_val, str(node_val), meta['type'])
-                for link_val, relation in meta['linked_entities']:
-                    add_node(link_val, str(link_val), "linked")
-                    edges.append({"from": node_val, "to": link_val, "label": relation})
-        else:
-            # Fallback til grov fil-parsing
-            target_node = session.get('name', 'Ukendt_Target')
-            add_node(target_node, target_node, "Target")
-            
-            for f in files:
-                try:
-                    data = json.loads(f.read_text(encoding='utf-8'))
-                    if "Email" in data:
-                        add_node(data["Email"], data["Email"], "Email")
-                        edges.append({"from": target_node, "to": data["Email"], "label": "Ejer"})
-                    if "Telefonnumre" in data:
-                        for t in data["Telefonnumre"]:
-                            add_node(t, t, "Phone")
-                            edges.append({"from": target_node, "to": t, "label": "Bruger"})
-                except: pass
-
-        return json.dumps({"nodes": nodes, "edges": edges})
-
-    def generate(self):
-        print(f"\n{C.CYAN}[*] Kompilerer Interaktiv Sagsrapport (Vis.js Graph Engine)...{C.RESET}")
-        files = list(self.loot_dir.glob("*.json"))
-        
-        # Samledata
-        all_emails, all_phones, all_usernames = set(), set(), set()
-        for f in files:
-            try:
-                data = json.loads(f.read_text(encoding='utf-8'))
-                if "Email" in data: all_emails.add(data["Email"])
-                if "Telefonnumre" in data: all_phones.update(data["Telefonnumre"])
-            except: pass
-
-        graph_json = self._build_graph_data(files)
-
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>GOLIATH // TACTICAL DASHBOARD</title>
-            <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-            <style>
-                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e2f; color: #cfd2d9; margin: 0; padding: 20px; }}
-                h1 {{ color: #00e5ff; border-bottom: 2px solid #3b3b54; padding-bottom: 10px; }}
-                .grid {{ display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }}
-                .box {{ background: #27293d; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 4px solid #00e5ff; }}
-                #mynetwork {{ width: 100%; height: 600px; border: 1px solid #3b3b54; background-color: #1a1a24; border-radius: 8px; }}
-                .badge {{ background: #ff007f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; }}
-                ul {{ list-style-type: none; padding: 0; }}
-                li {{ background: #1e1e2f; margin: 5px 0; padding: 10px; border-radius: 4px; border: 1px solid #3b3b54; }}
-            </style>
-        </head>
-        <body>
-            <h1>GOLIATH APEX // INTERACTIVE CASE REPORT</h1>
-            <p>Genereret: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            
-            <div class="grid">
-                <div>
-                    <div class="box">
-                        <h2>Identifikatorer</h2>
-                        <p><strong>Emails <span class="badge">{len(all_emails)}</span></strong></p>
-                        <ul>{''.join([f"<li>{e}</li>" for e in all_emails]) if all_emails else "<li>Ingen data</li>"}</ul>
-                        <p><strong>Telefoner <span class="badge">{len(all_phones)}</span></strong></p>
-                        <ul>{''.join([f"<li>+45 {p}</li>" for p in all_phones]) if all_phones else "<li>Ingen data</li>"}</ul>
-                    </div>
-                    <div class="box">
-                        <h2>Bevismateriale ({len(files)} filer)</h2>
-                        <ul style="max-height: 250px; overflow-y: auto;">
-                            {''.join([f"<li style='border-left: 2px solid #2ecc71;'>{f.name}</li>" for f in files])}
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="box" style="border-left: 4px solid #ff007f;">
-                    <h2>Relational Intelligence Network (Vis.js)</h2>
-                    <div id="mynetwork"></div>
-                </div>
-            </div>
-
-            <script type="text/javascript">
-                var graphData = {graph_json};
-                var container = document.getElementById('mynetwork');
-                var data = {{
-                    nodes: new vis.DataSet(graphData.nodes),
-                    edges: new vis.DataSet(graphData.edges)
-                }};
-                var options = {{
-                    nodes: {{ shape: 'dot', size: 20, font: {{ color: '#cfd2d9' }} }},
-                    edges: {{ font: {{ color: '#cfd2d9', align: 'middle' }}, arrows: 'to' }},
-                    physics: {{ stabilization: true, barnesHut: {{ springLength: 200 }} }}
-                }};
-                var network = new vis.Network(container, data, options);
-            </script>
-        </body>
-        </html>
-        """
-
-        self.report_file.write_text(html_content, encoding='utf-8')
-        print(f"{C.GREEN}[✓] Interaktiv Sagsrapport genereret!{C.RESET}")
-        print(f"{C.CYAN}    -> Åbn filen i din browser: {self.report_file.absolute()}{C.RESET}")
-
-
-# ==========================================
-# 🔹 CLI & MAIN MENU ROUTING
-# ==========================================
-def setup_cli():
-    parser = argparse.ArgumentParser(description="PETFE GOLIATH - Advanced OSINT Framework")
-    parser.add_argument("-t", "--target", help="Målets navn, email eller IP", type=str)
-    parser.add_argument("-m", "--modules", help="Kommasepareret liste af moduler (fx '01,04,17')", type=str)
-    parser.add_argument("--auto", action="store_true", help="Kør autonom omni-pivot skanning (Modul 00/30)")
-    return parser.parse_args()
-
-def display_menu(cmd_center: GoliathCommandCenter):
-    os.system('cls' if os.name == 'nt' else 'clear')
-    banner = f"""{C.WHITE}{C.BOLD}
-===========================================================================
- 🦅 GOLIATH APEX ORCHESTRATOR // CENTRAL INTELLIGENCE COMMAND
-===========================================================================
-{C.RESET}"""
-    print(banner)
-
-    if vault and vault.get("system_settings"):
-        mode = vault.get("system_settings", "operator_mode")
-        print(f"{C.DIM} Vault Security: ENABLED | Mode: {mode} | Core: V36 {C.RESET}\n")
-
-    print(f"{C.BG_RED}{C.WHITE} [00] THE GRAND ORCHESTRATOR (Autonom Identitets-Opløsning) {C.RESET}\n")
-
-    if cmd_center.module_manager:
-        cmd_center.module_manager.display_dynamic_menu()
-    else:
-        print(f"{C.RED}[!] ModuleManager nede. Tjek core/module_manager.py.{C.RESET}")
-
-    print(f"\n{C.CYAN}--- [ SYSTEM & REPORTING ] ------------------------------------------------{C.RESET}")
-    print(f" {C.GREEN}[14]{C.RESET} Generér Interaktiv Sagsrapport (HTML/D3.js)")
+    mod_list = ["30"] if args.auto else [m.strip() for m in args.modules.split(",")]
     
-    print(f"\n{C.DIM}" + "-" * 75 + f"{C.RESET}")
-    print(f" {C.RED}[99] Afslut System{C.RESET}")
+    for m_id in mod_list:
+        module = mm.get_module(m_id)
+        if module and module.check_requirements():
+            jm.start_job(m_id, target, module, is_background=False)
+            
+    AutomatedCaseReporter().generate()
 
 def main():
-    args = setup_cli()
-    cmd_center = GoliathCommandCenter()
+    parser = argparse.ArgumentParser(description="PET FE - OSINT Framework")
+    parser.add_argument("-t", "--target", help="Mål", type=str)
+    parser.add_argument("-m", "--modules", help="Moduler (fx '01,04')", type=str)
+    parser.add_argument("--auto", action="store_true", help="Kør autonom scanning")
+    args = parser.parse_args()
 
-    # --- CLI PIPELINE MODE (Hvis argumenter er givet i terminalen) ---
-    if args.target:
-        session["name"] = args.target
-        if args.auto:
-            print(f"{C.CYAN}[*] Initiating CLI Autonomous Mode against {args.target}...{C.RESET}")
-            # Kald Modul 30 direkte
-            cmd_center.execute_module("30", args.target)
-            AutomatedCaseReporter().generate()
-            return
-            
-        if args.modules:
-            mod_list = [m.strip() for m in args.modules.split(",")]
-            for m_id in mod_list:
-                cmd_center.execute_module(m_id, args.target)
-            AutomatedCaseReporter().generate()
-            return
-
-    # --- INTERACTIVE MENU MODE ---
-    while True:
-        display_menu(cmd_center)
-        
-        try:
-            choice = input(f"\n{C.YELLOW}Vælg Handling [00-99]: {C.RESET}").strip()
-            
-            if choice == "99" or choice.lower() in ['q', 'exit', 'quit']: 
-                print(f"\n{C.RED}[*] Gemmer Vault State. Sletter midlertidige spor. System afsluttet.{C.RESET}")
-                break
-
-            if choice in ["00", "0"]:
-                target = get_input("Målets fulde navn/ID", "name")
-                cmd_center.execute_module("30", target) # Auto-ruter til Modul 30 Orchestrator
-
-            elif choice == "14":
-                AutomatedCaseReporter().generate()
-
-            else:
-                # Dynamisk routing til det valgte modul
-                target_map = {
-                    "01": "Navn/By", "02": "Firma/CVR", "03": "Email", "04": "Brugernavn",
-                    "10": "IP/Domæne", "12": "Telefon", "19": "Krypto Adresse", "20": "Nummerplade",
-                    "21": "MAC Adresse"
-                }
-                
-                # Prøv at hente target beskrivelse, ellers brug "Target"
-                target_prompt = target_map.get(choice, "Indtast Mål/Target")
-                target = get_input(target_prompt, "target")
-                
-                success = cmd_center.execute_module(choice, target)
-                if not success:
-                    print(f"{C.RED}[!] Kunne ikke eksekvere modul (Findes det, eller opstod en fejl?){C.RESET}")
-
-            input(f"\n{C.DIM}Tryk ENTER for at vende tilbage til kontrolcenteret...{C.RESET}")
-
-        except KeyboardInterrupt:
-            print(f"\n{C.RED}[!] Proces afbrudt af operatør (Ctrl+C). Standser asynkrone tråde.{C.RESET}")
-            time.sleep(1)
-        except Exception as e:
-            logger.error(f"Kritisk systemfejl i menuen: {e}")
-            print(f"\n{C.BG_RED}{C.WHITE}[!] KRITISK ORCHESTRATOR FEJL:{C.RESET} {str(e)}")
-            input(f"\n{C.DIM}Tryk ENTER for at genindlæse miljøet...{C.RESET}")
+    if args.target and (args.modules or args.auto): run_pipeline(args)
+    else:
+        shell = GoliathShell()
+        shell.cmd_loop()
 
 if __name__ == "__main__":
     main()

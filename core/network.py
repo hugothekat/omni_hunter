@@ -43,7 +43,7 @@ from urllib3.util.retry import Retry
 from fake_useragent import UserAgent
 import nmap
 import paramiko
-from crt_sh import CrtSh
+from core.cert_intel import CertificateIntelligenceEngine
 from securitytrails import SecurityTrails
 from shodan import Shodan
 from censys.search import CensysSearchClient
@@ -232,24 +232,27 @@ class NetworkScanner:
             self.results.errors.append(f"SecurityTrails Fejl: {e}")
 
     def enumerate_subdomains_passive(self) -> List[str]:
-        logger.info("[*] Udfører passiv subdomain enumeration (crt.sh)...")
-        if not self.domain or self.domain == self.ip: return []
-        
-        subs = set()
-        try:
-            crt = CrtSh()
-            certs = crt.search(self.domain)
-            for cert in certs:
-                name = cert.get('name_value', '').lower()
-                if '*' not in name and name.endswith(self.domain):
-                    subs.add(name)
-            
-            logger.info(f"{C.GREEN}[+] Fandt {len(subs)} subdomæner via certifikater!{C.RESET}")
-            self.results.subdomains.extend(list(subs))
-            return list(subs)
-        except Exception as e:
-            self.results.errors.append(f"crt.sh fejl: {e}")
-            return []
+    """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
+    logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
+    if not self.domain or self.domain == self.ip: return []
+
+    try:
+        # Initialiserer vores nye Native Engine
+        cert_engine = CertificateIntelligenceEngine(self.domain)
+        subs = cert_engine.execute_recon()
+
+        if subs:
+            self.results.subdomains.extend(subs)
+            # Fjern potentielle dubletter
+            self.results.subdomains = list(set(self.results.subdomains))
+
+        if cert_engine.errors:
+            self.results.errors.extend(cert_engine.errors)
+
+        return subs
+    except Exception as e:
+        self.results.errors.append(f"Native CRT fejl: {e}")
+        return []
 
     async def subdomain_bruteforce_async(self, wordlist: str = None) -> List[str]:
         logger.info("[*] Starter Asynkron Subdomain Bruteforce...")
