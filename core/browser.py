@@ -385,12 +385,17 @@ class RequestsBrowser:
 
 # ====================== MAIN BROWSER FACTORY ======================
 class OmniHunterBrowser:
-    """Den intelligente orkestrator der skifter sømløst mellem motorer."""
-    def __init__(self, config: Optional[BrowserConfig] = None):
-        self.config = config or BrowserConfig()
-        self.browser = None
-        self.logger = logging.getLogger("OmniHunterBrowser")
-        create_dirs(self.config.screenshot_dir, self.config.download_dir)
+    def __init__(self, use_tor=False, captcha_key=None):
+        self.use_tor = use_tor
+        self.captcha_key = captcha_key
+        self.driver = None  # Selenium/Playwright driver
+
+    def get(self, url):
+        if self.use_tor:
+            pass
+        response = requests.get(url)
+        return response
+
 
     def _select_best_browser(self) -> Union[SeleniumBrowser, PlaywrightBrowser, RequestsBrowser]:
         if "chrome" in self.config.browser_type.lower():
