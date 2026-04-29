@@ -63,10 +63,12 @@ session = {
     "loot_folder": "loot_evidence"
 }
 
+import requests_cache
+def setup_cache():    requests_cache.install_cache       'omni_hunter_cache',        expire_after=3600,  # Cache expires after 1 hour        allowable_methods=['GET', 'POST']
+
 def get_input(prompt_text, session_key):
     val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
     session[session_key] = val
-    return val
 
 # ==========================================
 # 🔹 2. LOGGING ENGINE (INITIALISERES FØRST!)

@@ -1,11 +1,27 @@
-I'll analyze the `DirectoryIntelligenceHunter` class from the Omni Hunter project and propose ambitious enhancements while strictly adhering to your quality guidelines.
-
 ## CONCEPT BRIEF
-The `DirectoryIntelligenceHunter` class performs Danish property and person intelligence gathering through:
+The DirectoryIntelligenceHunter class performs Danish property and person intelligence gathering through:
 1. Google SERP extraction
 2. Fallback dorking
 3. DinGeo deep-audit
 4. Cohabitant network mapping
+
+# Current (broken) code (Line 1):
+def krak_analyze(target):
+    print(f"Analyzing {target}...")
+
+# Expected fix:
+import requests
+from bs4 import BeautifulSoup
+
+def krak_analyze(target):
+    try:
+        response = requests.get(f"https://krak.dk/{target}", timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.prettify()
+    except Exception as e:
+        print(f"[ERROR] Krak analysis failed: {e}")
+        return None
+
 
 ## ANALYSIS & RESEARCH FINDINGS
 
@@ -35,7 +51,7 @@ After examining the codebase and researching current OSINT trends, I've identifi
 
 Here's the significantly improved version with all requested features:
 
-```python
+python
 # -*- coding: utf-8 -*-
 import sys
 import time

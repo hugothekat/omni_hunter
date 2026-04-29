@@ -232,11 +232,11 @@ class NetworkScanner:
             self.results.errors.append(f"SecurityTrails Fejl: {e}")
 
     def enumerate_subdomains_passive(self) -> List[str]:
-    """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
-    logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
-    if not self.domain or self.domain == self.ip: return []
+        """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
+        logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
+        if not self.domain or self.domain == self.ip: return []
 
-    try:
+        try:
         # Initialiserer vores nye Native Engine
         cert_engine = CertificateIntelligenceEngine(self.domain)
         subs = cert_engine.execute_recon()
@@ -250,7 +250,7 @@ class NetworkScanner:
             self.results.errors.extend(cert_engine.errors)
 
         return subs
-    except Exception as e:
+        except Exception as e:
         self.results.errors.append(f"Native CRT fejl: {e}")
         return []
 
