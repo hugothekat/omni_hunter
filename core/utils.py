@@ -404,3 +404,20 @@ class OmniDataLake:
 datalake = OmniDataLake()
 def save_to_json(data: Dict[str, Any], filename: str, encrypt: bool = False) -> None:
     datalake.save_to_json(data, filename, encrypt)
+
+# ==========================================
+# 🔹 9. BACKWARDS COMPATIBILITY LAYER
+# ==========================================
+# Sikrer at ældre moduler (Modul 01, 02, 04, 09) ikke crasher på manglende imports
+REGEX_EMAIL = ThreatIntelExtractor.PATTERNS["email"]
+REGEX_CPR = ThreatIntelExtractor.PATTERNS["danish_cpr"]
+REGEX_CVR = ThreatIntelExtractor.PATTERNS["danish_cvr"]
+REGEX_BTC = ThreatIntelExtractor.PATTERNS["crypto_btc"]
+REGEX_ETH = ThreatIntelExtractor.PATTERNS["crypto_eth"]
+REGEX_XMR = ThreatIntelExtractor.PATTERNS["crypto_xmr"]
+REGEX_IBAN = ThreatIntelExtractor.PATTERNS["iban"]
+REGEX_IPV4 = ThreatIntelExtractor.PATTERNS["ipv4"]
+REGEX_MAC = ThreatIntelExtractor.PATTERNS["mac"]
+
+def extract_danish_phones(text):
+    return ThreatIntelExtractor.extract_danish_phones(text)

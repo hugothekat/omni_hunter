@@ -349,7 +349,7 @@ class AutonomousOrchestrator(BaseModule):
                 futures = [executor.submit(run_browser_module, cls, tgt, kw) for cls, tgt, kw in browser_tasks]
                 concurrent.futures.wait(futures)
 
-    def _phase_7_finalize_models(self):
+    def _phase_7_finalize_models(self):§
         """Kører Wordlist, AI og Graph generation sekventielt."""
         try:
             email_seed = list(self.intel_pool["Fundne_Emails"])[0] if self.intel_pool["Fundne_Emails"] else ""
