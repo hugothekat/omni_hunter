@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 🚀 OMNI_HUNTER - ENTERPRISE MODULE FOUNDATION (core/base_module.py)
-📌 Formål: Objektorienteret standardisering for alle OSINT-moduler.
+📌 Formål: Objektorienteret standardisering og Type Hinting for alle OSINT-moduler.
 """
+from abc import ABC, abstractmethod
 from enum import Enum
-from core.utils import C, logger
+from typing import Dict, Any, Optional
+import sys
+from datetime import datetime
 
 class ModuleCategory(Enum):
     PERSON = "Identitets & Person-Efterforskning"
@@ -15,17 +18,25 @@ class ModuleCategory(Enum):
     REPORTING = "Rapportering & Visualisering"
     GENERAL = "Generel Efterretning"
 
-class BaseModule:
-    """Master Class for alle PETFE GOLIATH Moduler."""
-    def __init__(self):
-        self.name = "Unknown Module"
-        self.description = "Ingen beskrivelse angivet."
-        self.category = ModuleCategory.GENERAL
+class BaseModule(ABC):
+    """Master Class for alle PETFE GOLIATH Moduler (Python 3.10+ Compliant)."""
+    
+    def __init__(self) -> None:
+        self.name: str = "Unknown Module"
+        self.description: str = "Ingen beskrivelse angivet."
+        self.category: ModuleCategory = ModuleCategory.GENERAL
+        self.data: Dict[str, Any] = {}
         
     def check_requirements(self) -> bool:
-        """Validerer om modulet har de nødvendige API-nøgler før kørsel."""
+        """Validerer om modulet har de nødvendige API-nøgler og afhængigheder før kørsel."""
         return True
 
-    def run(self, driver=None, target: str = "") -> dict:
-        """Selve eksekverings-motoren. Skal overskrives af child-klassen."""
-        raise NotImplementedError(f"Modul {self.name} mangler en run() funktion.")
+    def _log(self, message: str, color: str = '\033[96m') -> None:
+        """Standardiseret tidsstemplet logning til TUI."""
+        ts = datetime.now().strftime("%H:%M:%S")
+        sys.stdout.write(f"\r\033[2m[{ts}]\033[0m {color}{message}\033[0m\n")
+
+    @abstractmethod
+    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
+        """Selve eksekverings-motoren. SKAL overskrives af child-klassen."""
+        pass

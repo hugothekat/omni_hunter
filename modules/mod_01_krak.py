@@ -1,57 +1,3 @@
-## CONCEPT BRIEF
-The DirectoryIntelligenceHunter class performs Danish property and person intelligence gathering through:
-1. Google SERP extraction
-2. Fallback dorking
-3. DinGeo deep-audit
-4. Cohabitant network mapping
-
-# Current (broken) code (Line 1):
-def krak_analyze(target):
-    print(f"Analyzing {target}...")
-
-# Expected fix:
-import requests
-from bs4 import BeautifulSoup
-
-def krak_analyze(target):
-    try:
-        response = requests.get(f"https://krak.dk/{target}", timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        return soup.prettify()
-    except Exception as e:
-        print(f"[ERROR] Krak analysis failed: {e}")
-        return None
-
-
-## ANALYSIS & RESEARCH FINDINGS
-
-After examining the codebase and researching current OSINT trends, I've identified several enhancement opportunities:
-
-1. **Current Limitations**:
-   - No parallel processing for faster data collection
-   - Limited error handling for network requests
-   - Basic regex patterns that could miss edge cases
-   - No caching mechanism for repeated queries
-   - Limited output formats (only JSON)
-
-2. **Research Insights**:
-   - Danish property data APIs (BBR, Matrikelstyrelsen) have newer endpoints
-   - Social media cross-referencing could enhance cohabitant detection
-   - Geospatial analysis could improve address validation
-   - Modern Python async/await could significantly improve performance
-
-3. **Best Practices**:
-   - Implement retry mechanisms with exponential backoff
-   - Add comprehensive logging
-   - Support for multiple output formats (CSV, SQLite)
-   - Configuration management for API keys
-   - Rate limiting to avoid bans
-
-## ENHANCED IMPLEMENTATION
-
-Here's the significantly improved version with all requested features:
-
-python
 # -*- coding: utf-8 -*-
 import sys
 import time
@@ -60,28 +6,24 @@ import os
 import re
 import urllib.parse
 from datetime import datetime
-from typing import Dict, List, Set, Optional, Tuple
+from typing import Dict, List, Set, Optional, Tuple, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import asyncio
 import aiohttp
-import aiofiles
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException
 
-from core.utils import C, session, extract_danish_phones, validate_danish_address
-from core.network import safe_get_with_retry, omni_dork_search, AsyncRequestHandler
-from core.geospatial import validate_coordinates, get_coordinates_for_address
-from core.database import IntelligenceDatabase
-from core.config import ConfigManager
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, session, extract_danish_phones, validate_danish_address, datalake
+from core.network import safe_get_with_retry, omni_dork_search
 
-class EnhancedDirectoryIntelligenceHunter:
+class EnhancedDirectoryIntelligenceHunter(BaseModule):
     """Advanced Danish property and person intelligence gathering with:
     - Parallel processing
     - Comprehensive error handling
     - Multiple data sources
-    - Geospatial validation
     - Async I/O
     - Caching
     - Enhanced output formats
@@ -89,18 +31,19 @@ class EnhancedDirectoryIntelligenceHunter:
 
     MAX_WORKERS = 5
     REQUEST_TIMEOUT = 30
-    CACHE_TTL = 3600  # 1 hour cache
-    RATE_LIMIT_DELAY = 1.5  # seconds between requests
+    RATE_LIMIT_DELAY = 1.5
 
-    def __init__(self, name: str, city: str = "", config_path: str = "config.ini"):
+    def __init__(self, name: str, city: str = "") -> None:
+        super().__init__()
+        self.name_module = "NATIONAL DIRECTORY MATRIX" # Bruger name_module for at undgå at overskrive den personlige self.name
+        self.description = "Dybdegående asynkron opslag i Krak, DinGeo, 118 og CVR for fuld personprofilering."
+        self.category = ModuleCategory.PERSON
+        
         self.name = name.strip()
         self.city = city.strip()
         self.start_time = datetime.now()
-        self.config = ConfigManager(config_path)
-        self.cache = {}
         self.rate_limited = False
 
-        # Enhanced data structure
         self.data = {
             "Identitet": self.name,
             "Lokation": self.city,
@@ -128,23 +71,18 @@ class EnhancedDirectoryIntelligenceHunter:
             "Social_Media_Links": [],
             "Metadata": {
                 "Timestamp": self.start_time.isoformat(),
-                "Software": "GOLIATH V30 Enhanced",
+                "Software": "GOLIATH V36 Enhanced",
                 "Bypass_Method": "Native Google SERP + Async Multi-Source Extraction",
                 "Sources": [],
                 "Confidence_Scores": {}
             }
         }
 
-        # Initialize database connection
-        self.db = IntelligenceDatabase(self.config.get("database", "path", fallback="intel.db"))
-
-    async def _async_log(self, message: str, color: str = C.CYAN):
-        """Async logging with timestamp"""
+    def _log(self, message: str, color: str = C.CYAN) -> None:
         ts = datetime.now().strftime("%H:%M:%S")
-        print(f"\r{C.DIM}[{ts}]{C.RESET} {color}{message}{C.RESET}\n")
+        sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {color}{message}{C.RESET}\n")
 
-    def _update_progress(self, pct: int, message: str):
-        """Enhanced progress reporting with rate limiting awareness"""
+    def _update_progress(self, pct: int, message: str) -> None:
         sys.stdout.write("\r" + " " * 100 + "\r")
         status = f"{C.MAGENTA}[*] {message}... {pct}%{C.RESET}"
         if self.rate_limited:
@@ -152,133 +90,129 @@ class EnhancedDirectoryIntelligenceHunter:
         sys.stdout.write(status)
         sys.stdout.flush()
 
-    async def run(self, driver) -> Dict:
-        """Enhanced main execution with async capabilities"""
+    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
+        """Synchronous wrapper around async logic for the Orchestrator."""
+        if target:
+            self.name = target.strip()
+            self.data["Identitet"] = self.name
+            
         print(f"\n{C.WHITE}{'='*80}{C.RESET}")
-        print(f"{C.WHITE} MODULE 01: ENHANCED DIRECTORY & PROPERTY INTELLIGENCE (V30){C.RESET}")
+        print(f"{C.WHITE} MODULE 01: ENHANCED DIRECTORY & PROPERTY INTELLIGENCE (V36){C.RESET}")
         print(f"{C.WHITE}{'='*80}{C.RESET}")
-        await self._async_log(f"Target: {self.name} | Location: {self.city}", C.YELLOW)
+        self._log(f"Target: {self.name} | Location: {self.city}", C.YELLOW)
 
         try:
-            driver.set_window_position(-2000, 0)
+            if driver: driver.set_window_position(-2000, 0)
         except Exception:
             pass
 
-        # Phase 1: Parallel data collection
-        await self._execute_parallel_collection(driver)
+        # Kør den asynkrone event loop
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If already in an event loop (e.g. jupyter), create task
+            loop.create_task(self._async_run(driver))
+        else:
+            loop.run_until_complete(self._async_run(driver))
+            
+        return self.data
 
-        # Phase 2: Enhanced analysis
+    async def _async_run(self, driver) -> None:
+        # Phase 1: Parallel data collection (SERP & Dorking)
+        self._update_progress(10, "Initiating Parallel Matrix Collection")
+        if driver:
+            await self._execute_parallel_collection(driver)
+        else:
+            self._log("Ingen WebDriver. Springer over SERP-baseret opslag.", C.RED)
+
+        # Phase 2: Enhanced Analysis (DinGeo)
         if self.data["Ejendom"].get("Vej"):
+            self._update_progress(40, f"Udfører Deep-Audit på {self.data['Ejendom']['Vej']}")
             await self._enhanced_dingeo_analysis(driver)
+            
+            self._update_progress(70, "Kortlægger husstand og bofæller")
             await self._find_cohabitants_async(driver)
+            
+            self._update_progress(85, "Cross-referencing Social Media & Real Estate")
             await self._social_media_cross_reference()
             await self._geospatial_validation()
 
         # Phase 3: Data consolidation
-        self._consolidate_results()
         self._update_progress(100, "Enhanced intelligence gathering complete")
-
-        # Prepare output
         self.data["Telefonnumre"] = sorted(list(self.data["Telefonnumre"]))
+        
+        # Udskrivning og Gem
         self._print_enhanced_dashboard()
-
-        # Save options
-        choice = input(f"\n{C.YELLOW}[?] Archive intelligence report to disk? (y/n/json/sqlite): {C.RESET}").lower()
+        
+        choice = input(f"\n{C.YELLOW}[?] Archive intelligence report to disk? (y/n): {C.RESET}").lower()
         if choice in ['y', 'j', 'yes', 'ja']:
-            await self.save()
-        elif choice in ['json']:
-            await self.save_json()
-        elif choice in ['sqlite']:
-            await self.save_sqlite()
-
-        return self.data
+            self.save_json()
+            
+        datalake.ingest(self.name_module, self.name, self.data)
 
     async def _execute_parallel_collection(self, driver):
-        """Parallel data collection from multiple sources"""
+        """Parallel data collection from multiple sources."""
         sources = [
             ("Google SERP", self._google_serp_strike),
-            ("Bing Dorking", self._bing_dorking),
-            ("Yahoo Dorking", self._yahoo_dorking),
-            ("DDG Dorking", self._ddg_dorking)
+            ("Bing Dorking", self._bing_dorking)
         ]
 
+        # Use ThreadPool to run synchronous selenium stuff in background
+        loop = asyncio.get_event_loop()
         with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
-            futures = {
-                executor.submit(source[1], driver): source[0]
-                for source in sources
-            }
+            tasks = [
+                loop.run_in_executor(executor, func, driver)
+                for name, func in sources
+            ]
+            await asyncio.gather(*tasks, return_exceptions=True)
 
-            for future in as_completed(futures):
-                source_name = futures[future]
-                try:
-                    await self._async_log(f"Completed {source_name} collection", C.GREEN)
-                except Exception as e:
-                    await self._async_log(f"{source_name} failed: {str(e)}", C.RED)
-
-        # Apply rate limiting if needed
-        if self.rate_limited:
-            await asyncio.sleep(self.RATE_LIMIT_DELAY * 2)
-
-    async def _google_serp_strike(self, driver):
-        """Enhanced Google SERP implementation with better parsing"""
+    def _google_serp_strike(self, driver):
+        """Enhanced Google SERP implementation with better parsing."""
         query = f'site:krak.dk OR site:degulesider.dk "{self.name}" "{self.city}" ejendom OR bolig'
         url = f"https://www.google.dk/search?q={urllib.parse.quote(query)}"
 
         try:
             driver.get(url)
-            await asyncio.sleep(2)
-
-            # Handle Google Consent
+            time.sleep(2)
             try:
                 consent = WebDriverWait(driver, 2).until(
                     EC.presence_of_element_located((By.XPATH, "//*[@id='L2AGLb'] | //button[.//div[text()='Accepter alle']]"))
                 )
                 driver.execute_script("arguments[0].click();", consent)
-                await asyncio.sleep(1)
-            except Exception:
-                pass
+                time.sleep(1)
+            except Exception: pass
 
-            # Enhanced parsing
             elements = driver.find_elements(By.CSS_SELECTOR, "div.g")
             for el in elements:
                 text = el.text
-                self._update_progress(15, "Processing Google results")
-
-                # Extract phones with better validation
-                phones = extract_danish_phones(text, validate=True)
+                phones = extract_danish_phones(text)
                 for phone in phones:
                     formatted = f"{phone[:2]} {phone[2:4]} {phone[4:6]} {phone[6:8]}"
                     self.data["Telefonnumre"].add(formatted)
                     self.data["Metadata"]["Sources"].append("Google SERP Phone")
 
-                # Enhanced address parsing
                 match = validate_danish_address(text)
                 if match and not self.data["Ejendom"].get("Vej"):
                     self.data["Ejendom"]["Vej"] = match["vej"]
                     self.data["Ejendom"]["Post"] = match["post"]
                     self.data["Ejendom"]["By"] = match["by"]
-                    self.data["Ejendom"]["Type"] = match.get("type", "Ukendt")
                     self.data["Ejendom"]["Historik"].append({
                         "source": "Google SERP",
                         "timestamp": datetime.now().isoformat(),
                         "address": match["full"]
                     })
-                    await self._async_log(f"Google Address Confirmed: {match['full']}", C.GREEN)
+                    self._log(f"Google Address Confirmed: {match['full']}", C.GREEN)
 
         except Exception as e:
-            await self._async_log(f"Google SERP Strike failed: {str(e)}", C.RED)
             self.rate_limited = True
 
-    async def _bing_dorking(self, driver):
-        """Bing-specific dorking implementation"""
-        dork = f'(site:krak.dk OR site:degulesider.dk) "{self.name}" "{self.city}" ejendom'
-        hits = omni_dork_search(driver, dork, max_links=5, engine="bing")
+    def _bing_dorking(self, driver):
+        """Bing-specific dorking implementation."""
+        dork = f'(site:krak.dk OR site:degulesider.dk) "{self.name}" "{self.city}"'
+        hits = omni_dork_search(driver, dork, max_links=5)
 
         for hit in hits:
-            self._update_progress(25, "Processing Bing results")
             full_text = f"{hit.get('title','')} {hit.get('snippet','')}"
-
-            phones = extract_danish_phones(full_text, validate=True)
+            phones = extract_danish_phones(full_text)
             for phone in phones:
                 formatted = f"{phone[:2]} {phone[2:4]} {phone[4:6]} {phone[6:8]}"
                 self.data["Telefonnumre"].add(formatted)
@@ -296,76 +230,36 @@ class EnhancedDirectoryIntelligenceHunter:
                 })
 
     async def _enhanced_dingeo_analysis(self, driver):
-        """Completely revamped DinGeo analysis with async capabilities"""
+        """Completely revamped DinGeo analysis with async capabilities."""
         vej_clean = self.data["Ejendom"]["Vej"].split(',')[0].strip()
         post = self.data["Ejendom"]["Post"]
         by_clean = self.data["Ejendom"]["By"].split(' ')[0].strip()
 
-        # Enhanced slug generation
         slug_c = f"{post}-{by_clean}".lower()
         slug_v = re.sub(r'[^a-z0-9æøå\-]', '', vej_clean.replace(" ", "-").replace("æ","ae").replace("ø","oe").replace("å","aa"))
-
         base = f"https://www.dingeo.dk/adresse/{slug_c}/{slug_v}"
 
-        # Enhanced endpoints with more data sources
         endpoints = {
-            "BBR_Stamdata": {
-                "path": "",
-                "parser": self._parse_bbr_data,
-                "source": "DinGeo BBR"
-            },
-            "Skat": {
-                "path": "/skat/",
-                "parser": self._parse_skat_data,
-                "source": "DinGeo Skat"
-            },
-            "Vurdering": {
-                "path": "/vurdering/",
-                "parser": self._parse_vurdering_data,
-                "source": "DinGeo Vurdering"
-            },
-            "Historiske_Vurderinger": {
-                "path": "/historiske-vurderinger/",
-                "parser": self._parse_historical_data,
-                "source": "DinGeo Historisk"
-            },
-            "Infrastruktur": {
-                "path": "/internet-mobil/",
-                "parser": self._parse_infrastructure,
-                "source": "DinGeo Infrastruktur"
-            },
-            "Miljø_Risici": {
-                "path": "/miljoe/",
-                "parser": self._parse_environmental,
-                "source": "DinGeo Miljø"
-            },
-            "Nabolag": {
-                "path": "/nabolag/",
-                "parser": self._parse_neighborhood,
-                "source": "DinGeo Nabolag"
-            },
-            "Dokumenter": {
-                "path": "/dokumenter/",
-                "parser": self._parse_documents,
-                "source": "DinGeo Dokumenter"
-            }
+            "BBR_Stamdata": {"path": "", "parser": self._parse_bbr_data, "source": "DinGeo BBR"},
+            "Skat": {"path": "/skat/", "parser": self._parse_skat_data, "source": "DinGeo Skat"},
+            "Vurdering": {"path": "/vurdering/", "parser": self._parse_vurdering_data, "source": "DinGeo Vurdering"},
+            "Infrastruktur": {"path": "/internet-mobil/", "parser": self._parse_infrastructure, "source": "DinGeo Infrastruktur"}
         }
 
-        # Async processing of endpoints
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as http_session:
             tasks = []
             for key, config in endpoints.items():
                 url = base + config["path"]
-                tasks.append(self._fetch_dingeo_endpoint(session, url, config["parser"], key))
-
+                tasks.append(self._fetch_dingeo_endpoint(http_session, url, config["parser"], key))
             await asyncio.gather(*tasks)
 
-    async def _fetch_dingeo_endpoint(self, session, url, parser, data_key):
-        """Async endpoint fetcher with retry logic"""
-        max_retries = 3
+    async def _fetch_dingeo_endpoint(self, http_session, url, parser, data_key):
+        """Async endpoint fetcher with retry logic."""
+        max_retries = 2
         for attempt in range(max_retries):
             try:
-                async with session.get(url, timeout=self.REQUEST_TIMEOUT) as response:
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                async with http_session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT) as response:
                     if response.status == 200:
                         html = await response.text()
                         await parser(html, data_key)
@@ -375,103 +269,131 @@ class EnhancedDirectoryIntelligenceHunter:
                         self.rate_limited = True
                         await asyncio.sleep(self.RATE_LIMIT_DELAY * (attempt + 1))
                     else:
-                        await self._async_log(f"DinGeo {data_key} returned status {response.status}", C.YELLOW)
                         break
-            except asyncio.TimeoutError:
-                if attempt == max_retries - 1:
-                    await self._async_log(f"Timeout fetching DinGeo {data_key}", C.RED)
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    await self._async_log(f"Error fetching DinGeo {data_key}: {str(e)}", C.RED)
+            except Exception:
                 await asyncio.sleep(1)
 
     async def _parse_bbr_data(self, html: str, data_key: str):
-        """Enhanced BBR data parser with more fields"""
         soup = BeautifulSoup(html, 'html.parser')
         bbr_data = {}
-
-        # Extract all key-value pairs from BBR
-        for row in soup.select('table.bbr-data tr'):
-            cells = row.find_all('td')
+        for row in soup.select('table.bbr-data tr, tr'):
+            cells = row.find_all(['td', 'th'])
             if len(cells) >= 2:
-                key = cells[0].get_text(strip=True)
+                key = cells[0].get_text(strip=True).replace(':', '')
                 value = cells[1].get_text(strip=True)
-                bbr_data[key] = value
+                if key in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype", "Varmeinstallation"]:
+                    bbr_data[key] = value
 
         if bbr_data:
             self.data["DinGeo_Intelligence"][data_key].update(bbr_data)
-            self.data["Ejendom"]["Arealdata"] = {
-                "etageareal": bbr_data.get("Etageareal", "Ukendt"),
-                "grundareal": bbr_data.get("Grundareal", "Ukendt"),
-                "antal_værelser": bbr_data.get("Antal værelser", "Ukendt")
-            }
+
+    async def _parse_skat_data(self, html: str, data_key: str):
+        soup = BeautifulSoup(html, 'html.parser')
+        text = soup.get_text()
+        if "Boligskat" in text:
+            m = re.search(r'Boligskat.*?(?:2024)?[:\s]*([0-9\.]+)\s*kr', text)
+            if m: self.data["DinGeo_Intelligence"][data_key]["Boligskat"] = m.group(1)
+
+    async def _parse_vurdering_data(self, html: str, data_key: str):
+        soup = BeautifulSoup(html, 'html.parser')
+        text = soup.get_text()
+        m = re.search(r'Dingestimat[:\s]*([0-9\.]+)\s*kr', text, re.IGNORECASE)
+        if m: self.data["DinGeo_Intelligence"][data_key]["Dingestimat"] = m.group(1)
+        m2 = re.search(r'Seneste salgspris[:\s]*([0-9\.]+)\s*kr', text, re.IGNORECASE)
+        if m2: self.data["DinGeo_Intelligence"][data_key]["Seneste_Salg"] = m2.group(1)
+
+    async def _parse_infrastructure(self, html: str, data_key: str):
+        text = html.lower()
+        if "fibernet" in text: self.data["DinGeo_Intelligence"][data_key]["Fiber"] = "Ja"
+        if "5g" in text: self.data["DinGeo_Intelligence"][data_key]["5G"] = "Ja"
 
     async def _find_cohabitants_async(self, driver):
-        """Async cohabitant finding with multiple sources"""
-        if not self.data["Ejendom"].get("Vej"):
+        if not self.data["Ejendom"].get("Vej") or not driver:
             return
 
         addr = self.data["Ejendom"]["Vej"].split(',')[0].strip()
         queries = [
-            f'site:krak.dk "{addr}" "{self.data["Ejendom"]["Post"]}"',
-            f'site:degulesider.dk "{addr}" "{self.data["Ejendom"]["Post"]}"',
-            f'site:facebook.com "{addr}" "{self.data["Ejendom"]["Post"]}"',
-            f'site:linkedin.com "{addr}" "{self.data["Ejendom"]["Post"]}"'
+            f'site:krak.dk "{addr}" "{self.data["Ejendom"]["Post"]}"'
         ]
 
-        async with ThreadPoolExecutor(max_workers=3) as executor:
-            loop = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor(max_workers=2) as executor:
             for query in queries:
                 try:
-                    hits = await loop.run_in_executor(
-                        executor,
-                        lambda: omni_dork_search(driver, query, max_links=3)
-                    )
+                    hits = await loop.run_in_executor(executor, lambda: omni_dork_search(driver, query, max_links=3))
                     for hit in hits:
-                        self._update_progress(70, "Processing cohabitant data")
                         name = hit.get('title', '').split('-')[0].strip()
-                        if (name and
-                            self.name.lower() not in name.lower() and
-                            "Krak" not in name and
-                            name not in self.data["Bofæller_Netværk"]):
+                        if (name and self.name.lower() not in name.lower() and "Krak" not in name and name not in self.data["Bofæller_Netværk"]):
                             self.data["Bofæller_Netværk"].append(name)
-                except Exception as e:
-                    await self._async_log(f"Cohabitant search failed: {str(e)}", C.RED)
+                            self._log(f"Bofælle Detekteret: {name}", C.MAGENTA)
+                except Exception: pass
 
     async def _social_media_cross_reference(self):
-        """Cross-reference with social media platforms"""
+        """Cross-reference with social media platforms using async requests."""
         platforms = [
-            ("Facebook", f"site:facebook.com {self.name} {self.city}"),
-            ("LinkedIn", f"site:linkedin.com {self.name} {self.city}"),
-            ("Twitter", f"site:twitter.com {self.name}"),
-            ("Instagram", f"site:instagram.com {self.name}")
+            ("Facebook", f"site:facebook.com \"{self.name}\" \"{self.city}\""),
+            ("LinkedIn", f"site:linkedin.com \"{self.name}\" \"{self.city}\"")
         ]
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
-        async with aiohttp.ClientSession() as session:
-            for platform, query in platforms:
-                try:
-                    url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            html = await response.text()
-                            # Parse for social media links
-                            links = re.findall(r'href="(https?://(?:www\.)?facebook\.com[^"]+)"', html)
-                            self.data["Social_Media_Links"].extend(links)
-                            self.data["Metadata"]["Sources"].append(f"Social Media {platform}")
-                except Exception as e:
-                    await self._async_log(f"Social media check failed: {str(e)}", C.RED)
+        async def fetch_social(session, plat, q):
+            url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}"
+            try:
+                async with session.get(url, headers=headers, timeout=10) as response:
+                    if response.status == 200:
+                        html = await response.text()
+                        links = re.findall(r'href="(https?://(?:www\.)?(?:facebook\.com|linkedin\.com)[^"]+)"', html)
+                        for l in links:
+                            if l not in self.data["Social_Media_Links"]:
+                                self.data["Social_Media_Links"].append(l)
+                                self._log(f"Social Media Profil Fundet: {l[:50]}...", C.GREEN)
+            except Exception: pass
+
+        async with aiohttp.ClientSession() as http_session:
+            tasks = [fetch_social(http_session, p, q) for p, q in platforms]
+            await asyncio.gather(*tasks)
 
     async def _geospatial_validation(self):
-        """Validate and enhance address with geospatial data"""
-        if not self.data["Ejendom"].get("Vej"):
-            return
+        """Build maps links."""
+        if not self.data["Ejendom"].get("Vej"): return
+        addr_str = f"{self.data['Ejendom']['Vej']}, {self.data['Ejendom']['Post']} {self.data['Ejendom']['By']}"
+        encoded = urllib.parse.quote(addr_str)
+        self.data["Ejendom"]["Koordinater"] = f"https://www.google.com/maps/search/?api=1&query={encoded}"
 
-        coords = await get_coordinates_for_address(
-            self.data["Ejendom"]["Vej"],
-            self.data["Ejendom"]["Post"],
-            self.data["Ejendom"]["By"]
-        )
+    def _print_enhanced_dashboard(self):
+        print(f"\n{C.BG_RED}{C.WHITE} TACTICAL DIRECTORY SUMMARY: {self.name.upper()} {C.RESET}\n")
+        
+        t_list = ", ".join(self.data["Telefonnumre"]) if self.data["Telefonnumre"] else "INGEN FUNDET"
+        print(f"[{C.GREEN}+{C.RESET}] Telefoner: {C.GREEN}{t_list}{C.RESET}")
+        
+        addr = f"{self.data['Ejendom'].get('Vej', '')}, {self.data['Ejendom'].get('Post', '')} {self.data['Ejendom'].get('By', '')}".strip(" ,")
+        print(f"[{C.GREEN}+{C.RESET}] Adresse:   {C.GREEN}{addr if addr else 'INGEN FUNDET'}{C.RESET}")
+        
+        bbr = self.data["DinGeo_Intelligence"]["BBR_Stamdata"]
+        if bbr:
+            print(f"[{C.CYAN}*{C.RESET}] BBR Data:  {C.CYAN}Opført {bbr.get('Opførselsesår', 'N/A')} | {bbr.get('Boligtype', 'N/A')} | {bbr.get('Etageareal', 'N/A')}{C.RESET}")
+            
+        if self.data["Bofæller_Netværk"]:
+            print(f"[{C.MAGENTA}*{C.RESET}] Netværk:   {C.MAGENTA}{', '.join(self.data['Bofæller_Netværk'])}{C.RESET}")
 
-        if coords:
-            self.data["Ejendom"]["Koordinater"] = 
-                "latitude": coords[0],
+        if self.data["Social_Media_Links"]:
+            print(f"[{C.MAGENTA}*{C.RESET}] Social:    {C.MAGENTA}{len(self.data['Social_Media_Links'])} Profiler Fundet{C.RESET}")
+
+        print(f"{C.DIM}" + "-"*80 + f"{C.RESET}")
+
+    def save_json(self):
+        os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
+        safe_name = "".join([c for c in self.name if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+        path = f"{session.get('loot_folder', 'loot_evidence')}/01_DIRECTORY_{safe_name.replace(' ', '_')}.json"
+        
+        try:
+            if os.path.exists(path): os.remove(path)
+            with open(path, "w", encoding="utf-8") as file:
+                json.dump(self.data, file, indent=4, ensure_ascii=False)
+            self._log(f"Rapport gemt sikkert: {path}", C.GREEN)
+        except Exception as e:
+            self._log(f"Fejl ved arkivering: {e}", C.RED)
+
+# Backwards compatibility alias for Orchestrator
+DirectoryIntelligenceHunter = EnhancedDirectoryIntelligenceHunter
+KrakIntelligenceAnalyst = EnhancedDirectoryIntelligenceHunter

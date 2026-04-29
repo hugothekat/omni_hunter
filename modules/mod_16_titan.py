@@ -1,15 +1,26 @@
 # -*- coding: utf-8 -*-
+"""
+🚀 GOLIATH TITAN V36: FULL SPECTRUM FORENSICS & AUTO-PIVOT
+📌 Formål: Den mest komplette kombination af OSINT, heuristisk analyse og digital forensik.
+"""
+
+import sys
+from pathlib import Path
+# Sikrer at modulet altid kan finde 'core', selv hvis det køres direkte!
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import os
 import glob
 import time
 import json
 import re
 import zipfile
-import tarfile # NY V8: Tilføjet tar/gz support
-import hashlib # NY V8: Til kryptografisk sikring
+import tarfile
+import hashlib
+import math
 import concurrent.futures
-from pathlib import Path
 from datetime import datetime
+from typing import Dict, Any, Optional
 
 import magic
 import cv2
@@ -18,48 +29,66 @@ import fitz  # PyMuPDF
 from PIL import Image
 from PIL.ExifTags import TAGS
 
-from core.utils import C, session, REGEX_EMAIL, REGEX_BANK, REGEX_CPR, REGEX_BTC, REGEX_ETH
-from modules.mod_27_ai import TitanAIEnrichment
-from modules.mod_03_breach import BreachIntelligenceAnalyst
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, session, REGEX_EMAIL, datalake
+from core.network import safe_get_with_retry
+
+# Undgår cirkulære imports under init
+try:
+    from modules.mod_27_ai import TitanAIEnrichment
+    from modules.mod_03_breach import BreachIntelligenceAnalyst
+except ImportError:
+    TitanAIEnrichment = None
+    BreachIntelligenceAnalyst = None
 
 HAS_OCR = True
 HAS_PDF = True
 
-class AutoForensicMassScanner:
-    """TITAN Orchestrator: Den mest komplette kombination af OSINT og digital forensik (GOLIATH V8)."""
-    def _convert_to_degrees(self, value):
-        try:
-            d, m, s = float(value[0]), float(value[1]), float(value[2])
-            return d + (m / 60.0) + (s / 3600.0)
-        except Exception: return None
+class AutoForensicMassScanner(BaseModule):
+    """TITAN Orchestrator: Den mest komplette kombination af OSINT og digital forensik (GOLIATH V36)."""
     
-    def __init__(self, folder_path):
-        self.folder_path = folder_path.strip()
+    def __init__(self, folder_path=""):
+        super().__init__()
+        self.name = "TITAN HEURISTIC ENGINE"
+        self.description = "Dybdegående mass-scanning, OCR, EXIF, Entropy, dHash og Heuristik."
+        self.category = ModuleCategory.FORENSICS
+        self.folder_path = folder_path.strip() if folder_path else session.get("loot_folder", "loot")
         self.start_time = time.time()
         
         self.master_data = {
             "Meta": {"Sagsmappe": self.folder_path, "Timestamp": datetime.now().isoformat(), "Filer_Behandlet": 0},
             "Case_Intelligence": {
                 "Verified_Identities": {}, 
-                "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set(), "Telefonnumre": set()}, # NY V8: IPs og Telefoner
-                "Financial_Leads": {"Bankkonti": set(), "IBAN_Konti": set(), "Crypto_Seeds": [], "Keys_Secrets": [], "CVR": set()}, # NY V8: IBAN
+                "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set(), "Telefonnumre": set()},
+                "Financial_Leads": {"Bankkonti": set(), "IBAN_Konti": set(), "Crypto_Seeds": [], "Keys_Secrets": [], "CVR": set()},
                 "Physical_Leads": {"Adresser": set(), "Nummerplader": set(), "GPS_Data": []},
                 "ID_Documents": {"MRZ_Koder": [], "CPR_Numre": set(), "Pasnumre": set()},
                 "Timeline": {"Datoer_Fundet": set()}
             },
             "Metadata_Report": {}, 
-            "Forensic_Hashes": {}, # NY V8: Chain of custody
+            "Forensic_Hashes": {}, 
             "Source_Map": {},      
             "File_Integrity_Alerts": [], 
-            "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": [], "IP_Reports": []}, # NY V8: IP Reports
+            "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": [], "IP_Reports": []},
             "Raw_Text_Archive": {} 
         }
-        self.noise_list = ["Matas", "Apple", "Google", "Lunar", "Faktura", "Store", "Support", "Maria Casino", "Gældsstyrelsen", "Danske Spil", "Danske Inkasso"]
 
-    def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[16] GOLIATH TITAN: FULL SPECTRUM FORENSICS V8\n{'='*60}{C.RESET}")
+        # Regex overført fra utils for robusthed
+        self.REGEX_BANK = re.compile(r'\b(?:Reg|Reg nr|Regnr|Bank)[.\s:]*([0-9]{4})[\s-]*([0-9]{6,10})\b', re.IGNORECASE)
+        self.REGEX_CPR = re.compile(r'\b(?:0[1-9]|[12][0-9]|3[01])(?:0[1-9]|1[0-2])\d{2}[- ]?\d{4}\b')
+        self.REGEX_BTC = re.compile(r'\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b')
+        self.REGEX_ETH = re.compile(r'\b0x[a-fA-F0-9]{40}\b')
+
+    def _convert_to_degrees(self, value):
+        try:
+            d, m, s = float(value[0]), float(value[1]), float(value[2])
+            return d + (m / 60.0) + (s / 3600.0)
+        except Exception: return None
+
+    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
+        print(f"\n{C.CYAN}{'='*60}\n[16] GOLIATH TITAN: FULL SPECTRUM FORENSICS V36\n{'='*60}{C.RESET}")
         if not os.path.exists(self.folder_path): 
-            print(f"{C.RED}[!] Fejl: Stien {self.folder_path} findes ikke.{C.RESET}"); return
+            print(f"{C.RED}[!] Fejl: Stien {self.folder_path} findes ikke.{C.RESET}"); return self.data
         
         print(f"{C.YELLOW}[*] Step 1: Deep Unpacking af arkiver (.zip, .tar, .gz)...{C.RESET}")
         self._unpack_archives()
@@ -67,10 +96,9 @@ class AutoForensicMassScanner:
         files = [f for f in glob.glob(f"{self.folder_path}/**/*", recursive=True) if os.path.isfile(f)]
         self.master_data["Meta"]["Filer_Behandlet"] = len(files)
 
-        print(f"{C.YELLOW}[*] Step 2: Starter synkroniseret OCR/Tekst/Krypto-analyse af {len(files)} enheder (Max 8 tråde)...{C.RESET}")
+        print(f"{C.YELLOW}[*] Step 2: Starter synkroniseret OCR/Heuristik/Krypto-analyse af {len(files)} enheder (Max 8 tråde)...{C.RESET}")
         completed = 0
         
-        # Vi tilføjer robusthed her: Hvis én proces fejler (Pga. en mystisk fil), fortsætter de 7 andre
         with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(self._titan_process_file, f): f for f in files}
             for future in concurrent.futures.as_completed(futures):
@@ -79,15 +107,15 @@ class AutoForensicMassScanner:
                 try:
                     res = future.result()
                     if res: self._ingest_results(res)
-                except Exception as e:
-                    pass # Skjuler specifikke tråd-fejl for brugeren for at holde konsollen ren
+                except Exception:
+                    pass
         
         print(f"\n{C.GREEN}[✓] Forensic Pipeline komplet. Starter automatisk Omni-Berigelse...{C.RESET}")
         self._auto_pivot_engine(driver)
-        self._save_master_file()
+        self._save_master_file(target)
         
         print(f"\n{C.CYAN}--- TITAN MISSION SUMMARY ---{C.RESET}")
-        print(f"Filer Hashet (Krypto): {len(self.master_data['Forensic_Hashes'])}")
+        print(f"Filer Hashet (Krypto & Visuelt): {len(self.master_data['Forensic_Hashes'])}")
         print(f"Emails fundet: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['Emails'])}")
         print(f"Telefonnumre: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['Telefonnumre'])}")
         print(f"IP-Adresser: {len(self.master_data['Case_Intelligence']['Digital_Footprint']['IP_Adresser'])}")
@@ -95,11 +123,91 @@ class AutoForensicMassScanner:
         print(f"CPR numre fundet: {len(self.master_data['Case_Intelligence']['ID_Documents']['CPR_Numre'])}")
         
         if self.master_data.get("File_Integrity_Alerts"):
-            print(f"{C.RED}Steganografi/Integrity Alerts: {len(self.master_data['File_Integrity_Alerts'])} filer flaget!{C.RESET}")
+            print(f"{C.RED}Steganografi & Heuristik Alerts: {len(self.master_data['File_Integrity_Alerts'])} filer flaget!{C.RESET}")
         
         if "Devices" in self.master_data["Case_Intelligence"]:
             print(f"Identificerede Enheder: {', '.join(self.master_data['Case_Intelligence']['Devices'].keys())}")
         print(f"{C.CYAN}----------------------------{C.RESET}")
+        
+        return self.master_data
+
+    def _calculate_entropy(self, data: bytes) -> float:
+        """Shannon Entropy beregner - Fanger krypterede payloads og malware blobs"""
+        if not data: return 0.0
+        entropy = 0
+        for x in range(256):
+            p_x = float(data.count(x))/len(data)
+            if p_x > 0:
+                entropy += - p_x*math.log(p_x, 2)
+        return entropy
+
+    def _heuristic_malware_scan(self, f_bytes: bytes) -> List[str]:
+        """NY V36: Scanner filens binære data for typiske malicious payloads / web shells."""
+        alerts = []
+        try:
+            content = f_bytes.decode('utf-8', errors='ignore')
+            # Leder efter PHP base64_decode web shells i billeder
+            if re.search(r'eval\s*\(\s*base64_decode', content, re.IGNORECASE):
+                alerts.append("PHP Base64 WebShell Signatur Detekteret")
+            # Leder efter skjulte PowerShell kommandoer
+            if re.search(r'powershell.*-WindowStyle\s+Hidden', content, re.IGNORECASE):
+                alerts.append("Skjult PowerShell Eksekvering Detekteret")
+            # Leder efter Windows commands i billeder
+            if re.search(r'cmd\.exe\s+/c', content, re.IGNORECASE):
+                alerts.append("CMD Eksekvering indlejret (Mulig Stego-Malware)")
+        except Exception: pass
+        return alerts
+
+    def _calculate_dhash(self, img_path: str) -> Optional[str]:
+        """NY V36: Perceptual Image Hashing (dHash). Tillader at finde visuelt identiske billeder."""
+        try:
+            with Image.open(img_path) as img:
+                # Konverter til gråtone og resize til 9x8 for at beregne gradienter
+                img = img.convert('L').resize((9, 8), Image.Resampling.LANCZOS)
+                pixels = list(img.getdata())
+                diff = []
+                # Beregn dHash forskellen mellem tilstødende pixels
+                for row in range(8):
+                    for col in range(8):
+                        pixel_left = img.getpixel((col, row))
+                        pixel_right = img.getpixel((col + 1, row))
+                        diff.append(pixel_left > pixel_right)
+                
+                # Konverter binært array til HEX streng
+                decimal_value = 0
+                hex_string = []
+                for index, value in enumerate(diff):
+                    if value:
+                        decimal_value += 2**(index % 8)
+                    if (index % 8) == 7:
+                        hex_string.append(hex(decimal_value)[2:].rjust(2, '0'))
+                        decimal_value = 0
+                return ''.join(hex_string)
+        except Exception:
+            return None
+
+    def _extract_office_metadata(self, f_path: str) -> dict:
+        """Dyb ekstraktion af metadata fra .docx, .xlsx, .pptx"""
+        meta = {}
+        try:
+            with zipfile.ZipFile(f_path, 'r') as z:
+                # Udtager forfatter og oprettelse
+                if 'docProps/core.xml' in z.namelist():
+                    core_xml = z.read('docProps/core.xml').decode('utf-8')
+                    creator = re.search(r'<dc:creator>(.*?)</dc:creator>', core_xml)
+                    created = re.search(r'<dcterms:created[^>]*>(.*?)</dcterms:created>', core_xml)
+                    if creator: meta["Document_Author"] = creator.group(1)
+                    if created: meta["Document_Created"] = created.group(1)
+                
+                # NY V36: Udtager Software Version og Firma
+                if 'docProps/app.xml' in z.namelist():
+                    app_xml = z.read('docProps/app.xml').decode('utf-8')
+                    app_name = re.search(r'<Application>(.*?)</Application>', app_xml)
+                    company = re.search(r'<Company>(.*?)</Company>', app_xml)
+                    if app_name: meta["Software_Application"] = app_name.group(1)
+                    if company and company.group(1): meta["Corporate_Owner"] = company.group(1)
+        except Exception: pass
+        return meta
 
     def _titan_process_file(self, f_path):
         fname = os.path.basename(f_path)
@@ -109,21 +217,35 @@ class AutoForensicMassScanner:
             return res
 
         try:
-            # --- NY V8: Hash filen for retsgyldighed ---
             with open(f_path, 'rb') as bin_f:
                 f_bytes = bin_f.read()
                 res["meta"]["MD5"] = hashlib.md5(f_bytes).hexdigest()
                 res["meta"]["SHA256"] = hashlib.sha256(f_bytes).hexdigest()
+                
+                # Entropi & Heuristik
+                entropy = self._calculate_entropy(f_bytes)
+                res["meta"]["Entropy"] = round(entropy, 2)
+                malware_alerts = self._heuristic_malware_scan(f_bytes)
+                
+                if entropy > 7.6:
+                    res["meta"]["Steganografi_Advarsel"] = f"Ekstremt høj entropi ({round(entropy,2)}). Krypteret payload eller pakket malware mistænkes."
+                if malware_alerts:
+                    res["meta"]["Malware_Signaturer"] = malware_alerts
 
             mime_type = magic.from_file(f_path, mime=True)
             res["mime"] = mime_type if mime_type else "unknown"
 
             if "image" in res["mime"]:
-                # --- NY V8: Steganografi Check ---
                 if res["mime"] in ["image/jpeg", "image/jpg"]:
                     eof_idx = f_bytes.rfind(b"\xff\xd9")
                     if eof_idx != -1 and eof_idx + 2 < len(f_bytes):
-                        res["meta"]["Steganografi_Advarsel"] = f"Fundet {len(f_bytes) - (eof_idx + 2)} skjulte bytes!"
+                        if "Steganografi_Advarsel" not in res["meta"]:
+                            res["meta"]["Steganografi_Advarsel"] = f"Fundet {len(f_bytes) - (eof_idx + 2)} skjulte bytes bag EOF!"
+
+                # Udtrækker dHash for billedet
+                dhash_val = self._calculate_dhash(f_path)
+                if dhash_val:
+                    res["meta"]["Visuel_Hash_dHash"] = dhash_val
 
                 res["meta"].update(self._extract_exif(f_path))
                 if HAS_OCR: res["text"] = self._ocr_pro(f_path)
@@ -131,10 +253,10 @@ class AutoForensicMassScanner:
             elif "pdf" in res["mime"] and HAS_PDF:
                 try:
                     doc = fitz.open(f_path)
+                    res["meta"].update(doc.metadata)
                     text_parts = []
                     for page in doc:
                         text_parts.append(page.get_text())
-                        
                         if HAS_OCR:
                             for img_idx, img in enumerate(page.get_images(full=True)):
                                 try:
@@ -147,24 +269,28 @@ class AutoForensicMassScanner:
                     res["text"] = "\n".join(text_parts)
                     doc.close()
                 except Exception: pass
+            
+            elif f_path.lower().endswith(('.docx', '.xlsx', '.pptx')):
+                res["meta"].update(self._extract_office_metadata(f_path))
                 
-            elif any(x in res["mime"] for x in ["text", "json", "csv", "plain"]):
+            elif any(x in res["mime"] for x in ["text", "json", "csv", "plain", "log"]):
                 with open(f_path, 'r', encoding='utf-8', errors='ignore') as f: res["text"] = f.read()
 
             if res["text"]:
                 res["entities"] = self._scrub_all(res["text"])
                 res["secrets"] = self._find_secrets(res["text"])
                 
-                if len(res["text"]) > 50:
-                    ai = TitanAIEnrichment()
-                    ai_data = ai.analyze_text(res["text"])
-                    if ai_data:
-                        res["ai_context"] = ai_data
+                if len(res["text"]) > 50 and TitanAIEnrichment:
+                    try:
+                        ai = TitanAIEnrichment()
+                        ai_data = ai.analyze_text(res["text"])
+                        if ai_data:
+                            res["ai_context"] = ai_data
+                    except Exception: pass
         except Exception: pass
         return res
 
     def _ocr_pro(self, path):
-        """OpenCV Pre-processing med MAX opløsning for memory-sikkerhed."""
         try:
             img = cv2.imread(path)
             if img is None: return ""
@@ -187,18 +313,11 @@ class AutoForensicMassScanner:
 
     def _scrub_all(self, text):
         e = {"emails": [], "bank": [], "cpr": [], "mrz": [], "crypto": [], "telefoner": [], "ips": [], "iban": []}
+        for mail in REGEX_EMAIL.findall(text): e["emails"].append({"val": self._sanitize_email(mail.lower()), "score": 100})
+        e["bank"] = self.REGEX_BANK.findall(text)
+        e["cpr"] = self.REGEX_CPR.findall(text)
         
-        for mail in REGEX_EMAIL.findall(text):
-            clean_mail = self._sanitize_email(mail.lower())
-            e["emails"].append({"val": clean_mail, "score": 100})
-            
-        e["bank"] = REGEX_BANK.findall(text)
-        e["cpr"] = REGEX_CPR.findall(text)
-        
-        # --- NY V8 TILFØJELSE: IP, Tlf, IBAN ---
-        for ip in re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', text):
-            e["ips"].append(ip)
-            
+        for ip in re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', text): e["ips"].append(ip)
         for ph in re.findall(r'\b(?:\+45|0045|45)?\s*([2-9]\d{1}\s?\d{2}\s?\d{2}\s?\d{2})\b', text):
             clean_ph = ph.replace(" ", "")
             if len(clean_ph) == 8: e["telefoner"].append(clean_ph)
@@ -206,8 +325,8 @@ class AutoForensicMassScanner:
         for iban in re.findall(r'\b[a-zA-Z]{2}[0-9]{2}\s?[a-zA-Z0-9]{4}\s?[0-9]{4}\s?[0-9]{3}\s?[a-zA-Z0-9]{3}\b', text):
             e["iban"].append(iban.replace(" ", ""))
 
-        for m in REGEX_BTC.findall(text): e["crypto"].append({"type": "Bitcoin_Addr", "val": m})
-        for m in REGEX_ETH.findall(text): e["crypto"].append({"type": "Ethereum_Addr", "val": m})
+        for m in self.REGEX_BTC.findall(text): e["crypto"].append({"type": "Bitcoin_Addr", "val": m})
+        for m in self.REGEX_ETH.findall(text): e["crypto"].append({"type": "Ethereum_Addr", "val": m})
         return e
 
     def _sanitize_email(self, email):
@@ -232,8 +351,8 @@ class AutoForensicMassScanner:
         intel = self.master_data["Case_Intelligence"]
         print(f"\n{C.CYAN}{'='*60}\nBERIGELSE: GOLIATH TITAN ORCHESTRATOR\n{'='*60}{C.RESET}")
         
-        # 1. PIVOT PÅ EMAILS
-        if intel["Digital_Footprint"]["Emails"]:
+        # PIVOT PÅ EMAILS
+        if intel["Digital_Footprint"]["Emails"] and BreachIntelligenceAnalyst:
             emails = [e for e, data in sorted(intel["Digital_Footprint"]["Emails"].items(), key=lambda x: x[1]['score'], reverse=True)[:5]]
             for email in emails:
                 now = datetime.now().strftime("%H:%M:%S")
@@ -244,50 +363,24 @@ class AutoForensicMassScanner:
                     if mod.data["Data_Leaks"] or mod.data["Paste_Sites"]:
                         self.master_data["Berigelse_Resultater"]["Breach_Reports"].append(mod.data)
                 except Exception: pass
-                import random
-                time.sleep(random.uniform(2, 4))
-                
-        # 2. PIVOT PÅ TELEFONNUMRE (NY V8)
-        if intel["Digital_Footprint"].get("Telefonnumre"):
-            phones = list(intel["Digital_Footprint"]["Telefonnumre"])[:3]
-            for ph in phones:
-                now = datetime.now().strftime("%H:%M:%S")
-                print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 12 (RevPhone): {ph}...{C.RESET}")
-                try:
-                    from modules.mod_12_revphone import ReversePhoneIntelligence
-                    mod_ph = ReversePhoneIntelligence(ph); mod_ph.save = lambda: None
-                    mod_ph.run(driver)
-                    self.master_data["Berigelse_Resultater"]["Phone_Data"].append(mod_ph.data)
-                except ImportError:
-                    print(f"{C.DIM}  [-] Modul 12 (RevPhone) ikke fundet.{C.RESET}")
-                except Exception: pass
-                time.sleep(1)
-
-        # 3. PIVOT PÅ IP-ADRESSER (NY V8)
-        if intel["Digital_Footprint"].get("IP_Adresser"):
-            ips = [ip for ip in list(intel["Digital_Footprint"]["IP_Adresser"]) if not ip.startswith(("192.168", "10.", "127.", "172."))]
-            for ip in ips[:3]:
-                now = datetime.now().strftime("%H:%M:%S")
-                print(f"[{now}] {C.YELLOW}[*] Deep-Scan via Modul 10 (IP Intel): {ip}...{C.RESET}")
-                try:
-                    from modules.mod_10_ip import IPNetworkAnalyzer
-                    mod_ip = IPNetworkAnalyzer(ip); mod_ip.save = lambda: None
-                    mod_ip.run(driver)
-                    self.master_data["Berigelse_Resultater"]["IP_Reports"].append(mod_ip.data)
-                except ImportError:
-                    print(f"{C.DIM}  [-] Modul 10 (IP Intel) ikke fundet.{C.RESET}")
-                except Exception: pass
+                time.sleep(2)
 
     def _ingest_results(self, res):
         intel = self.master_data["Case_Intelligence"]
         
-        # --- NY V8: Hash Register Ingestion ---
         if "MD5" in res.get("meta", {}):
-            self.master_data["Forensic_Hashes"][res["file"]] = {
-                "MD5": res["meta"]["MD5"], "SHA256": res["meta"]["SHA256"]
-            }
+            hash_data = {"MD5": res["meta"]["MD5"], "SHA256": res["meta"]["SHA256"]}
+            if "Visuel_Hash_dHash" in res["meta"]:
+                hash_data["Visuel_Hash_dHash"] = res["meta"]["Visuel_Hash_dHash"]
+            self.master_data["Forensic_Hashes"][res["file"]] = hash_data
+            
             if "Steganografi_Advarsel" in res["meta"]:
                 self.master_data["File_Integrity_Alerts"].append({"File": res["file"], "Alert": res["meta"]["Steganografi_Advarsel"]})
+            if "Malware_Signaturer" in res["meta"]:
+                self.master_data["File_Integrity_Alerts"].append({"File": res["file"], "Alert": f"Malware Signatur: {res['meta']['Malware_Signaturer']}"})
+                
+            if "Document_Author" in res["meta"]:
+                intel["Verified_Identities"][res["file"]] = res["meta"]["Document_Author"]
         
         for e in res["entities"].get("emails", []):
             email = e["val"]
@@ -309,7 +402,6 @@ class AutoForensicMassScanner:
         for sec in res.get("secrets", []):
             intel["Financial_Leads"]["Keys_Secrets"].append(sec)
 
-        # --- NY V8 Ingestion (Tlf, IP, IBAN) ---
         for ip in res["entities"].get("ips", []):
             intel["Digital_Footprint"]["IP_Adresser"].add(ip)
         for ph in res["entities"].get("telefoner", []):
@@ -319,8 +411,7 @@ class AutoForensicMassScanner:
 
         if res.get("meta") and "Make" in res["meta"]:
             device = f"{res['meta'].get('Make', 'Unknown')} {res['meta'].get('Model', '')}".strip()
-            if "Devices" not in intel: 
-                intel["Devices"] = {}
+            if "Devices" not in intel: intel["Devices"] = {}
             intel["Devices"][device] = intel["Devices"].get(device, 0) + 1
             
         if res.get("meta") and "GPS_Link" in res["meta"]:
@@ -368,7 +459,7 @@ class AutoForensicMassScanner:
         sys.stdout.write(f"\r{C.YELLOW}[*] TITAN-SCAN: |{bar}| {pct}% ({current}/{total}){C.RESET}")
         sys.stdout.flush()
 
-    def _save_master_file(self):
+    def _save_master_file(self, target=""):
         def convert_sets(obj):
             if isinstance(obj, set): return list(obj)
             if isinstance(obj, dict): return {k: convert_sets(v) for k, v in obj.items()}
@@ -378,18 +469,16 @@ class AutoForensicMassScanner:
         self.master_data["Case_Intelligence"] = convert_sets(self.master_data["Case_Intelligence"])
         
         mappe_navn = os.path.basename(os.path.normpath(self.folder_path))
-        path = f"{session['loot_folder']}/16_TITAN_REPORT_{mappe_navn}_{datetime.now().strftime('%H%M%S')}.json"
+        path = f"{session.get('loot_folder', 'loot')}/16_TITAN_REPORT_{mappe_navn}_{datetime.now().strftime('%H%M%S')}.json"
         
-        # NY V8: Sikker overskrivning
-        if os.path.exists(path):
-            try: os.remove(path)
-            except: pass
-            
         try:
+            if os.path.exists(path): os.remove(path)
             Path(path).write_text(json.dumps(self.master_data, indent=4, ensure_ascii=False), encoding="utf-8")
             print(f"\n{C.GREEN}[✓✓✓] TITAN MISSION FULDFØRT! FIL GEMT: {path}{C.RESET}")
         except Exception as e:
             print(f"{C.RED}[!] Fejl under gemning: {e}{C.RESET}")
+
+        datalake.ingest(self.name, target or "TITAN_SCAN", self.master_data)
 
     def _unpack_archives(self):
         for zf in glob.glob(f"{self.folder_path}/**/*.zip", recursive=True):
@@ -399,7 +488,6 @@ class AutoForensicMassScanner:
                     with zipfile.ZipFile(zf, 'r') as zip_ref: zip_ref.extractall(extract_dir)
                 except Exception: pass
                 
-        # --- NY V8 TILFØJELSE: TAR og GZ udpakning ---
         for tf in glob.glob(f"{self.folder_path}/**/*.tar*", recursive=True):
             extract_dir = os.path.join(self.folder_path, f"_extracted_{os.path.basename(tf).split('.')[0]}")
             if not os.path.exists(extract_dir):

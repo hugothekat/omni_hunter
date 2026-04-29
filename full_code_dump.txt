@@ -679,11 +679,11 @@ class NetworkScanner:
             self.results.errors.append(f"SecurityTrails Fejl: {e}")
 
     def enumerate_subdomains_passive(self) -> List[str]:
-    """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
-    logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
-    if not self.domain or self.domain == self.ip: return []
+        """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
+        logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
+        if not self.domain or self.domain == self.ip: return []
 
-    try:
+        try:
         # Initialiserer vores nye Native Engine
         cert_engine = CertificateIntelligenceEngine(self.domain)
         subs = cert_engine.execute_recon()
@@ -697,7 +697,7 @@ class NetworkScanner:
             self.results.errors.extend(cert_engine.errors)
 
         return subs
-    except Exception as e:
+        except Exception as e:
         self.results.errors.append(f"Native CRT fejl: {e}")
         return []
 
@@ -1121,7 +1121,6 @@ session = {
 def get_input(prompt_text, session_key):
     val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
     session[session_key] = val
-    return val
 
 # ==========================================
 # 🔹 2. LOGGING ENGINE (INITIALISERES FØRST!)
@@ -5981,2286 +5980,7 @@ class GoogleEarthExporter:
             
         print(f"\n{C.GREEN}[✓] GEOINT MISSION FULDFØRT!{C.RESET}")
         print(f"{C.MAGENTA}    [*] Plottede lokationer: {len(self.placemarks)}{C.RESET}")
-        print(f"{C.CYAN}    -> Åbn filen i Google Earth Pro for 3D-analyse: {file_path}{C.RESET}")--- FIL: ./modules/mod_01_krak.py ---
-# -*- coding: utf-8 -*-
-import sys
-import time
-import json
-import os
-import re
-import urllib.parse
-from datetime import datetime
-
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-from core.utils import C, session, extract_danish_phones
-from core.network import safe_get_with_retry, omni_dork_search
-
-class DirectoryIntelligenceHunter:
-    
-    def __init__(self, name, city=""):
-        self.name = name.strip()
-        self.city = city.strip()
-        self.start_time = datetime.now()
-        
-        self.data = {
-            "Identitet": self.name,
-            "Lokation": self.city,
-            "Telefonnumre": set(),
-            "Ejendom": {
-                "Vej": "",
-                "Post": "",
-                "By": "",
-                "Type": "Ukendt",
-                "Koordinater": ""
-            },
-            "DinGeo_Intelligence": {
-                "BBR_Stamdata": {},
-                "Vurdering": {},
-                "Skat": {},
-                "Dokumenter": {},
-                "Infrastruktur": {},
-                "Miljø_Risici": {},
-                "Nabolag_Profil": {}
-            },
-            "Bofæller_Netværk": [],
-            "Metadata": {
-                "Timestamp": self.start_time.isoformat(),
-                "Software": "GOLIATH V28",
-                "Bypass_Method": "Native Google SERP Extraction"
-            }
-        }
-
-    def _log(self, message, color=C.CYAN):
-        ts = datetime.now().strftime("%H:%M:%S")
-        sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {color}{message}{C.RESET}\n")
-
-    def _update_progress(self, pct, message):
-        sys.stdout.write("\r" + " " * 100 + "\r")
-        sys.stdout.write(f"{C.MAGENTA}[*] {message}... {pct}%{C.RESET}")
-        sys.stdout.flush()
-
-    def run(self, driver):
-        print(f"\n{C.WHITE}{'='*80}{C.RESET}")
-        print(f"{C.WHITE} MODULE 01: DIRECTORY & PROPERTY INTELLIGENCE (V28){C.RESET}")
-        print(f"{C.WHITE}{'='*80}{C.RESET}")
-        self._log(f"Target: {self.name} | Location: {self.city}", C.YELLOW)
-
-        try:
-            driver.set_window_position(-2000, 0)
-        except Exception:
-            pass
-
-        self._update_progress(10, "Executing Native Google SERP Strike")
-        self._google_serp_strike(driver)
-
-        if not self.data["Ejendom"].get("Vej"):
-            self._update_progress(30, "Fallback: Standard Search Engine Dorking")
-            self._fallback_dorking(driver)
-
-        if self.data["Ejendom"].get("Vej"):
-            self._update_progress(60, f"Initiating DinGeo Deep-Audit ({self.data['Ejendom']['Vej']})")
-            self._juggernaut_dingeo_engine(driver)
-            
-            self._update_progress(85, "Mapping Cohabitants via Network Query")
-            self._find_cohabitants(driver)
-        else:
-            self._log("Insufficient location data. DinGeo audit bypassed.", C.RED)
-
-        self._update_progress(100, "Intelligence gathering complete")
-        self.data["Telefonnumre"] = list(self.data["Telefonnumre"])
-        
-        self._print_dashboard()
-        
-        choice = input(f"\n{C.YELLOW}[?] Archive intelligence report to disk? (y/n): {C.RESET}").lower()
-        if choice in ['y', 'j', 'yes', 'ja']:
-            self.save()
-        else:
-            self._log("Data purged from RAM.", C.DIM)
-
-        return self.data
-
-    def _google_serp_strike(self, driver):
-        """Native Google search implementation to bypass missing engines in core.network"""
-        query = f'site:krak.dk OR site:degulesider.dk "{self.name}" "{self.city}"'
-        url = f"https://www.google.dk/search?q={urllib.parse.quote(query)}"
-        
-        try:
-            driver.get(url)
-            time.sleep(1.5)
-            
-            # Handle Google Consent
-            try:
-                consent = WebDriverWait(driver, 2).until(
-                    EC.presence_of_element_located((By.XPATH, "//*[@id='L2AGLb'] | //button[.//div[text()='Accepter alle']]"))
-                )
-                driver.execute_script("arguments[0].click();", consent)
-                time.sleep(1)
-            except Exception:
-                pass
-
-            # Parse SERP Elements
-            elements = driver.find_elements(By.CSS_SELECTOR, "div.g")
-            for el in elements:
-                text = el.text
-                
-                for phone in extract_danish_phones(text):
-                    self.data["Telefonnumre"].add(f"{phone[:2]} {phone[2:4]} {phone[4:6]} {phone[6:8]}")
-                
-                # Regex targetting standard Danish address format and Krak snippet structure
-                match = re.search(r'([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\.\-]+?\s\d+[A-Z0-9a-z]*?)\s*,\s*(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)', text)
-                if match and not self.data["Ejendom"].get("Vej"):
-                    vej = match.group(1).strip()
-                    if any(c.isdigit() for c in vej) and "område" not in vej.lower():
-                        self.data["Ejendom"]["Vej"] = vej
-                        self.data["Ejendom"]["Post"] = match.group(2).strip()
-                        self.data["Ejendom"]["By"] = match.group(3).strip()
-                        self._log(f"SERP Address Confirmed: {vej}, {match.group(2)}", C.GREEN)
-
-        except Exception as e:
-            self._log(f"Google SERP Strike encountered an error: {e}", C.RED)
-
-    def _fallback_dorking(self, driver):
-        """Fallback to core network omni_dork (DDG/Bing/Yahoo)"""
-        dork = f'(site:krak.dk OR site:degulesider.dk) "{self.name}" "{self.city}"'
-        hits = omni_dork_search(driver, dork, max_links=5)
-        
-        for hit in hits:
-            full_text = f"{hit.get('title','')} {hit.get('snippet','')}"
-            for p in extract_danish_phones(full_text):
-                self.data["Telefonnumre"].add(f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}")
-            
-            match = re.search(r'([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\.\-]+?\s\d+[A-Z0-9a-z]*?)\s*,\s*(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)', full_text)
-            if match and not self.data["Ejendom"].get("Vej"):
-                vej = match.group(1).strip()
-                if any(c.isdigit() for c in vej) and "område" not in vej.lower():
-                    self.data["Ejendom"]["Vej"] = vej
-                    self.data["Ejendom"]["Post"] = match.group(2).strip()
-                    self.data["Ejendom"]["By"] = match.group(3).strip()
-                    self._log(f"Fallback Address Confirmed: {vej}, {match.group(2)}", C.GREEN)
-
-    def _juggernaut_dingeo_engine(self, driver):
-        """Modular data extraction from DinGeo"""
-        vej_clean = self.data["Ejendom"]["Vej"].split(',')[0].strip()
-        post = self.data["Ejendom"]["Post"]
-        by_clean = self.data["Ejendom"]["By"].split(' ')[0].strip()
-        
-        slug_c = f"{post}-{by_clean}".lower().replace("æ","ae").replace("ø","oe").replace("å","aa")
-        slug_v = vej_clean.lower().replace(" ","-").replace("æ","ae").replace("ø","oe").replace("å","aa").replace(".","")
-        base = f"https://www.dingeo.dk/adresse/{slug_c}/{slug_v}"
-
-        endpoints = {
-            "BBR_Stamdata": "",
-            "Skat": "/skat/",
-            "Vurdering": "/vurdering/",
-            "Infrastruktur": "/internet-mobil/",
-            "Miljø_Risici": "/miljoe/",
-            "Nabolag": "/nabolag/"
-        }
-
-        for key, path in endpoints.items():
-            try:
-                if safe_get_with_retry(driver, base + path, max_retries=1):
-                    time.sleep(1.5)
-                    
-                    if "verify you are human" in driver.page_source.lower():
-                        continue
-
-                    lines = [l.strip() for l in driver.find_element(By.TAG_NAME, "body").text.split('\n') if l.strip()]
-                    body_lower = driver.page_source.lower()
-                    
-                    if key == "BBR_Stamdata":
-                        for i, l in enumerate(lines):
-                            for k in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype", "Varmeinstallation"]:
-                                if l == k and i+1 < len(lines): self.data["DinGeo_Intelligence"][key][k] = lines[i+1]
-                    
-                    elif key == "Skat":
-                        for i, l in enumerate(lines):
-                            if "Boligskat 2024" in l: self.data["DinGeo_Intelligence"][key]["Skat_2024"] = lines[i+1]
-                            if "Grundskyld" in l: self.data["DinGeo_Intelligence"][key]["Grundskyld"] = lines[i+1]
-                            
-                    elif key == "Vurdering":
-                        for i, l in enumerate(lines):
-                            if "Dingestimat" in l: self.data["DinGeo_Intelligence"][key]["Dingestimat"] = lines[i+1]
-                            if "Seneste salgspris" in l: self.data["DinGeo_Intelligence"][key]["Seneste_Salg"] = lines[i+1]
-                    
-                    elif key == "Infrastruktur":
-                        if "fibernet" in body_lower: self.data["DinGeo_Intelligence"][key]["Fiber"] = "Ja"
-                        if "5g" in body_lower: self.data["DinGeo_Intelligence"][key]["5G"] = "Ja"
-                        
-                    elif key == "Miljø_Risici":
-                        if "støj" in body_lower: self.data["DinGeo_Intelligence"][key]["Støj_Niveau"] = "Data registreret"
-                        if "oversvømmelse" in body_lower: self.data["DinGeo_Intelligence"][key]["Oversvømmelse_Risiko"] = "Data registreret"
-
-                    elif key == "Nabolag":
-                        for i, l in enumerate(lines):
-                            if "bor i" in l.lower() and "naboer" in body_lower:
-                                self.data["DinGeo_Intelligence"]["Nabolag_Profil"]["Demografi"] = l + " " + (lines[i+1] if i+1 < len(lines) else "")
-
-            except Exception:
-                pass
-
-    def _find_cohabitants(self, driver):
-        vej = self.data["Ejendom"].get("Vej", "")
-        if not vej: return
-        addr = vej.split(',')[0].strip()
-        
-        for hit in omni_dork_search(driver, f'site:krak.dk "{addr}" "{self.data["Ejendom"]["Post"]}"', max_links=4):
-            n = hit.get('title', '').split('-')[0].strip()
-            if n and self.name.lower() not in n.lower() and "Krak" not in n:
-                if n not in self.data["Bofæller_Netværk"]:
-                    self.data["Bofæller_Netværk"].append(n)
-
-    def _print_dashboard(self):
-        print(f"\n{C.WHITE}[+] INTELLIGENCE SUMMARY: {self.name.upper()}{C.RESET}")
-        
-        t_list = ", ".join(self.data["Telefonnumre"]) if self.data["Telefonnumre"] else "INGEN FUNDET"
-        print(f"    Telefoner: {C.GREEN}{t_list}{C.RESET}")
-        
-        addr = f"{self.data['Ejendom'].get('Vej', '')}, {self.data['Ejendom'].get('Post', '')} {self.data['Ejendom'].get('By', '')}".strip(" ,")
-        print(f"    Adresse:   {C.GREEN}{addr if addr else 'INGEN FUNDET'}{C.RESET}")
-        
-        bbr = self.data["DinGeo_Intelligence"]["BBR_Stamdata"]
-        if bbr:
-            print(f"    BBR Data:  {C.CYAN}Opført {bbr.get('Opførselsesår', 'N/A')} | {bbr.get('Boligtype', 'N/A')} | {bbr.get('Etageareal', 'N/A')}{C.RESET}")
-            print(f"    Vurdering: {C.CYAN}{self.data['DinGeo_Intelligence']['Vurdering'].get('Seneste_Salg', 'Ukendt')}{C.RESET}")
-            
-        if self.data["Bofæller_Netværk"]:
-            print(f"    Netværk:   {C.MAGENTA}{', '.join(self.data['Bofæller_Netværk'])}{C.RESET}")
-
-        print(f"{C.DIM}" + "-"*80 + f"{C.RESET}")
-
-    def save(self):
-        os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
-        path = f"{session.get('loot_folder', 'loot_evidence')}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
-        
-        try:
-            if os.path.exists(path): os.remove(path)
-            with open(path, "w", encoding="utf-8") as file:
-                json.dump(self.data, file, indent=4, ensure_ascii=False)
-            self._log(f"Report securely archived: {path}", C.GREEN)
-        except Exception as e:
-            self._log(f"Failed to archive report: {e}", C.RED)
-
-DirectoryIntelligenceHunter = DirectoryIntelligenceHunter
-KrakIntelligenceAnalyst = DirectoryIntelligenceHunter--- FIL: ./modules/mod_06_emailgen.py ---
-# -*- coding: utf-8 -*-
-import sys
-import json
-import os
-import requests
-import socket
-import smtplib
-import dns.resolver
-from datetime import datetime
-from pathlib import Path
-
-from core.utils import C, session
-from core.network import omni_dork_search
-
-class EmailPatternGenerator:
-    def __init__(self, name):
-        parts = name.strip().split()
-        self.first = parts[0].lower() if len(parts) > 0 else "unknown"
-        self.last = parts[-1].lower() if len(parts) > 1 else self.first
-        self.middle = parts[1].lower() if len(parts) > 2 else ""
-        self.name = name
-        self.data = {
-            "Navn": name,
-            "Generated_Emails": [],
-            "Verified_Emails": [],
-            "SMTP_Bekræftede_Emails": [], # NY V8: E-mails bekræftet direkte via mailserver
-            "Leaked_Emails": [],          # NY V8: E-mails fundet i hacker-databaser
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def _update_progress(self, pct, message):
-        sys.stdout.write("\r" + " " * 80 + "\r")
-        sys.stdout.write(f"{C.CYAN}    [*] {message}... {pct}%{C.RESET}")
-        sys.stdout.flush()
-
-    def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[06] E-mail-mønster & SMTP Validering (GOLIATH V8)\n{'='*60}{C.RESET}")
-        print(f"Target: {self.name}\n")
-        
-        # Udvidet domæneliste for moderne trusselsbilleder og danske brugere
-        domains = [
-            "gmail.com", "hotmail.com", "live.dk", "mail.com", 
-            "yahoo.dk", "yahoo.com", "icloud.com", "me.com", 
-            "mac.com", "outlook.dk", "outlook.com", "protonmail.com"
-        ]
-        
-        print(f"{C.YELLOW}[*] Genererer permutations-matrix for e-mails...{C.RESET}")
-        
-        # Standard Mønstre
-        patterns = [
-            f"{self.first}{self.last}", f"{self.first}.{self.last}",
-            f"{self.first}_{self.last}", f"{self.first[0]}{self.last}",
-            f"{self.first}{self.last[0]}", f"{self.last}{self.first}"
-        ]
-        
-        # Udvidede danske mønstre (inkl. mellemnavn og fødselsår)
-        if self.middle:
-            patterns.extend([
-                f"{self.first}{self.middle[0]}{self.last}",
-                f"{self.first}.{self.middle[0]}.{self.last}"
-            ])
-            
-        # Tilføjer typiske danske tal-endelser
-        extended_patterns = list(patterns)
-        for p in patterns:
-            extended_patterns.extend([f"{p}88", f"{p}123", f"{p}1"])
-            
-        for domain in domains:
-            for pat in set(extended_patterns):
-                email = f"{pat}@{domain}"
-                self.data["Generated_Emails"].append(email)
-
-        print(f"{C.GREEN}    [+] Genererede {len(self.data['Generated_Emails'])} potentielle e-mails.{C.RESET}")
-        
-        # Udvælger de absolut mest sandsynlige mål for dybdeanalyse
-        top_targets = [f"{self.first}{self.last}@{d}" for d in ["gmail.com", "hotmail.com"]] + \
-                      [f"{self.first}.{self.last}@{d}" for d in ["gmail.com", "hotmail.com"]]
-        
-        # --- NY V8 INTELLIGENS: SMTP / DIRECT SERVER VERIFICATION ---
-        print(f"\n{C.YELLOW}[*] Udfører direkte SMTP Server-validering (Stealth Ping)...{C.RESET}")
-        for email in top_targets:
-            if self._smtp_verify(email):
-                print(f"{C.RED}    🔥 BEKRÆFTET VIA SERVER: E-mailen eksisterer! ({email}){C.RESET}")
-                if email not in self.data["SMTP_Bekræftede_Emails"]:
-                    self.data["SMTP_Bekræftede_Emails"].append(email)
-            else:
-                print(f"{C.DIM}      [-] {email} afvist af server eller server-timeout.{C.RESET}")
-        
-        # --- NY V8 INTELLIGENS: XPOSED OR NOT KRYDSTJEK ---
-        print(f"\n{C.YELLOW}[*] Krydstjekker mod Hacker-lækager for eksistensbevis...{C.RESET}")
-        for email in top_targets:
-            if self._check_leak_db(email):
-                print(f"{C.RED}    🔥 EKSISTENS BEVIST: {email} figurerer i datalæk!{C.RESET}")
-                if email not in self.data["Leaked_Emails"]:
-                    self.data["Leaked_Emails"].append(email)
-
-        # --- EKSISTERENDE V7: LIVE DORK VALIDERING ---
-        print(f"\n{C.YELLOW}[*] Udfører Live Dork-Validering af de mest sandsynlige e-mails...{C.RESET}")
-        if driver:
-            # Kombinerer de top e-mails i ét kald for hastighed
-            dork = " OR ".join([f'"{t}"' for t in top_targets])
-            hits = omni_dork_search(driver, dork, max_links=4)
-            if hits:
-                print(f"{C.GREEN}    🔥 OFFENTLIGE SPOR FUNDET PÅ NETTET!{C.RESET}")
-                for h in hits:
-                    url = h['url']
-                    print(f"      -> {C.CYAN}{url}{C.RESET}")
-                    
-                    # Identificer hvilken e-mail der gav udslaget
-                    for target in top_targets:
-                        if target in h.get('snippet', '').lower():
-                            if target not in self.data["Verified_Emails"]:
-                                self.data["Verified_Emails"].append(target)
-            else:
-                print(f"{C.DIM}    [-] Ingen offentlige spor fundet via Google Dorking.{C.RESET}")
-        else:
-            print(f"{C.DIM}    [-] Ingen stealth-driver givet. Skipper Live Dork-Validering.{C.RESET}")
-        self.generate_patterns()
-        self.save()
-
-    def _smtp_verify(self, email):
-        """
-        NY V8: Forsøger at forbinde til e-mailens MX server og bruge 'RCPT TO'
-        til at tjekke om mailboksen faktisk eksisterer (uden at sende en mail).
-        """
-        domain = email.split('@')[-1]
-        try:
-            # Find MX record for domænet
-            records = dns.resolver.resolve(domain, 'MX')
-            mx_record = str(records[0].exchange)
-            
-            # Forbind til MX server (timeout sat til 3 sek for speed)
-            server = smtplib.SMTP(timeout=3)
-            server.set_debuglevel(0)
-            
-            server.connect(mx_record)
-            server.helo(server.local_hostname)
-            server.mail('admin@localhost.com')
-            code, message = server.rcpt(str(email))
-            server.quit()
-            
-            # Statuskode 250 betyder at serveren accepterer e-mailadressen!
-            if code == 250:
-                return True
-            return False
-            
-        except Exception:
-            # Fejler typisk pga timeout eller blokering - returner False
-            return False
-
-    def _check_leak_db(self, email):
-        """NY V8: Slår op i XposedOrNot. Hvis emailen er lækket, SKAL den eksistere."""
-        url = f"https://api.xposedornot.com/v1/check-email/{email}"
-        try:
-            res = requests.get(url, timeout=5)
-            if res.status_code == 200:
-                return True
-            return False
-        except Exception:
-            return False
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/06_EMAILGEN_{self.name.replace(' ', '_')}.json"
-        
-        # Sikrer overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] E-mail rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_08_darkweb.py ---
-# -*- coding: utf-8 -*-
-"""
-PETFE GOLIATH V31: ABYSS DARKWEB CRAWLER
-Operativ Specifikation:
-- Deep-Dive Onion Routing: Skraper det faktiske indhold af .onion sider, ikke kun snippets.
-- Clearnet Tor2Web Injection: Læser darkweb-sider via proxy-oversættelse, selv når Tor er slukket.
-- Next-Gen Threat Identifiers: Regex extraction af PGP Keys, Tox IDs, og Session IDs.
-- Asynchronous Execution: Ahmia scraping og Clearnet dorking kører parallelt.
-"""
-
-import requests
-import json
-import os
-import re
-import urllib.parse
-import threading
-import concurrent.futures
-from datetime import datetime
-from pathlib import Path
-from bs4 import BeautifulSoup 
-
-from core.utils import C, session
-from core.network import CONFIG, omni_dork_search
-
-class AbyssDarkwebCrawler: 
-    def __init__(self, query):
-        self.query = query.strip()
-        self.print_lock = threading.Lock()
-        self.use_tor = CONFIG.get("use_tor_proxy", False)
-        
-        self.data = {
-            "Søgning": self.query, 
-            "Proxy_Type": "TOR Network" if self.use_tor else "Clearnet & Tor2Web Proxies",
-            "Onion_Hits": [], 
-            "Deep_Dive_Skrapede_Sider": 0,    # NY V31: Tæller faktiske onion sider læst
-            "Ekstraherede_Emails": set(), 
-            "Ekstraherede_Crypto": set(), 
-            "Ekstraherede_Tox_Session": set(),# NY V31: Moderne Darkweb Chat IDs
-            "Ekstraherede_PGP_Keys": set(),   # NY V31: PGP Nøgler til de-anonymisering
-            "Clearnet_Onion_Spor": [], 
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def _log(self, level, message):
-        """Trådsikker og klinisk logning."""
-        colors = {"INFO": C.CYAN, "WARN": C.YELLOW, "CRITICAL": C.RED, "SUCCESS": C.GREEN, "DEEP": C.MAGENTA}
-        color = colors.get(level, C.RESET)
-        ts = datetime.now().strftime("%H:%M:%S")
-        with self.print_lock:
-            sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} [{color}{level}{C.RESET}] {message}\n")
-
-    def run(self, driver=None):
-        print(f"\n{C.WHITE}{'='*80}{C.RESET}")
-        print(f"{C.WHITE} MODULE 08: ABYSS DARKWEB CRAWLER & THREAT EXTRACTOR (V31){C.RESET}")
-        print(f"{C.WHITE}{'='*80}{C.RESET}")
-        self._log("INFO", f"Target Query: {self.query}")
-        self._log("INFO", f"Routing Protocol: {self.data['Proxy_Type']}")
-        
-        # Opretter Asynkron Matrix for at køre Ahmia og Clearnet Dorks samtidigt
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            future_ahmia = executor.submit(self._crawl_ahmia)
-            future_clearnet = executor.submit(self._search_clearnet_proxies, driver)
-            
-            # Venter på at Ahmia er færdig, før vi starter Deep Dive på de fundne links
-            ahmia_links = future_ahmia.result()
-            
-            if ahmia_links:
-                self._log("WARN", f"Initiating Deep-Dive into {len(ahmia_links)} .onion sources...")
-                deep_dive_futures = [executor.submit(self._deep_dive_onion, link) for link in ahmia_links]
-                concurrent.futures.wait(deep_dive_futures)
-            
-            concurrent.futures.wait([future_clearnet])
-
-        # Opsamling & konvertering af sets
-        self.data["Ekstraherede_Emails"] = list(self.data["Ekstraherede_Emails"])
-        self.data["Ekstraherede_Crypto"] = list(self.data["Ekstraherede_Crypto"])
-        self.data["Ekstraherede_Tox_Session"] = list(self.data["Ekstraherede_Tox_Session"])
-        self.data["Ekstraherede_PGP_Keys"] = list(self.data["Ekstraherede_PGP_Keys"])
-
-        self._print_tactical_dashboard()
-        self.save()
-        return self.data
-
-    # =========================================================================
-    # CORE ROUTING & SEARCH ENGINES
-    # =========================================================================
-    def _get_session(self):
-        """Genererer en requests session konfigureret med eller uden Tor."""
-        req_session = requests.Session()
-        req_session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0"})
-        if self.use_tor:
-            proxy = CONFIG.get("tor_proxy_url", "socks5h://127.0.0.1:9050")
-            req_session.proxies = {'http': proxy, 'https': proxy}
-        return req_session
-
-    def _crawl_ahmia(self):
-        """Søger Ahmia-indekset og returnerer links til Deep-Dive."""
-        req_session = self._get_session()
-        found_links = []
-        
-        if self.use_tor:
-            url = f"http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion/search/?q={requests.utils.quote(self.query)}"
-        else:
-            url = f"https://ahmia.fi/search/?q={requests.utils.quote(self.query)}"
-            
-        try:
-            res = req_session.get(url, timeout=30)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            results = soup.find_all('li', class_='searchResultsItem')
-            
-            if not results:
-                self._log("INFO", "Ahmia index returned zero results.")
-                return found_links
-
-            for item in results[:10]: # Tager kun top 10 for hastighedens skyld
-                link_tag = item.find('cite')
-                title_tag = item.find('h4')
-                desc_tag = item.find('p')
-                
-                if link_tag:
-                    onion_link = link_tag.text.strip()
-                    titel = title_tag.text.strip() if title_tag else "Ukendt Titel"
-                    beskrivelse = desc_tag.text.strip() if desc_tag else ""
-                    
-                    self._log("CRITICAL", f"AHMIA HIT: {titel} ({onion_link})")
-                    self._harvest_intel(beskrivelse, onion_link, context="Ahmia Snippet")
-                    
-                    self.data["Onion_Hits"].append({
-                        "Titel": titel,
-                        "URL": onion_link,
-                        "Kontekst": beskrivelse[:200]
-                    })
-                    
-                    # Sikrer at vi har fuld URL
-                    if not onion_link.startswith("http"):
-                        onion_link = "http://" + onion_link
-                    found_links.append(onion_link)
-                    
-            return found_links
-            
-        except requests.exceptions.ProxyError:
-            self._log("ERROR", "Tor Proxy Error. Ensure Tor service is running on 127.0.0.1:9050.")
-        except Exception as e:
-            self._log("ERROR", f"Ahmia crawl failed: {e}")
-            
-        return found_links
-
-    # =========================================================================
-    # ABYSS DEEP-DIVE (Scraper indholdet AF SELVE onion-siden)
-    # =========================================================================
-    def _deep_dive_onion(self, onion_url):
-        """
-        Går fysisk ind på onion-linket og læser hele sidens kildekode for secrets.
-        Hvis Tor ikke er aktiveret, oversætter den linket til en Tor2Web proxy!
-        """
-        req_session = self._get_session()
-        
-        target_url = onion_url
-        if not self.use_tor:
-            # Tor2Web Translation Trick: Oversæt http://xyz.onion til https://xyz.onion.ly
-            target_url = onion_url.replace(".onion", ".onion.ly").replace("http://", "https://")
-            
-        try:
-            res = req_session.get(target_url, timeout=15)
-            if res.status_code == 200:
-                self.data["Deep_Dive_Skrapede_Sider"] += 1
-                self._log("DEEP", f"Successfully breached and dumped source code from: {onion_url}")
-                # Kører den fulde HTML igennem regex-kværnen!
-                self._harvest_intel(res.text, onion_url, context="Deep Scrape")
-        except Exception:
-            # Sider på darkweb er ofte nede, det er normalt
-            pass
-
-    def _search_clearnet_proxies(self, driver):
-        """Dorker clearnet for indekserede lækager via Tor2Web proxies."""
-        if not driver: return
-        self._log("INFO", "Executing Clearnet Tor2Web Dorking Sequence...")
-        
-        dork = f'(site:onion.ly OR site:onion.ws OR site:onion.pet OR site:onion.dog) "{self.query}"'
-        links = omni_dork_search(driver, dork, max_links=4)
-        
-        if links:
-            for link in links:
-                url = link.get('url', '')
-                self._log("CRITICAL", f"CLEARNET LEAK HIT: {url[:80]}")
-                if url not in self.data["Clearnet_Onion_Spor"]:
-                    self.data["Clearnet_Onion_Spor"].append(url)
-                    
-                snippet = link.get('snippet', '')
-                self._harvest_intel(snippet, url, context="Clearnet Dork")
-        else:
-            self._log("INFO", "No clearnet Tor2Web leaks identified.")
-
-    # =========================================================================
-    # NEXT-GEN THREAT EXTRACTION (V31)
-    # =========================================================================
-    def _harvest_intel(self, text, source_link, context=""):
-        """Udvidet regex-motor tilpasset moderne cyberkriminalitet og darknet-standarder."""
-        
-        # 1. PGP Nøgler (Kritisk for at identificere trusselsaktører)
-        pgp_pattern = re.findall(r'-----BEGIN PGP PUBLIC KEY BLOCK-----[A-Za-z0-9\+\/\n\r=]+-----END PGP PUBLIC KEY BLOCK-----', text)
-        for pgp in pgp_pattern:
-            self.data["Ekstraherede_PGP_Keys"].add("PGP Key Block Found (Se JSON for rå data)")
-            self._log("SUCCESS", f"[{context}] Extracted PGP Public Key from {source_link}")
-
-        # 2. Tox IDs (76 hex chars - Standard p2p chat for Ransomware grupper)
-        tox_pattern = re.findall(r'\b[A-Fa-f0-9]{76}\b', text)
-        for tox in tox_pattern:
-            self.data["Ekstraherede_Tox_Session"].add(f"Tox ID: {tox}")
-            self._log("CRITICAL", f"[{context}] Tox Messenger ID Identified: {tox[:10]}...")
-
-        # 3. Session IDs (66 chars, starter med 05)
-        session_pattern = re.findall(r'\b05[a-zA-Z0-9]{64}\b', text)
-        for sess in session_pattern:
-            self.data["Ekstraherede_Tox_Session"].add(f"Session ID: {sess}")
-            self._log("CRITICAL", f"[{context}] Session Messenger ID Identified: {sess[:10]}...")
-
-        # 4. Crypto Wallets
-        btc_pattern = re.findall(r'\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b', text)
-        for btc in btc_pattern:
-            self.data["Ekstraherede_Crypto"].add(f"BTC: {btc}")
-            self._log("SUCCESS", f"[{context}] Bitcoin Wallet Identified: {btc}")
-            
-        xmr_pattern = re.findall(r'\b4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}\b', text)
-        for xmr in xmr_pattern:
-            self.data["Ekstraherede_Crypto"].add(f"XMR: {xmr}")
-            self._log("SUCCESS", f"[{context}] Monero Wallet Identified (High OPSEC): {xmr[:15]}...")
-
-        # 5. Emails
-        emails = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', text)
-        for em in emails:
-            # Undgår false positives fra typiske onion/pgp støj
-            if not any(x in em.lower() for x in [".onion", "pgp", "example"]):
-                self.data["Ekstraherede_Emails"].add(em.lower())
-                self._log("SUCCESS", f"[{context}] Email Identified: {em.lower()}")
-
-    # =========================================================================
-    # TACTICAL DASHBOARD & OUTPUT
-    # =========================================================================
-    def _print_tactical_dashboard(self):
-        with self.print_lock:
-            print(f"\n{C.BG_RED}{C.WHITE} TACTICAL ABYSS SUMMARY: {self.query.upper()} {C.RESET}\n")
-            print(f"Network Protocol: {C.GREEN}{self.data['Proxy_Type']}{C.RESET}")
-            print(f"Deep-Dived Sites: {C.GREEN}{self.data['Deep_Dive_Skrapede_Sider']}{C.RESET} (Raw HTML successfully extracted)\n")
-            
-            if self.data['Ekstraherede_PGP_Keys']:
-                print(f"{C.RED}[!] PGP Keys (De-Anonymization Leads):{C.RESET} {len(self.data['Ekstraherede_PGP_Keys'])} Keys Captured")
-                
-            if self.data['Ekstraherede_Tox_Session']:
-                print(f"{C.RED}[!] Underground Comms (Tox/Session IDs):{C.RESET}")
-                for cid in self.data['Ekstraherede_Tox_Session']: print(f"    └─ {cid}")
-
-            if self.data['Ekstraherede_Crypto']:
-                print(f"{C.MAGENTA}[+] Cryptocurrency Wallets:{C.RESET}")
-                for w in self.data['Ekstraherede_Crypto']: print(f"    └─ {w}")
-
-            if self.data['Ekstraherede_Emails']:
-                print(f"{C.CYAN}[+] Associated Emails:{C.RESET}")
-                for e in self.data['Ekstraherede_Emails']: print(f"    └─ {e}")
-                
-            print(f"\n{C.DIM}" + "-"*80 + f"{C.RESET}")
-
-    def save(self):
-        folder = session.get("loot_folder", "loot_evidence")
-        os.makedirs(folder, exist_ok=True)
-        filename = f"{folder}/08_DARKWEB_{self.query.replace(' ', '_')}.json"
-        
-        if os.path.exists(filename):
-            try: os.remove(filename)
-            except Exception: pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        self._log("SUCCESS", f"Abyss Intelligence Report archived: {filename}")
-
-# Alias til backwards compatibility i Orchestrator og Main
-DarkWebIntelligence = AbyssDarkwebCrawler--- FIL: ./modules/mod_09_emailtrack.py ---
-# -*- coding: utf-8 -*-
-import json
-import os
-import hashlib
-import subprocess
-import requests
-import socket # NY V8 TILFØJELSE: Til DNS/Domæne opslag
-import sys
-import re
-from datetime import datetime
-from pathlib import Path
-
-# Henter fra Core
-from core.utils import C, session, REGEX_EMAIL
-from core.network import CONFIG
-
-class EmailTracker:
-    def __init__(self, email):
-        self.email = email.strip().lower()
-        self.api_key = CONFIG.get("api_keys", {}).get("hunter_io", "")
-        self.gravatar_hash = hashlib.md5(self.email.encode()).hexdigest()
-        self.data = {
-            "Email": self.email, 
-            "Email_Prefix": "",           # NY V8 TILFØJELSE: Til Alias-pivot
-            "Gravatar_Data": {}, 
-            "Holehe_Hits": [], 
-            "Hunter_Data": {},
-            "Domain_Intel": {},           # NY V8 TILFØJELSE: Corporate Data
-            "Direct_OSINT_Links": {},     # NY V8 TILFØJELSE: Epieos / Skype
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def run(self, _=None):
-        print(f"\n{C.CYAN}{'='*60}\n[09] E-mail Tracker (Hunter.io, Gravatar, Holehe & Epieos V8)\n{'='*60}{C.RESET}")
-        
-        if not re.match(REGEX_EMAIL, self.email):
-            print(f"{C.RED}[!] Ugyldigt e-mail format angivet: {self.email}{C.RESET}")
-            return
-            
-        print(f"Target Email: {self.email}\n")
-        
-        # --- NY V8 TILFØJELSE: Prefix Extraction (Brugernavn) ---
-        self._extract_prefix()
-
-        # --- NY V8 TILFØJELSE: Generer direkte Epieos og Skype OSINT links ---
-        self._generate_osint_links()
-
-        # --- NY V8 TILFØJELSE: Corporate Domain Intelligence ---
-        self._domain_intelligence()
-        
-        # 1. Hunter.io Intelligence
-        self._check_hunter()
-        
-        # 2. Gravatar Tjek (Med Avatar Bevissikring)
-        print(f"\n{C.YELLOW}[*] Checker globalt Gravatar netværk for profildata...{C.RESET}")
-        try:
-            res = requests.get(f"https://en.gravatar.com/{self.gravatar_hash}.json", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-            if res.status_code == 200:
-                grav_json = res.json()
-                if "entry" in grav_json and grav_json["entry"]:
-                    entry = grav_json["entry"][0]
-                    print(f"{C.GREEN}    ✓ Offentlig Gravatar Profil Fundet!{C.RESET}")
-                    
-                    navn = entry.get("displayName", "Ukendt")
-                    self.data["Gravatar_Data"]["Navn"] = navn
-                    print(f"      -> Navn: {navn}")
-                    
-                    if "thumbnailUrl" in entry:
-                        img_url = entry["thumbnailUrl"] + "?s=600"
-                        self.data["Gravatar_Data"]["Billede"] = img_url
-                        self._download_image(img_url)
-            else:
-                print(f"{C.DIM}    [-] Ingen Gravatar profil tilknyttet denne e-mail.{C.RESET}")
-        except Exception: pass
-
-        # 3. Holehe Integration (Trådsikker Live % Progress Bar)
-        print(f"\n{C.YELLOW}[*] Kører Holehe OSINT engine for at finde registrerede profiler...{C.RESET}")
-        try:
-            process = subprocess.Popen(
-                ['holehe', self.email, '--only-used'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1, 
-                universal_newlines=True
-            )
-            
-            checked_lines = 0
-            estimated_total = 120 
-            
-            for line in iter(process.stdout.readline, ''):
-                if not line: break
-                
-                checked_lines += 1
-                pct = min(int((checked_lines / estimated_total) * 100), 99)
-                
-                sys.stdout.write(f"\r{C.CYAN}    [*] Analyserer platforme... {pct}% færdig {C.RESET}")
-                sys.stdout.flush()
-
-                if "[+]" in line:
-                    try:
-                        site = line.split("]")[1].strip().split(" ")[0].replace('\x1b[0m', '')
-                        sys.stdout.write("\r" + " " * 60 + "\r")
-                        print(f"{C.GREEN}    🔥 Registreret på: {C.CYAN}{site}{C.RESET}")
-                        self.data["Holehe_Hits"].append(site)
-                    except IndexError: pass
-                    
-            process.wait()
-            sys.stdout.write("\r" + " " * 60 + "\r")
-            print(f"{C.GREEN}    [✓] Holehe scanning 100% fuldført. Fandt {len(self.data['Holehe_Hits'])} profiler.{C.RESET}")
-
-        except FileNotFoundError:
-            sys.stdout.write("\r" + " " * 60 + "\r")
-            print(f"{C.RED}    [!] 'holehe' er ikke installeret. Kør: pip install holehe{C.RESET}")
-        except Exception as e:
-            print(f"{C.RED}    [!] Fejl ved Holehe kørsel: {e}{C.RESET}")
-
-        self.save()
-
-    def _extract_prefix(self):
-        """NY V8: Udtrækker prefix til brug som socialt alias"""
-        prefix = self.email.split('@')[0]
-        self.data["Email_Prefix"] = prefix
-        print(f"{C.YELLOW}[*] Udtrækker E-mail Prefix til Alias-søgning...{C.RESET}")
-        print(f"{C.GREEN}    -> Alias/Brugernavn: {prefix}{C.RESET}")
-
-    def _generate_osint_links(self):
-        """NY V8: Bygger direkte API og OSINT links"""
-        print(f"\n{C.YELLOW}[*] Genererer direkte OSINT og App-links for e-mailen...{C.RESET}")
-        epieos = f"https://epieos.com/?q={self.email}"
-        skype = f"skype:{self.email}?userinfo"
-        
-        self.data["Direct_OSINT_Links"] = {"Epieos": epieos, "Skype": skype}
-        print(f"{C.CYAN}    -> Epieos Dybde-Analyse: {epieos} (Tjek for Google Maps anmeldelser etc.){C.RESET}")
-        print(f"{C.CYAN}    -> Skype Profil-Tjek: {skype}{C.RESET}")
-
-    def _domain_intelligence(self):
-        """NY V8: Hvis e-mailen er corporate, slås domænet op for at finde serveren"""
-        domain = self.email.split('@')[1]
-        generic_domains = ["gmail.com", "hotmail.com", "yahoo.com", "outlook.com", "live.dk", "icloud.com", "me.com", "mac.com", "protonmail.com"]
-        
-        if domain.lower() not in generic_domains:
-            print(f"\n{C.YELLOW}[*] Corporate Domæne Detekteret: Udfører DNS opslag på {domain}...{C.RESET}")
-            try:
-                ip = socket.gethostbyname(domain)
-                print(f"{C.GREEN}    ✓ Server IP for domæne: {ip}{C.RESET}")
-                self.data["Domain_Intel"]["IP"] = ip
-            except Exception as e:
-                print(f"{C.DIM}    [-] Kunne ikke slå domæne op: {e}{C.RESET}")
-
-    def _check_hunter(self):
-        if not self.api_key:
-            print(f"\n{C.DIM}[-] Springer Hunter.io over (Mangler API-nøgle i config.json){C.RESET}")
-            return
-
-        print(f"\n{C.YELLOW}[*] Kontakter Hunter.io for Corporate Intelligence...{C.RESET}")
-        
-        ver_url = f"https://api.hunter.io/v2/email-verifier?email={self.email}&api_key={self.api_key}"
-        try:
-            res = requests.get(ver_url, timeout=10).json()
-            if "data" in res:
-                status = res["data"]["status"]
-                score = res["data"]["score"]
-                color = C.GREEN if score > 70 else (C.YELLOW if score > 40 else C.RED)
-                print(f"{color}    ✓ Status: {status.upper()} (Sikkerhedsscore: {score}/100){C.RESET}")
-                self.data["Hunter_Data"]["Verification"] = res["data"]
-        except Exception as e:
-            print(f"{C.DIM}    [!] Kunne ikke verificere email: {e}{C.RESET}")
-
-        enr_url = f"https://api.hunter.io/v2/combined/find?email={self.email}&api_key={self.api_key}"
-        try:
-            res = requests.get(enr_url, timeout=10).json()
-            if "data" in res and res["data"]:
-                data = res["data"]
-                print(f"{C.GREEN}    🔥 Person & Firma Berigelse Fundet!{C.RESET}")
-                
-                first = data.get("first_name", "")
-                last = data.get("last_name", "")
-                company = data.get("company", "")
-                position = data.get("position", "")
-                twitter = data.get("twitter", "")
-                linkedin = data.get("linkedin", "")
-
-                if first or last: print(f"      -> Navn: {first} {last}")
-                if company: print(f"      -> Firma: {company}")
-                if position: print(f"      -> Stilling: {position}")
-                if linkedin: print(f"      -> LinkedIn: {linkedin}")
-                if twitter: print(f"      -> Twitter: {twitter}")
-
-                self.data["Hunter_Data"]["Enrichment"] = data
-        except Exception:
-            pass
-
-    def _download_image(self, url):
-        try:
-            img_data = requests.get(url, timeout=10).content
-            mappe = os.path.join(session["loot_folder"], "avatars")
-            os.makedirs(mappe, exist_ok=True)
-            filsti = os.path.join(mappe, f"Gravatar_{self.email.replace('@', '_at_')}.jpg")
-            with open(filsti, 'wb') as handler:
-                handler.write(img_data)
-            print(f"{C.GREEN}      ✓ Avatar sikret lokalt: {filsti}{C.RESET}")
-        except Exception: pass
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/09_EMAILTRACK_{self.email.replace('@', '_at_')}.json"
-        
-        # NY V8 TILFØJELSE: Sikrer overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except: pass
-            
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Rapport gemt (Overskrevet succesfuldt): {filename}{C.RESET}")--- FIL: ./modules/mod_12_revphone.py ---
-# -*- coding: utf-8 -*-
-import json
-import os
-import sys
-import re
-import time
-from datetime import datetime
-from pathlib import Path
-from selenium.webdriver.common.by import By # NY V8 FIX: Manglende import for WhatsApp scraperen
-
-from core.utils import C, session
-from core.network import omni_dork_search, safe_get_with_retry
-
-class ReversePhoneIntelligence:
-    def __init__(self, phone):
-        self.phone = phone.replace(" ", "").replace("+45", "").strip()
-        self.data = {
-            "Telefon": self.phone,
-            "OSINT_Hits": [],
-            "Brugtmarked_Spor": [],       # NY V8: DBA, G&G
-            "Svindel_Advarsler": [],      # NY V8: 180.dk, ukendtnummer.dk
-            "WhatsApp_Status": "Ukendt",
-            "Telegram_Status": "Ukendt",  # NY V8: Telegram Tjek
-            "Viber_Status": "Ukendt",     # NY V8: Viber Tjek
-            "Identificeret_Navn": "",
-            "Alias_Brugernavne": [],      # NY V8: Dæknavne fra annoncer
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[12] Omvendt Telefon-Intelligence (GOLIATH V8)\n{'='*60}{C.RESET}")
-        print(f"Target Nummer: {self.phone}\n")
-
-        if not driver:
-            print(f"{C.RED}[!] Fejl: Modul 12 kræver en aktiv stealth driver.{C.RESET}")
-            return
-
-        # V7: Genererer formater
-        p = self.phone
-        formats = [
-            p,                                  # 12345678
-            f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:]}", # 12 34 56 78
-            f"{p[:4]} {p[4:]}",                 # 1234 5678
-            f"+45 {p}",                         # +45 12345678
-            f"45{p}"                            # 4512345678 (WhatsApp format)
-        ]
-
-        print(f"{C.YELLOW}[*] Udfører Multi-Format OSINT Dorking over 15+ platforme...{C.RESET}")
-        search_query = " OR ".join([f'"{f}"' for f in formats[:4]])
-        
-        # --- NY V8: CHUNK DORKING (Krak, Brugtmarked, Spam-databaser, Global OSINT) ---
-        dork_chunks = [
-            # Chunk 1: Klassiske registre og Social
-            f"({search_query}) site:krak.dk OR site:degulesider.dk OR site:118.dk OR site:facebook.com",
-            # Chunk 2: Danske Brugtmarkeder (Guldgrube for taletidskort og svindlere)
-            f"({search_query}) site:dba.dk OR site:guloggratis.dk OR site:trendsales.dk OR site:trustpilot.com",
-            # Chunk 3: Svindel-databaser og Globale Caller-ID's
-            f"({search_query}) site:180.dk OR site:ukendtnummer.dk OR site:truecaller.com OR site:sync.me"
-        ]
-
-        for chunk_idx, dork in enumerate(dork_chunks):
-            sys.stdout.write(f"\r{C.CYAN}    [*] Skanner Matrix Del {chunk_idx+1}/{len(dork_chunks)}...      {C.RESET}")
-            sys.stdout.flush()
-            
-            links = omni_dork_search(driver, dork, max_links=5)
-            
-            if links:
-                for link in links:
-                    url = link['url']
-                    titel = link.get('title', '')
-                    snippet = link.get('snippet', '')
-                    
-                    sys.stdout.write("\r" + " " * 80 + "\r")
-                    print(f"{C.GREEN}    🔥 SPOR FUNDET: {url[:70]}...{C.RESET}")
-                    
-                    # V7 Auto-Identifikation fra Gule Sider / Krak
-                    if any(x in url for x in ["krak.dk", "degulesider.dk", "118.dk"]):
-                        pot_navn = titel.split('-')[0].strip()
-                        if pot_navn and not self.data["Identificeret_Navn"] and "Krak" not in pot_navn:
-                            self.data["Identificeret_Navn"] = pot_navn
-                            print(f"{C.MAGENTA}      -> Identitet detekteret ud fra nummer: {pot_navn}{C.RESET}")
-                            
-                    # NY V8: Auto-Identifikation fra Brugtmarkeder
-                    elif any(x in url for x in ["dba.dk", "guloggratis.dk"]):
-                        if url not in self.data["Brugtmarked_Spor"]:
-                            self.data["Brugtmarked_Spor"].append(url)
-                        
-                        # Prøver at trække "Sælger:" eller navnet fra titlen
-                        seller_match = re.search(r'af ([A-ZÆØÅa-zæøå\s]+)\s*[-|]', titel)
-                        if seller_match:
-                            alias = seller_match.group(1).strip()
-                            if alias not in self.data["Alias_Brugernavne"]:
-                                self.data["Alias_Brugernavne"].append(alias)
-                                print(f"{C.MAGENTA}      -> Brugtmarkeds-Alias fundet: {alias}{C.RESET}")
-                                
-                    # NY V8: Auto-Advarsel fra Spam-databaser
-                    elif any(x in url for x in ["180.dk", "ukendtnummer.dk"]):
-                        if url not in self.data["Svindel_Advarsler"]:
-                            self.data["Svindel_Advarsler"].append(url)
-                            print(f"{C.RED}      [!] ADVARSEL: Nummeret er flaget i svindel/spam database!{C.RESET}")
-                    
-                    if url not in self.data["OSINT_Hits"]:
-                        self.data["OSINT_Hits"].append(url)
-
-        if not self.data["OSINT_Hits"]:
-            sys.stdout.write("\r" + " " * 80 + "\r")
-            print(f"{C.DIM}    [-] Ingen resultater via åben OSINT-dorking.{C.RESET}")
-
-        # V7: WhatsApp Web API Tjek
-        print(f"\n{C.YELLOW}[*] Checker WhatsApp-registrering via Web API...{C.RESET}")
-        wa_url = f"https://api.whatsapp.com/send?phone=45{self.phone}"
-        if safe_get_with_retry(driver, wa_url, max_retries=1):
-            time.sleep(2)
-            page_text = driver.find_element(By.TAG_NAME, "body").text.lower()
-            if "isn't on whatsapp" in page_text or "er ikke på whatsapp" in page_text:
-                self.data["WhatsApp_Status"] = "Ikke Registreret"
-                print(f"{C.DIM}    [-] Nummeret er IKKE registreret på WhatsApp.{C.RESET}")
-            else:
-                self.data["WhatsApp_Status"] = "Sandsynligvis Aktiv"
-                print(f"{C.RED}    [!] Nummeret ER sandsynligvis aktivt på WhatsApp!{C.RESET}")
-
-        # NY V8: Telegram Web API Tjek
-        print(f"{C.YELLOW}[*] Checker Telegram-registrering via t.me...{C.RESET}")
-        tg_url = f"https://t.me/+45{self.phone}"
-        if safe_get_with_retry(driver, tg_url, max_retries=1):
-            time.sleep(2)
-            tg_text = driver.find_element(By.TAG_NAME, "body").text.lower()
-            if "if you have telegram, you can contact" in tg_text or "send message" in tg_text:
-                self.data["Telegram_Status"] = "Sandsynligvis Aktiv"
-                print(f"{C.RED}    [!] Nummeret ER sandsynligvis aktivt på Telegram!{C.RESET}")
-            else:
-                self.data["Telegram_Status"] = "Ukendt / Skjult"
-                print(f"{C.DIM}    [-] Ingen offentlig profil fundet på Telegram.{C.RESET}")
-
-        # NY V8: Viber Opslag
-        print(f"{C.YELLOW}[*] Genererer direkte Viber API link...{C.RESET}")
-        vi_link = f"viber://add?number=45{self.phone}"
-        print(f"{C.CYAN}    -> Viber Tjek-link: {vi_link}{C.RESET}")
-
-        self.save()
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/12_REVPHONE_{self.phone}.json"
-        
-        # NY V8: Sikker fil-overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Telefon rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_19_crypto.py ---
-# -*- coding: utf-8 -*-
-import json
-import os
-import requests
-import time
-from pathlib import Path
-from datetime import datetime
-from core.utils import C, session
-from core.network import omni_dork_search # NY V8 TILFØJELSE: Web-søgning efter adressen
-
-class CryptoLedgerAnalyzer:
-    def __init__(self, address):
-        self.address = address.strip()
-        self.data = {
-            "Adresse": self.address, 
-            "Valuta": "Ukendt", 
-            "Balance": 0, 
-            "Total_Modtaget": 0, 
-            "Transaktioner": 0, 
-            "Seneste_Transaktioner": [],   # NY V8 TILFØJELSE: Aktivitetssporing
-            "Svindel_Advarsler": [],       # NY V8 TILFØJELSE: Threat Intel
-            "Web_Spor": [],                # NY V8 TILFØJELSE: Hacker forums / Pastes
-            "Direct_OSINT_Links": {},      # NY V8 TILFØJELSE: Klikbare Arkham/Explorer links
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def run(self, driver=None):
-        print(f"\n{C.CYAN}{'='*60}\n[19] Blockchain Efterretning (Whale-Trace & Threat Intel V8)\n{'='*60}{C.RESET}")
-        print(f"[*] Analyserer krypto-adresse: {self.address}")
-
-        self._generate_osint_links()
-
-        if self.address.startswith("1") or self.address.startswith("3") or self.address.startswith("bc1"):
-            self.data["Valuta"] = "Bitcoin (BTC)"
-            self._trace_btc()
-        elif self.address.startswith("0x"):
-            self.data["Valuta"] = "Ethereum (ETH) / EVM Compatible"
-            self._trace_eth()
-        else:
-            print(f"{C.RED}[!] Ukendt kæde-format. Understøtter BTC og ETH (samt EVM kæder).{C.RESET}")
-
-        # --- NY V8 TILFØJELSE: Dork the Web for Scam/Ransomware reports ---
-        if driver:
-            self._dork_crypto_address(driver)
-        else:
-            print(f"{C.DIM}[-] Ingen stealth-driver angivet. Skipper Web Threat-Opslag.{C.RESET}")
-
-        self.save()
-
-    def _generate_osint_links(self):
-        """NY V8 TILFØJELSE: Bygger genveje til manuelle dybde-analyser"""
-        print(f"\n{C.YELLOW}[*] Genererer direkte OSINT Explorer links...{C.RESET}")
-        
-        self.data["Direct_OSINT_Links"]["Arkham_Intelligence"] = f"https://platform.arkhamintelligence.com/explorer/address/{self.address}"
-        
-        if self.address.startswith("0x"):
-            self.data["Direct_OSINT_Links"]["Etherscan"] = f"https://etherscan.io/address/{self.address}"
-            self.data["Direct_OSINT_Links"]["BscScan"] = f"https://bscscan.com/address/{self.address}"
-            self.data["Direct_OSINT_Links"]["PolygonScan"] = f"https://polygonscan.com/address/{self.address}"
-        else:
-            self.data["Direct_OSINT_Links"]["Blockchain_com"] = f"https://www.blockchain.com/explorer/addresses/btc/{self.address}"
-            
-        print(f"{C.CYAN}    -> Arkham (Platform for De-Anonymisering): {self.data['Direct_OSINT_Links']['Arkham_Intelligence']}{C.RESET}")
-
-    def _trace_btc(self):
-        try:
-            print(f"{C.YELLOW}[*] Forbinder til Bitcoin Blockchain API...{C.RESET}")
-            res = requests.get(f"https://blockchain.info/rawaddr/{self.address}", timeout=10).json()
-            self.data["Balance"] = res.get("final_balance", 0) / 100000000
-            self.data["Total_Modtaget"] = res.get("total_received", 0) / 100000000
-            self.data["Transaktioner"] = res.get("n_tx", 0)
-
-            print(f"{C.GREEN}    ✓ Netværk: Bitcoin{C.RESET}")
-            print(f"{C.GREEN}    ✓ Aktuel Balance: {self.data['Balance']} BTC{C.RESET}")
-            print(f"{C.GREEN}    ✓ Total Modtaget: {self.data['Total_Modtaget']} BTC{C.RESET}")
-            print(f"{C.GREEN}    ✓ Antal Transaktioner: {self.data['Transaktioner']}{C.RESET}")
-            
-            # --- NY V8 TILFØJELSE: Udtrækker de seneste transaktioner for whale-tracking ---
-            txs = res.get("txs", [])
-            if txs:
-                print(f"\n{C.YELLOW}[*] Analyserer seneste aktivitet...{C.RESET}")
-                for tx in txs[:3]: # Top 3 seneste txs
-                    tx_hash = tx.get("hash")
-                    tx_time = datetime.fromtimestamp(tx.get("time", 0)).strftime('%Y-%m-%d %H:%M:%S')
-                    # Meget forsimplet beløb (fokus på tidsstempel og aktivitet)
-                    self.data["Seneste_Transaktioner"].append({"Dato": tx_time, "TX_Hash": tx_hash})
-                    print(f"{C.CYAN}      -> TX Dato: {tx_time} | Hash: {tx_hash[:15]}...{C.RESET}")
-
-        except Exception as e:
-            print(f"{C.RED}    [-] Fejl ved BTC opslag: Kunne ikke finde adresse.{C.RESET}")
-
-    def _trace_eth(self):
-        try:
-            print(f"{C.YELLOW}[*] Forbinder til Etherscan API (Balance)...{C.RESET}")
-            res = requests.get(f"https://api.etherscan.io/api?module=account&action=balance&address={self.address}&tag=latest", timeout=10).json()
-            if res.get("status") == "1":
-                bal = int(res.get("result", 0)) / 10**18
-                self.data["Balance"] = bal
-                print(f"{C.GREEN}    ✓ Netværk: Ethereum{C.RESET}")
-                print(f"{C.GREEN}    ✓ Aktuel Balance: {bal:.4f} ETH{C.RESET}")
-                print(f"{C.MAGENTA}    [!] Note: 0x adresser kan også have midler på BSC, Polygon, Arbitrum etc.{C.RESET}")
-            else:
-                print(f"{C.YELLOW}    [-] Ingen data fundet på Etherscan.{C.RESET}")
-                
-            # --- NY V8 TILFØJELSE: Trækker Transaction History for ETH ---
-            print(f"\n{C.YELLOW}[*] Forbinder til Etherscan API (Seneste Transaktioner)...{C.RESET}")
-            tx_url = f"https://api.etherscan.io/api?module=account&action=txlist&address={self.address}&startblock=0&endblock=99999999&page=1&offset=5&sort=desc"
-            tx_res = requests.get(tx_url, timeout=10).json()
-            
-            if tx_res.get("status") == "1" and tx_res.get("result"):
-                transactions = tx_res.get("result")
-                self.data["Transaktioner"] = len(transactions) # Hvis mere end 5, viser den bare 5 som baseline
-                
-                for tx in transactions[:3]:
-                    tx_hash = tx.get("hash")
-                    tx_time = datetime.fromtimestamp(int(tx.get("timeStamp", 0))).strftime('%Y-%m-%d %H:%M:%S')
-                    value_eth = int(tx.get("value", 0)) / 10**18
-                    direction = "UD" if tx.get("from", "").lower() == self.address.lower() else "IND"
-                    
-                    self.data["Seneste_Transaktioner"].append({
-                        "Dato": tx_time, "Retning": direction, "Beløb_ETH": value_eth, "TX_Hash": tx_hash
-                    })
-                    
-                    color = C.RED if direction == "UD" else C.GREEN
-                    print(f"{color}      -> {direction}: {value_eth:.4f} ETH | Dato: {tx_time} | TX: {tx_hash[:10]}...{C.RESET}")
-            else:
-                print(f"{C.DIM}      [-] Ingen nyere Ethereum-transaktioner fundet på denne kæde.{C.RESET}")
-
-        except Exception as e:
-            print(f"{C.RED}    [-] Fejl ved ETH opslag: {e}{C.RESET}")
-
-    def _dork_crypto_address(self, driver):
-        """NY V8 TILFØJELSE: Dorker adressen for at finde pastebins, scams og darkweb referencer"""
-        print(f"\n{C.YELLOW}[*] Threat Intelligence: Søger på nettet efter adressen (Scams/Hacks)...{C.RESET}")
-        
-        # Vi søger generelt efter adressen for at fange forum posts og pastebins
-        dork = f'"{self.address}"'
-        links = omni_dork_search(driver, dork, max_links=5)
-        
-        if links:
-            for link in links:
-                url = link['url']
-                title = link.get('title', '').lower()
-                snippet = link.get('snippet', '').lower()
-                
-                # Hvis vi spotter scam/hack relaterede ord i resultatet
-                if any(x in title or x in snippet for x in ["scam", "hack", "ransomware", "stolen", "phishing", "abuse", "fraud"]):
-                    print(f"{C.RED}    🔥 KRITISK: Adresse er kædet sammen med svindel/hacking!{C.RESET}")
-                    print(f"{C.RED}      -> {url}{C.RESET}")
-                    if url not in self.data["Svindel_Advarsler"]:
-                        self.data["Svindel_Advarsler"].append(url)
-                else:
-                    # Almindelige fund på nettet (github, pastebin, forums)
-                    print(f"{C.GREEN}    ✓ Web-Spor Fundet: {url[:70]}...{C.RESET}")
-                    if url not in self.data["Web_Spor"]:
-                        self.data["Web_Spor"].append(url)
-        else:
-            print(f"{C.DIM}    [-] Ingen offentlige spor eller svindel-rapporter fundet via Dorking.{C.RESET}")
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/19_CRYPTO_{self.address[:10]}.json"
-        
-        # NY V8 TILFØJELSE: Sikker overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_20_vehicle.py ---
-# -*- coding: utf-8 -*-
-import os
-import json
-import re
-import time
-from pathlib import Path
-from datetime import datetime
-from selenium.webdriver.common.by import By
-from core.utils import C, session
-from core.network import safe_get_with_retry, omni_dork_search # NY V8 TILFØJELSE: omni_dork_search
-from core.browser import zap_cookies
-
-class VehicleIntelligence:
-    def __init__(self, reg_nr):
-        self.reg = reg_nr.upper().replace(" ", "").replace("-", "")
-        self.data = {
-            "RegNr": self.reg, 
-            "Mærke_Model": "", 
-            "Stelnummer": "", 
-            "Status": "", 
-            "Gæld_Pant": "Ukendt",           # NY V8 TILFØJELSE
-            "Kilometerstand": "Ukendt",      # NY V8 TILFØJELSE
-            "Forsikring": "Ukendt",          # NY V8 TILFØJELSE
-            "Tidligere_Salgsannoncer": [],   # NY V8 TILFØJELSE (Bilbasen, DBA)
-            "Direct_OSINT_Links": {},        # NY V8 TILFØJELSE
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[20] Køretøjs-Efterretning (Gæld, Pant & Annonce-Dorking V8)\n{'='*60}{C.RESET}")
-        print(f"[*] Slår nummerplade op: {self.reg}")
-
-        # --- NY V8 TILFØJELSE: OSINT genveje ---
-        self._generate_osint_links()
-
-        url = f"https://www.tjekbil.dk/nummerplade/{self.reg}/overblik"
-        if safe_get_with_retry(driver, url):
-            zap_cookies(driver)
-            time.sleep(2)
-            try:
-                # Cookie/Consent clicker for at undgå blokeret DOM
-                try:
-                    for btn in driver.find_elements(By.TAG_NAME, "button"):
-                        if any(x in btn.text.lower() for x in ["tillad", "accept", "forstået", "ok"]):
-                            driver.execute_script("arguments[0].click();", btn)
-                            time.sleep(1)
-                            break
-                except: pass
-
-                body_text = driver.find_element(By.TAG_NAME, "body").text
-                
-                # 1. Stelnummer
-                stel_match = re.search(r'(?i)(?:stelnummer|vin)[:\s]+([A-Z0-9]{17})', body_text)
-                if stel_match:
-                    self.data["Stelnummer"] = stel_match.group(1)
-                    print(f"{C.GREEN}    ✓ Stelnummer (VIN) fundet: {self.data['Stelnummer']}{C.RESET}")
-                    # NY V8 TILFØJELSE: VIN Decode Link
-                    self.data["Direct_OSINT_Links"]["VIN_Decoder"] = f"https://www.vindecoderz.com/EN/check-lookup/{self.data['Stelnummer']}"
-
-                # 2. Mærke & Model
-                try:
-                    h1 = driver.find_element(By.TAG_NAME, "h1").text
-                    self.data["Mærke_Model"] = h1.replace("Tjekbil", "").strip()
-                    print(f"{C.GREEN}    ✓ Køretøj: {self.data['Mærke_Model']}{C.RESET}")
-                except Exception: pass
-
-                # 3. Status
-                if "Afgemeldt" in body_text or "Afmeldt" in body_text:
-                    self.data["Status"] = "Afmeldt"
-                else:
-                    self.data["Status"] = "Aktiv"
-                print(f"{C.GREEN}    ✓ Status: {self.data['Status']}{C.RESET}")
-
-                # --- NYE V8 EKSTRAKTIONER ---
-                
-                # 4. Gæld og Pant i bilen (Økonomisk Intel)
-                if re.search(r'(?i)(?:restgæld|pant|tinglysning)[\s:]+(ja|[1-9]\d*\s*kr)', body_text) or "Der er tinglyst gæld" in body_text:
-                    self.data["Gæld_Pant"] = "Gæld Registreret!"
-                    print(f"{C.RED}    🔥 ØKONOMI ADVARSEL: Der er tinglyst gæld i køretøjet!{C.RESET}")
-                else:
-                    self.data["Gæld_Pant"] = "Ingen Gæld"
-                    print(f"{C.GREEN}    ✓ Økonomi: Ingen tinglyst gæld fundet.{C.RESET}")
-
-                # 5. Kilometerstand
-                km_match = re.search(r'(?i)(?:kilometerstand|kørt)[:\s]+([\d\.]+)\s*km', body_text)
-                if km_match:
-                    self.data["Kilometerstand"] = km_match.group(1) + " km"
-                    print(f"{C.CYAN}    ✓ Kilometerstand: {self.data['Kilometerstand']}{C.RESET}")
-
-                # 6. Forsikringsselskab
-                fors_match = re.search(r'(?i)(?:forsikringsselskab|forsikret hos)[:\s]+([A-Za-zÆØÅæøå\s]+)', body_text)
-                if fors_match:
-                    selskab = fors_match.group(1).strip().split('\n')[0]
-                    if len(selskab) > 2 and selskab.lower() not in ["ukendt", "ikke oplyst"]:
-                        self.data["Forsikring"] = selskab
-                        print(f"{C.CYAN}    ✓ Forsikring: {self.data['Forsikring']}{C.RESET}")
-
-            except Exception as e:
-                print(f"{C.YELLOW}    [-] Kunne ikke udtrække alt data automatisk. Tjek manuelt: {url}{C.RESET}")
-        else:
-            print(f"{C.RED}    [-] Kunne ikke forbinde til motor-registret.{C.RESET}")
-
-        # --- NY V8: DORKING EFTER HISTORISKE SALGSANNONCER ---
-        self._dork_vehicle_history(driver)
-
-        self.save()
-
-    def _generate_osint_links(self):
-        """NY V8 TILFØJELSE: Genererer genveje til manuelle opslag og tinglysning API'er"""
-        print(f"{C.YELLOW}[*] Genererer Tinglysning og Motorregister Links...{C.RESET}")
-        self.data["Direct_OSINT_Links"]["TjekBil"] = f"https://www.tjekbil.dk/nummerplade/{self.reg}/overblik"
-        self.data["Direct_OSINT_Links"]["NummerpladeNet"] = f"https://nummerplade.net/nummerplade/{self.reg}.html"
-        self.data["Direct_OSINT_Links"]["Tinglysning"] = f"https://www.tinglysning.dk/tinglysning/rest/forespoergsel/bilbogen/nummerplade/{self.reg}"
-        
-        print(f"{C.CYAN}    -> Auto-Tinglysning Link: {self.data['Direct_OSINT_Links']['Tinglysning']}{C.RESET}")
-
-    def _dork_vehicle_history(self, driver):
-        """NY V8 TILFØJELSE: Søger på DBA, Bilbasen og Bilgalleri for at finde gamle annoncer med ejerens data"""
-        print(f"\n{C.YELLOW}[*] Dorking Web History: Leder efter gamle salgsannoncer for pladen...{C.RESET}")
-        if not driver: return
-
-        dork = f'"{self.reg}" site:bilbasen.dk OR site:dba.dk OR site:bilgalleri.dk OR site:bilsalg.dk'
-        links = omni_dork_search(driver, dork, max_links=3)
-
-        if links:
-            for link in links:
-                url = link['url']
-                title = link.get('title', '')
-                print(f"{C.GREEN}    🔥 HISTORISK SPOR FUNDET: {url[:80]}{C.RESET}")
-                
-                if url not in self.data["Tidligere_Salgsannoncer"]:
-                    self.data["Tidligere_Salgsannoncer"].append({"Titel": title, "URL": url})
-        else:
-            print(f"{C.DIM}    [-] Ingen historiske salgsannoncer fundet for {self.reg}.{C.RESET}")
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/20_VEHICLE_{self.reg}.json"
-        
-        # NY V8 TILFØJELSE: Sikker overskrivning af rapporten
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_21_bssid.py ---
-# -*- coding: utf-8 -*-
-import os
-import json
-import requests
-from pathlib import Path
-from datetime import datetime
-from core.utils import C, session
-from core.network import CONFIG # Til at hente evt Wigle API nøgle
-
-class BSSIDGeofencer:
-    """Geolocates a router BSSID using Wigle (if configured) and Mylnikov API"""
-    def __init__(self, bssid):
-        self.bssid = bssid.strip().replace("-", ":").upper() # Wigle foretrækker upper
-        self.wigle_key = CONFIG.get("api_keys", {}).get("wigle", "")
-        
-        self.data = {
-            "BSSID": self.bssid, 
-            "Producent_OUI": "Ukendt",    # NY V8 TILFØJELSE: Router mærke
-            "Fundet": False, 
-            "Kilde": "",                  # NY V8 TILFØJELSE: Mylnikov eller Wigle
-            "Netværksnavn_SSID": "",      # NY V8 TILFØJELSE: Kan ofte udtrækkes fra Wigle
-            "Lat": None, 
-            "Lon": None, 
-            "Direct_OSINT_Links": {},     # NY V8 TILFØJELSE: Både Google og Apple Maps
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def run(self, driver=None):
-        print(f"\n{C.CYAN}{'='*60}\n[21] BSSID Geofencer (MAC Lokations-sporing V8)\n{'='*60}{C.RESET}")
-        print(f"[*] Starter global triangulering for router MAC: {self.bssid}")
-
-        # --- NY V8: Resolve OUI (Producent af netværkskortet) ---
-        self._resolve_oui()
-
-        # --- NY V8: Multi-API Fallback Engine ---
-        # 1. Forsøg Wigle (Mest præcis, kræver API)
-        if self.wigle_key:
-            print(f"{C.YELLOW}[*] Wigle API-Nøgle detekteret. Forbinder til Wigle.net databasen...{C.RESET}")
-            if self._query_wigle():
-                self._generate_map_links()
-                self.save()
-                return # Stopper her hvis Wigle fandt den
-
-        # 2. Forsøg Mylnikov (Gratis fallback)
-        print(f"{C.YELLOW}[*] Forbinder til Mylnikov Open Wifi API...{C.RESET}")
-        if self._query_mylnikov():
-            self._generate_map_links()
-            
-        self.save()
-
-    def _resolve_oui(self):
-        """Finder ud af hvilken hardware routeren er lavet af (f.eks Netgear, Sagemcom)"""
-        oui = self.bssid.replace(":", "")[:6]
-        print(f"\n{C.YELLOW}[*] Slår OUI ({oui}) op for at finde hardware producent...{C.RESET}")
-        try:
-            res = requests.get(f"https://api.macvendors.com/{oui}", timeout=5)
-            if res.status_code == 200 and res.text:
-                self.data["Producent_OUI"] = res.text.strip()
-                print(f"{C.MAGENTA}    ✓ Router Producent identificeret: {self.data['Producent_OUI']}{C.RESET}")
-            else:
-                print(f"{C.DIM}    [-] OUI ikke fundet i de offentlige registre.{C.RESET}")
-        except Exception:
-            pass
-
-    def _query_wigle(self):
-        """Søger i Wigle.net databasen. Kræver at 'wigle': 'encoded_auth_token' er i config.json"""
-        headers = {
-            'Authorization': f'Basic {self.wigle_key}',
-            'Accept': 'application/json'
-        }
-        url = f"https://api.wigle.net/api/v2/network/detail?netid={self.bssid}"
-        
-        try:
-            res = requests.get(url, headers=headers, timeout=10)
-            if res.status_code == 200:
-                json_data = res.json()
-                if json_data.get("success") and len(json_data.get("results", [])) > 0:
-                    net_data = json_data["results"][0]
-                    self.data["Fundet"] = True
-                    self.data["Kilde"] = "Wigle.net"
-                    self.data["Lat"] = net_data.get("trilat")
-                    self.data["Lon"] = net_data.get("trilong")
-                    self.data["Netværksnavn_SSID"] = net_data.get("ssid", "Skjult")
-                    
-                    print(f"{C.GREEN}    🔥 BINGO! Trianguleret lokation via Wigle!{C.RESET}")
-                    print(f"{C.GREEN}    ✓ Netværksnavn (SSID): {self.data['Netværksnavn_SSID']}{C.RESET}")
-                    print(f"{C.GREEN}    ✓ Breddegrad: {self.data['Lat']} | Længdegrad: {self.data['Lon']}{C.RESET}")
-                    return True
-                else:
-                    print(f"{C.DIM}    [-] Wigle.net havde ingen GPS koordinater på dette BSSID.{C.RESET}")
-            elif res.status_code == 401:
-                print(f"{C.RED}    [!] Wigle API Nøgle er ugyldig. Falder tilbage til Mylnikov.{C.RESET}")
-        except Exception as e:
-            print(f"{C.DIM}    [!] Fejl ved Wigle opslag: {e}{C.RESET}")
-        
-        return False
-
-    def _query_mylnikov(self):
-        """Det originale Mylnikov opslag som gratis fallback"""
-        url = f"https://api.mylnikov.org/geolocation/wifi?v=1.1&data={self.bssid.lower()}"
-        try:
-            res = requests.get(url, timeout=10).json()
-            if res.get("result") == 200:
-                self.data["Fundet"] = True
-                self.data["Kilde"] = "Mylnikov Open API"
-                self.data["Lat"] = res["data"]["lat"]
-                self.data["Lon"] = res["data"]["lon"]
-
-                print(f"{C.GREEN}    🔥 BINGO! Fysisk lokation fastslået via Mylnikov!{C.RESET}")
-                print(f"{C.GREEN}    ✓ Breddegrad: {self.data['Lat']} | Længdegrad: {self.data['Lon']}{C.RESET}")
-                return True
-            else:
-                print(f"{C.YELLOW}    [-] Routeren findes ikke i de åbne databaser.{C.RESET}")
-        except Exception as e:
-            print(f"{C.RED}    [!] Fejl ved Mylnikov API opslag: {e}{C.RESET}")
-            
-        return False
-
-    def _generate_map_links(self):
-        if self.data["Lat"] and self.data["Lon"]:
-            print(f"\n{C.YELLOW}[*] Genererer Taktiske Kort-Links...{C.RESET}")
-            
-            # Google Maps
-            g_link = f"https://www.google.com/maps?q={self.data['Lat']},{self.data['Lon']}"
-            
-            # Apple Maps (Ofte bedre opløsning i LookAround end Google Streetview)
-            a_link = f"http://googleusercontent.com/maps.apple.com/0ll={self.data['Lat']},{self.data['Lon']}&q=Target_Router"
-            
-            self.data["Direct_OSINT_Links"]["Google_Maps"] = g_link
-            self.data["Direct_OSINT_Links"]["Apple_Maps"] = a_link
-            
-            print(f"{C.CYAN}    -> Google Maps: {g_link}{C.RESET}")
-            print(f"{C.CYAN}    -> Apple Maps: {a_link}{C.RESET}")
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/21_BSSID_{self.bssid.replace(':', '')}.json"
-        
-        # Sikker overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] BSSID Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_22_chatapp.py ---
-# -*- coding: utf-8 -*-
-import os
-import json
-import re
-import requests
-from bs4 import BeautifulSoup # NY V8 TILFØJELSE: Til Telegram Web scraping
-from datetime import datetime
-from pathlib import Path
-from core.utils import C, session
-from core.network import omni_dork_search
-
-class ChatAppIntelligence:
-    def __init__(self, query):
-        self.query = query.strip()
-        self.data = {
-            "Søgeord": self.query, 
-            "Telegram_Hits": [], 
-            "Telegram_Intel": [],       # NY V8 TILFØJELSE: Deep Scrape data
-            "Discord_Hits": [], 
-            "Discord_Intel": [],        # NY V8 TILFØJELSE: Server Info via API
-            "WhatsApp_Hits": [],        # NY V8 TILFØJELSE: WhatsApp Grupper
-            "Skype_Hits": [],           # NY V8 TILFØJELSE: Skype Profiler
-            "Snowflakes_Decoded": [], 
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def _decode_discord_snowflake(self, snowflake_id):
-        """Dekoder et Discord ID for at finde oprettelsesdatoen (OSINT Trick)"""
-        try:
-            # Discord Epoch (2015-01-01T00:00:00.000Z)
-            discord_epoch = 1420070400000
-            # Tidsstemplet er gemt i de første 42 bits af ID'et
-            timestamp_ms = (int(snowflake_id) >> 22) + discord_epoch
-            creation_date = datetime.fromtimestamp(timestamp_ms / 1000.0)
-            return creation_date.strftime('%Y-%m-%d %H:%M:%S')
-        except Exception:
-            return None
-
-    def run(self, driver):
-        print(f"\n{C.CYAN}{'='*60}\n[22] Chat App Intelligence & Forensics (GOLIATH V8)\n{'='*60}{C.RESET}")
-        
-        # 1. Tjek om søgeordet rent faktisk er et Discord ID!
-        if self.query.isdigit() and 17 <= len(self.query) <= 19:
-            print(f"{C.YELLOW}[*] Detekterede et muligt Discord Snowflake ID! Udfører matematisk dekodning...{C.RESET}")
-            creation_time = self._decode_discord_snowflake(self.query)
-            if creation_time:
-                print(f"{C.RED}    🔥 KONTO/SERVER OPRETTET: {creation_time}{C.RESET}")
-                self.data["Snowflakes_Decoded"].append({"ID": self.query, "Oprettet": creation_time})
-
-        # --- TELEGRAM OSINT ---
-        print(f"\n{C.YELLOW}[*] Scanner Telegram økosystemet...{C.RESET}")
-        tg_dork = f'"{self.query}" site:t.me OR site:telegra.ph'
-        tg_links = omni_dork_search(driver, tg_dork, max_links=5)
-        if tg_links:
-            for link in tg_links:
-                url = link['url']
-                print(f"{C.GREEN}    ✓ TELEGRAM SPOR: {url}{C.RESET}")
-                self.data["Telegram_Hits"].append(url)
-                # NY V8: Deep Scrape af Telegram link
-                self._analyze_telegram_link(url)
-        else:
-            print(f"{C.DIM}    [-] Ingen Telegram spor fundet.{C.RESET}")
-
-        # --- DISCORD OSINT ---
-        print(f"\n{C.YELLOW}[*] Scanner Discord servere...{C.RESET}")
-        dc_dork = f'"{self.query}" site:discord.com/invite OR site:discord.gg'
-        dc_links = omni_dork_search(driver, dc_dork, max_links=5)
-        if dc_links:
-            for link in dc_links:
-                url = link['url']
-                print(f"{C.GREEN}    ✓ DISCORD INVITE: {url}{C.RESET}")
-                self.data["Discord_Hits"].append(url)
-                
-                # NY V8: Auto-ekstraher og API tjek invites
-                invite_match = re.search(r'discord\.(?:com/invite|gg)/([a-zA-Z0-9-]+)', url)
-                if invite_match:
-                    self._analyze_discord_invite(invite_match.group(1))
-                    
-                # NY V8: Auto-detekter Snowflake IDs i URL'en (f.eks. besked links)
-                snowflakes = re.findall(r'\b(\d{17,19})\b', url)
-                for sf in set(snowflakes):
-                    c_time = self._decode_discord_snowflake(sf)
-                    if c_time:
-                        print(f"{C.MAGENTA}      -> Skjult Snowflake ({sf}) dekodet: Oprettet {c_time}{C.RESET}")
-                        if not any(d.get("ID") == sf for d in self.data["Snowflakes_Decoded"]):
-                            self.data["Snowflakes_Decoded"].append({"ID": sf, "Oprettet": c_time, "Kilde": url})
-        else:
-            print(f"{C.DIM}    [-] Ingen Discord invites fundet.{C.RESET}")
-
-        # --- WHATSAPP OSINT (NY V8) ---
-        print(f"\n{C.YELLOW}[*] Scanner åbne WhatsApp Grupper...{C.RESET}")
-        wa_dork = f'"{self.query}" site:chat.whatsapp.com'
-        wa_links = omni_dork_search(driver, wa_dork, max_links=3)
-        if wa_links:
-            for link in wa_links:
-                print(f"{C.GREEN}    ✓ WHATSAPP GRUPPE: {link['url']}{C.RESET}")
-                self.data["WhatsApp_Hits"].append(link['url'])
-        else:
-            print(f"{C.DIM}    [-] Ingen WhatsApp grupper fundet.{C.RESET}")
-
-        # --- SKYPE OSINT (NY V8) ---
-        print(f"\n{C.YELLOW}[*] Scanner åbne Skype profiler...{C.RESET}")
-        sk_dork = f'"{self.query}" site:skype.com'
-        sk_links = omni_dork_search(driver, sk_dork, max_links=3)
-        if sk_links:
-            for link in sk_links:
-                print(f"{C.GREEN}    ✓ SKYPE SPOR: {link['url']}{C.RESET}")
-                self.data["Skype_Hits"].append(link['url'])
-        else:
-            print(f"{C.DIM}    [-] Ingen Skype profiler fundet.{C.RESET}")
-
-        self.save()
-
-    def _analyze_discord_invite(self, invite_code):
-        """NY V8: Kalder Discord API direkte for at stjæle server info udenom Google"""
-        print(f"{C.DIM}      -> Slår invite '{invite_code}' op via Discord API...{C.RESET}")
-        try:
-            res = requests.get(f"https://discord.com/api/v9/invites/{invite_code}?with_counts=true", timeout=5).json()
-            if "guild" in res:
-                guild_name = res["guild"].get("name", "Ukendt")
-                members = res.get("approximate_member_count", "Ukendt")
-                online = res.get("approximate_presence_count", "Ukendt")
-                channel = res.get("channel", {}).get("name", "Ukendt")
-                
-                print(f"{C.RED}      🔥 SERVER FUNDET: {guild_name} | {members} Medlemmer ({online} Online) | Kanal: #{channel}{C.RESET}")
-                self.data["Discord_Intel"].append({
-                    "Invite": invite_code,
-                    "Server_Navn": guild_name,
-                    "Medlemmer": members,
-                    "Online": online,
-                    "Kanal": channel
-                })
-            elif "message" in res:
-                print(f"{C.DIM}      [-] Invite link udløbet eller ugyldigt ({res.get('message')}).{C.RESET}")
-        except Exception as e:
-            print(f"{C.DIM}      [-] Fejl ved Discord API opslag: {e}{C.RESET}")
-
-    def _analyze_telegram_link(self, url):
-        """NY V8: Udfører et HTTP kald for at udtrække navn og bio fra Telegram Meta-tags"""
-        print(f"{C.DIM}      -> Tjekker Telegram Web Preview for '{url}'...{C.RESET}")
-        try:
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code == 200:
-                soup = BeautifulSoup(res.text, 'html.parser')
-                
-                title = soup.find("meta", property="og:title")
-                desc = soup.find("meta", property="og:description")
-                
-                title_val = title["content"] if title else "Ukendt"
-                desc_val = desc["content"] if desc else "Ingen bio tilgængelig"
-                
-                # Hvis vi fanger en retsgyldig titel
-                if title_val and title_val != "Telegram: Contact @telegram":
-                    print(f"{C.RED}      🔥 KONTO/GRUPPE: {title_val}{C.RESET}")
-                    print(f"{C.MAGENTA}      -> Bio: {desc_val[:100]}...{C.RESET}")
-                    
-                    self.data["Telegram_Intel"].append({
-                        "URL": url,
-                        "Navn": title_val,
-                        "Beskrivelse": desc_val
-                    })
-        except Exception:
-            pass
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/22_CHATAPP_{self.query.replace(' ', '_')}.json"
-        
-        # NY V8: Sikker overskrivning af fil
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=4, ensure_ascii=False)
-        print(f"\n{C.GREEN}[✓] Chat App Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_26_virustotal.py ---
-# -*- coding: utf-8 -*-
-import os
-import json
-import re
-import requests
-import base64
-from datetime import datetime
-from pathlib import Path
-from core.utils import C, session
-from core.network import CONFIG
-
-class VirusTotalAnalyzer:
-    """GOLIATH V8: Dybdegående Threat Intelligence & Malware Profiling"""
-    def __init__(self, hash_or_ip):
-        self.target = str(hash_or_ip).strip()
-        self.api_key = CONFIG.get("api_keys", {}).get("virus_total", "")
-        self.target_type = self._detect_target_type()
-        
-        self.data = {
-            "Target": self.target, 
-            "Type": self.target_type,
-            "Malicious": 0, 
-            "Undetected": 0, 
-            "Suspicious": 0,
-            "Trussels_Kategori": [],       # NY V8: Ransomware, Phishing, Trojan etc.
-            "Populært_Trusselsnavn": "",   # NY V8: Familiens navn (fx Emotet)
-            "Community_Kommentarer": [],   # NY V8: Indsigter fra andre analytikere
-            "Direct_OSINT_Links": {},      # NY V8: Genveje til Any.Run / HybridAnalysis
-            "Details": {},
-            "Timestamp": datetime.now().isoformat()
-        }
-
-    def _detect_target_type(self):
-        """Intelligent detektion af input typen for korrekt API routing"""
-        if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", self.target):
-            return "ip_addresses"
-        elif re.match(r"^[A-Fa-f0-9]{32}$|^[A-Fa-f0-9]{40}$|^[A-Fa-f0-9]{64}$", self.target):
-            return "files"
-        elif self.target.startswith("http://") or self.target.startswith("https://"):
-            return "urls"
-        else:
-            return "domains" # Fallback, antager domæne hvis det ikke er IP, Hash eller eksplicit URL
-
-    def run(self, driver=None): # Driver tilføjet for Omni-Pivot kompatibilitet
-        print(f"\n{C.CYAN}{'='*60}\n[26] VirusTotal Threat Intelligence (GOLIATH V8 Engine)\n{'='*60}{C.RESET}")
-        print(f"[*] Analyserer Target: {self.target}")
-        print(f"[*] Klassificering: {self.target_type.upper().replace('_', ' ')}")
-
-        if not self.api_key:
-            print(f"{C.RED}[!] VirusTotal API-nøgle mangler i config.json{C.RESET}")
-            return
-            
-        self._generate_osint_links()
-            
-        headers = {
-            "accept": "application/json",
-            "x-apikey": self.api_key
-        }
-
-        # Format URL for API kald
-        api_target = self.target
-        if self.target_type == "urls":
-            # VirusTotal kræver base64 url-safe encodede strenge (uden '=') til URL scanning
-            api_target = base64.urlsafe_b64encode(self.target.encode()).decode().strip("=")
-
-        url = f"https://www.virustotal.com/api/v3/{self.target_type}/{api_target}"
-
-        try:
-            print(f"{C.YELLOW}[*] Forbinder til VirusTotal API (Henter primær analyse)...{C.RESET}")
-            res = requests.get(url, headers=headers, timeout=15)
-            
-            if res.status_code == 200:
-                json_data = res.json()
-                attrs = json_data.get('data', {}).get('attributes', {})
-                stats = attrs.get('last_analysis_stats', {})
-                
-                # Original Logik Bevaret & Udvidet
-                self.data["Malicious"] = stats.get('malicious', 0)
-                self.data["Undetected"] = stats.get('undetected', 0)
-                self.data["Suspicious"] = stats.get('suspicious', 0)
-                
-                if self.data["Malicious"] > 0:
-                    print(f"{C.RED}    🔥 KRITISK TRUSSEL: Flaged som 'Malicious' af {self.data['Malicious']} motorer!{C.RESET}")
-                elif self.data["Suspicious"] > 0:
-                    print(f"{C.YELLOW}    [!] MISTÆNKELIGT: Flaget som 'Suspicious' af {self.data['Suspicious']} motorer.{C.RESET}")
-                else:
-                    print(f"{C.GREEN}    ✓ RENT: {self.data['Undetected']} motorer anser target for at være rent.{C.RESET}")
-
-                # --- NY V8: TRUSSELS KATEGORISERING ---
-                if 'popular_threat_classification' in attrs:
-                    threat_class = attrs['popular_threat_classification']
-                    if 'suggested_threat_label' in threat_class:
-                        self.data["Populært_Trusselsnavn"] = threat_class['suggested_threat_label']
-                        print(f"{C.MAGENTA}    🔥 Malware Familie: {self.data['Populært_Trusselsnavn']}{C.RESET}")
-                    
-                    if 'popular_threat_category' in threat_class:
-                        categories = [cat['value'] for cat in threat_class['popular_threat_category']]
-                        self.data["Trussels_Kategori"] = categories
-                        print(f"{C.MAGENTA}    🔥 Kategorier: {', '.join(categories)}{C.RESET}")
-
-                # Gemmer lidt af det rå data til fremtidig brug
-                if 'meaningful_name' in attrs: self.data["Details"]["Navn"] = attrs['meaningful_name']
-                if 'type_description' in attrs: self.data["Details"]["Filtype"] = attrs['type_description']
-
-                # --- NY V8: COMMUNITY COMMENTS (Intelligence Extract) ---
-                self._fetch_community_comments(headers, api_target)
-
-            elif res.status_code == 404:
-                print(f"{C.DIM}    [-] Target findes endnu ikke i VirusTotals database.{C.RESET}")
-            else:
-                print(f"{C.RED}    [!] Fejl fra VirusTotal: {res.status_code} - {res.text}{C.RESET}")
-
-        except Exception as e:
-            print(f"{C.RED}[!] Systemfejl under VT API kommunikation: {e}{C.RESET}")
-
-        self.save()
-
-    def _fetch_community_comments(self, headers, api_target):
-        """NY V8: Henter sikkerhedsforskeres kommentarer på target"""
-        comment_url = f"https://www.virustotal.com/api/v3/{self.target_type}/{api_target}/comments?limit=3"
-        try:
-            print(f"{C.YELLOW}[*] Henter Threat Community Intel (Kommentarer)...{C.RESET}")
-            c_res = requests.get(comment_url, headers=headers, timeout=10)
-            if c_res.status_code == 200:
-                comments = c_res.json().get('data', [])
-                if comments:
-                    for c in comments:
-                        text = c.get('attributes', {}).get('text', '').replace('\n', ' | ')
-                        self.data["Community_Kommentarer"].append(text)
-                        print(f"{C.CYAN}      -> Intel: {text[:100]}...{C.RESET}")
-                else:
-                    print(f"{C.DIM}      [-] Ingen community kommentarer fundet.{C.RESET}")
-        except Exception:
-            pass
-
-    def _generate_osint_links(self):
-        """NY V8: Bygger direkte links til Sandbox systemer"""
-        if self.target_type == "files":
-            print(f"\n{C.YELLOW}[*] Genererer Taktiske Sandbox Genveje...{C.RESET}")
-            self.data["Direct_OSINT_Links"]["VirusTotal"] = f"https://www.virustotal.com/gui/file/{self.target}"
-            self.data["Direct_OSINT_Links"]["AnyRun"] = f"https://any.run/submissions/#filehash:{self.target}"
-            self.data["Direct_OSINT_Links"]["HybridAnalysis"] = f"https://www.hybrid-analysis.com/search?query={self.target}"
-            
-            print(f"{C.CYAN}    -> Any.Run (Live Detonation): {self.data['Direct_OSINT_Links']['AnyRun']}{C.RESET}")
-            print(f"{C.CYAN}    -> HybridAnalysis (CrowdStrike): {self.data['Direct_OSINT_Links']['HybridAnalysis']}{C.RESET}")
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        # Renser filnavnet sikkert uanset type
-        safe_target = self.target.replace("http://", "").replace("https://", "").replace("/", "_")[:30]
-        filename = f"{session['loot_folder']}/26_VIRUSTOTAL_{safe_target}.json"
-        
-        # Sikker overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        print(f"\n{C.GREEN}[✓] Threat Intel Rapport gemt: {filename}{C.RESET}")--- FIL: ./modules/mod_30_person_intel.py ---
-# -*- coding: utf-8 -*-
-"""
-🚀 OMNI_HUNTER V6.0: THE JUGGERNAUT ORCHESTRATOR
-MODUL 30: TOTAL IDENTITY RESOLUTION, RECURSIVE PIVOTING & AI FUSION
-------------------------------------------------------------------
-OPERATIONAL SPECIFICATIONS:
-- 8-Phase Autonomous Intelligence Pipeline.
-- Historical Data Lake Correlation (Cross-Case Memory).
-- Recursive Dorking (Auto-Pivot på opdagede IOCs).
-- Threaded Omni-Pivot (Dispatcher under-moduler parallelt).
-- Full AI (Titan), Graph (Vis.js) og GEOINT (KML) integration.
-"""
-
-import time
-import json
-import os
-import re
-import urllib.parse
-import threading
-import concurrent.futures
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, List, Set
-
-from core.base_module import BaseModule, ModuleCategory
-from core.utils import C, session, ThreatIntelExtractor, datalake, sanitize_filename
-from core.network import omni_dork_search, safe_get_with_retry
-from core.browser import get_stealth_driver
-
-try:
-    from core.nexus import nexus, EntityType
-except ImportError:
-    nexus = None
-
-# DYNAMISK IMPORT AF UNDERMODULER TIL FASE 6
-from modules.mod_02_business import BusinessIntelligenceAnalyst
-from modules.mod_03_breach import BreachIntelligenceAnalyst
-from modules.mod_04_social import SocialMediaProfiler
-from modules.mod_10_ip import IPNetworkAnalyzer
-from modules.mod_12_revphone import ReversePhoneIntelligence
-from modules.mod_17_sniper import SniperModule
-from modules.mod_19_crypto import CryptoLedgerAnalyzer
-from modules.mod_20_vehicle import VehicleIntelligence
-from modules.mod_21_bssid import BSSIDGeofencer
-from modules.mod_23_matrix import MatrixAnalyzer
-from modules.mod_25_wayback import WaybackMachineIntelligence
-from modules.mod_27_ai import TitanAIEnrichment
-from modules.mod_28_graph import GoliathGraphExporter
-from modules.mod_29_kml import GoogleEarthExporter
-
-
-class AutonomousOrchestrator(BaseModule):
-    
-    def __init__(self):
-        super().__init__()
-        self.name = "GRAND ORCHESTRATOR (Identity Resolution & Omni-Pivot)"
-        self.description = "Autonom 8-faset identitets-kortlægning, historisk korrelation og AI-integration."
-        self.category = ModuleCategory.PERSON
-        self.print_lock = threading.Lock()
-        
-        self.target_name = ""
-        self.max_recursion_depth = 2
-        self.seen_targets = set()
-        
-        self.noise_domains = ["microsoft.com", "outlook.office", "support.google", "login.live", "wikipedia.org", "eniro.dk"]
-        
-        self.intel_pool = {
-            "Mål": "",
-            "Gættede_Aliaser": set(),
-            "Fundne_Emails": set(),
-            "Fundne_Brugernavne": set(),
-            "Telefonnumre": set(),
-            "Nummerplader": set(),
-            "MAC_Adresser": set(),
-            "Virk_Links": set(),
-            "GitHub_Reddit_Spor": set(),
-            "Eksponerede_Dokumenter": set(),
-            "Kryptovaluta_Wallets": set(),
-            "IP_Adresser": set(),
-            "CPR_Fragments": set(),
-            "Tidslinje_Bopæl": [],
-            "Confidence_Score": 0,
-            "Metadata": {
-                "Timestamp": datetime.now().isoformat(),
-                "Software": "GOLIATH V6.0 JUGGERNAUT ORCHESTRATOR"
-            }
-        }
-
-    def _log(self, message, level="INFO", indent=0):
-        """Thread-safe standardiseret logning."""
-        colors = {"INFO": C.CYAN, "WARN": C.YELLOW, "ERROR": C.RED, "SUCCESS": C.GREEN, "PIVOT": C.MAGENTA}
-        color = colors.get(level, C.RESET)
-        ts = datetime.now().strftime("%H:%M:%S")
-        prefix = "  " * indent
-        with self.print_lock:
-            sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {prefix}[{color}{level}{C.RESET}] {message}\n")
-
-    def run(self, driver, target: str) -> Dict[str, Any]:
-        """Den massive 8-fasede eksekverings-pipeline."""
-        self.target_name = target.strip()
-        self.intel_pool["Mål"] = self.target_name
-        self.seen_targets.add(self.target_name.lower())
-        
-        print(f"\n{C.BG_RED}{C.WHITE} === THE JUGGERNAUT ORCHESTRATOR ENGAGED === {C.RESET}\n")
-        self._log(f"Initiating Identity Resolution Sequence for: {self.target_name}", "INFO")
-
-        # FASE 0: Data Lake Correlation
-        self._phase_0_historical_lake()
-
-        # FASE 1: Alias Permutations
-        self._phase_1_generate_permutations()
-
-        # FASE 2: Recursive Clearnet Dorking
-        self._log("FASE 2: Executing Recursive Clearnet Intelligence Sweep...", "INFO")
-        self._phase_2_recursive_dorking(driver, self.target_name, current_depth=0)
-
-        # FASE 3: CVR/Virk Bopæls-historik
-        if self.intel_pool["Virk_Links"]:
-            self._log("FASE 3: Extracting historical residency data (CVR/Virk)...", "INFO")
-            for link in list(self.intel_pool["Virk_Links"])[:3]: 
-                self._phase_3_virk_pivot(driver, link)
-
-        # FASE 4: Darknet & Leak Recon
-        self._log("FASE 4: Querying Darknet Indexers & Paste-Dumps...", "WARN")
-        self._phase_4_darknet_recon(driver)
-
-        # FASE 5: Vurdering
-        self._phase_5_confidence_scoring()
-        self._print_intel_summary()
-
-        # FASE 6: THREADED OMNI-PIVOT
-        self._log("FASE 6: INITIATING PARALLEL OMNI-PIVOT ENGINE", "SUCCESS")
-        self._phase_6_threaded_omni_pivot()
-
-        # FASE 7: AI & VISUALIZATION
-        self._log("FASE 7: Finalizing Intelligence Models (AI, Graph & GEOINT)", "INFO")
-        self._phase_7_finalize_models()
-
-        # FASE 8: Archiving
-        self._phase_8_archive()
-        
-        self._log("MISSION COMPLETE. Orchestrator Disengaging.", "SUCCESS")
-        return {"status": "success", "target": self.target_name, "pool": self.intel_pool}
-
-    # =========================================================================
-    # DE 8 DRIFTSFASER
-    # =========================================================================
-
-    def _phase_0_historical_lake(self):
-        """Tjekker OmniDataLake for historiske spor."""
-        self._log("FASE 0: Cross-referencing Target in OmniDataLake...", "INFO")
-        records = datalake.query_cross_reference(self.target_name)
-        if records:
-            self._log(f"Found {len(records)} previous occurrences in Intelligence Database!", "SUCCESS", indent=1)
-            for r in records[:3]:
-                self._log(f"Past Entry -> Date: {r['timestamp']} | Source: {r['source_module']}", "WARN", indent=2)
-
-    def _phase_1_generate_permutations(self):
-        """Genererer aliaser til brug i Dorking."""
-        parts = self.target_name.lower().split()
-        if len(parts) >= 2:
-            f, l = parts[0], parts[-1]
-            yr = str(datetime.now().year)[-2:] 
-            aliases = [f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", f"{f}_{l}", f"{f}{l}123", f"{f}{l}{yr}"]
-            for a in aliases: self.intel_pool["Gættede_Aliaser"].add(a)
-
-    def _phase_2_recursive_dorking(self, driver, target: str, current_depth: int):
-        """Udfører Clearnet Dorking og Auto-Pivoterer på nye fund."""
-        if current_depth > self.max_recursion_depth: return
-        self._log(f"[DEPTH {current_depth}] Sweeping vectors for: {target}", "PIVOT", indent=current_depth)
-
-        queries = [
-            f'"{target}"', 
-            f'"{target}" @gmail.com OR @hotmail.com OR @icloud.com',
-            f'"{target}" site:instagram.com OR site:tiktok.com OR site:linkedin.com',
-            f'"{target}" site:github.com OR site:reddit.com OR site:pastebin.com',
-            f'"{target}" site:virk.dk OR site:proff.dk OR site:ownr.dk',
-            f'"{target}" ext:pdf OR ext:docx OR ext:xls OR ext:txt'
-        ]
-
-        all_hits = []
-        collected_text = ""
-
-        # Parallel dorking
-        def run_dork(q):
-            try: return omni_dork_search(driver, q, max_links=4)
-            except Exception: return []
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [executor.submit(run_dork, q) for q in queries]
-            for future in concurrent.futures.as_completed(futures):
-                hits = future.result()
-                for hit in hits:
-                    u = hit.get('url', '')
-                    if u and not any(d in u for d in self.noise_domains):
-                        all_hits.append(hit)
-                        collected_text += f" {hit.get('title','')} {hit.get('snippet','')}"
-
-        # Ekstrahering via The Forge (Fase 15 Utils)
-        iocs = ThreatIntelExtractor.extract_all(collected_text)
-        danish_phones = ThreatIntelExtractor.extract_danish_phones(collected_text)
-        
-        self._ingest_iocs(iocs, danish_phones, all_hits, target)
-
-        # RECURSIVE TRIGGER: Hvis vi finder nye mails/telefoner
-        new_targets = []
-        for em in iocs.get("email", []):
-            if em.lower() not in self.seen_targets and self.target_name.lower() not in em.lower():
-                new_targets.append(em.lower())
-                self.seen_targets.add(em.lower())
-                
-        for ph in list(danish_phones)[:2]:
-            if ph not in self.seen_targets:
-                new_targets.append(ph)
-                self.seen_targets.add(ph)
-
-        # Pivoter på maks 3 nye spor per dybde for at undgå API bans
-        for nt in new_targets[:3]:
-            self._log(f"Auto-Pivot Triggered on new identifier: {nt}", "SUCCESS", indent=current_depth+1)
-            self._phase_2_recursive_dorking(driver, nt, current_depth + 1)
-
-    def _ingest_iocs(self, iocs: Dict, phones: Set[str], hits: List[Dict], source_target: str):
-        """Hælder alle fundne IOCs ned i den globale Intel Pool og Nexus Grafen."""
-        with self.print_lock:
-            self.intel_pool["Fundne_Emails"].update(iocs.get("email", []))
-            self.intel_pool["IP_Adresser"].update([ip for ip in iocs.get("ipv4", []) if not ip.startswith("1.0")])
-            self.intel_pool["MAC_Adresser"].update(iocs.get("mac", []))
-            self.intel_pool["Telefonnumre"].update(phones)
-            self.intel_pool["CPR_Fragments"].update(iocs.get("danish_cpr", []))
-            self.intel_pool["Nummerplader"].update([r.replace(" ","") for r in re.findall(r'\b[A-ZÆØÅ]{2}\s?\d{5}\b', str(hits))])
-            
-            for k in ["crypto_btc", "crypto_eth", "crypto_xmr", "iban"]:
-                self.intel_pool["Kryptovaluta_Wallets"].update([f"{k.upper()}: {x}" for x in iocs.get(k, [])])
-
-            for hit in hits:
-                url = hit['url']
-                h_match = re.search(r'(?:instagram\.com|tiktok\.com\/@|twitter\.com|github\.com)\/([a-zA-Z0-9._-]+)', url)
-                if h_match: self.intel_pool["Fundne_Brugernavne"].add(h_match.group(1))
-                if any(x in url for x in ["virk.dk", "ownr.dk", "proff.dk"]): self.intel_pool["Virk_Links"].add(url)
-                if any(x in url for x in ["github.com", "reddit.com"]): self.intel_pool["GitHub_Reddit_Spor"].add(url)
-                if url.lower().endswith(('.pdf', '.docx', '.xls', '.txt')): self.intel_pool["Eksponerede_Dokumenter"].add(url)
-
-            # NEXUS GRAPH INGESTION
-            if nexus:
-                for e in iocs.get("email", []):
-                    nexus.ingest(EntityType.EMAIL, e, source=f"Dorking:{source_target}", confidence=0.8)
-                    nexus.link(self.target_name, e, "Tilknyttet Email")
-                for p in phones:
-                    nexus.ingest(EntityType.PHONE, p, source=f"Dorking:{source_target}", confidence=0.8)
-                    nexus.link(self.target_name, p, "Tilknyttet Tlf")
-
-    def _phase_3_virk_pivot(self, driver, url):
-        """Scraper virksomhedsdata."""
-        if "person" in url and "deltager" not in url: url = url.rstrip('/') + "/deltager"
-        if safe_get_with_retry(driver, url):
-            try:
-                from selenium.webdriver.common.by import By
-                rows = driver.find_elements(By.CSS_SELECTOR, "tr, div.address")
-                for r in rows:
-                    if any(x in r.text for x in ["Bopæl", "Vej", "Adresse", "Postnr"]):
-                        clean_addr = r.text.replace("\n", " | ")
-                        self.intel_pool["Tidslinje_Bopæl"].append(clean_addr)
-            except Exception: pass
-
-    def _phase_4_darknet_recon(self, driver):
-        """Tjekker target og e-mails mod pastebins og darkweb indexere."""
-        targets = [self.target_name] + list(self.intel_pool["Fundne_Emails"])[:2]
-        for t in targets:
-            ahmia_url = f"https://ahmia.fi/search/?q={urllib.parse.quote(t)}"
-            if safe_get_with_retry(driver, ahmia_url):
-                if "No results" not in driver.page_source:
-                    self._log(f"Darknet hits verified for indicator: {t}", "WARN", indent=1)
-                    
-            # Pastebin Dork Pivot
-            dork = f'site:pastebin.com OR site:trello.com "{t}"'
-            for h in omni_dork_search(driver, dork, max_links=2):
-                self.intel_pool["Eksponerede_Dokumenter"].add(h.get('url'))
-
-    def _phase_5_confidence_scoring(self):
-        score = 0
-        if self.intel_pool["Virk_Links"]: score += 15
-        if self.intel_pool["Fundne_Brugernavne"]: score += 15
-        if self.intel_pool["Fundne_Emails"]: score += 15
-        if self.intel_pool["Telefonnumre"]: score += 15
-        if self.intel_pool["CPR_Fragments"]: score += 10
-        if self.intel_pool["Tidslinje_Bopæl"]: score += 10
-        if self.intel_pool["Nummerplader"]: score += 10
-        if self.intel_pool["MAC_Adresser"]: score += 10
-        self.intel_pool["Confidence_Score"] = min(score, 100)
-
-    def _print_intel_summary(self):
-        with self.print_lock:
-            print(f"\n{C.CYAN}--- TACTICAL INTELLIGENCE SUMMARY: {self.target_name.upper()} ---{C.RESET}")
-            print(f"Data Confidence: {C.GREEN}{self.intel_pool['Confidence_Score']}/100{C.RESET}")
-            print(f"Usernames:       {C.WHITE}{', '.join(self.intel_pool['Fundne_Brugernavne'])}{C.RESET}")
-            print(f"Emails:          {C.WHITE}{', '.join(self.intel_pool['Fundne_Emails'])}{C.RESET}")
-            print(f"Phones:          {C.WHITE}{', '.join(self.intel_pool['Telefonnumre'])}{C.RESET}")
-            if self.intel_pool['Nummerplader']: print(f"Vehicles:        {C.RED}{', '.join(self.intel_pool['Nummerplader'])}{C.RESET}")
-            if self.intel_pool['Kryptovaluta_Wallets']: print(f"Crypto:          {C.RED}{', '.join(self.intel_pool['Kryptovaluta_Wallets'])}{C.RESET}")
-            if self.intel_pool['IP_Adresser']: print(f"IP Addresses:    {C.RED}{', '.join(self.intel_pool['IP_Adresser'])}{C.RESET}")
-            print(f"{C.DIM}" + "-"*60 + f"{C.RESET}")
-
-    def _phase_6_threaded_omni_pivot(self):
-        """Eksekverer sekundære moduler parallelt for at berige fundne datapunkter."""
-        def run_api_module(module_class, target, kwargs=None):
-            try:
-                self._log(f"Firing {module_class.__name__} against {target}", "PIVOT", indent=1)
-                instance = module_class(target, **(kwargs or {}))
-                instance.run(None)
-            except Exception as e: self._log(f"{module_class.__name__} failed: {e}", "ERROR", indent=2)
-
-        def run_browser_module(module_class, target, kwargs=None):
-            driver = None
-            try:
-                self._log(f"Spooling Sandbox WebDriver for {module_class.__name__} -> {target}", "PIVOT", indent=1)
-                driver = get_stealth_driver()
-                instance = module_class(target, **(kwargs or {}))
-                instance.run(driver)
-            except Exception as e: self._log(f"{module_class.__name__} failed: {e}", "ERROR", indent=2)
-            finally:
-                if driver: driver.quit()
-
-        api_tasks, browser_tasks = [], []
-
-        # Tildel API Tasks (Lynhurtige)
-        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:3]: api_tasks.append((MatrixAnalyzer, handle, {}))
-        for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append((IPNetworkAnalyzer, ip, {}))
-        for wallet in list(self.intel_pool["Kryptovaluta_Wallets"])[:2]:
-            api_tasks.append((CryptoLedgerAnalyzer, wallet.split(": ")[1] if ": " in wallet else wallet, {}))
-        for mac in list(self.intel_pool["MAC_Adresser"])[:2]: api_tasks.append((BSSIDGeofencer, mac, {}))
-        for doc in list(self.intel_pool["Eksponerede_Dokumenter"])[:2]: api_tasks.append((WaybackMachineIntelligence, doc, {}))
-
-        # Tildel Browser Tasks (Tunge)
-        browser_tasks.append((BusinessIntelligenceAnalyst, self.target_name, {}))
-        for email in list(self.intel_pool["Fundne_Emails"])[:2]: browser_tasks.append((BreachIntelligenceAnalyst, email, {}))
-        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: browser_tasks.append((SocialMediaProfiler, handle, {}))
-        for phone in list(self.intel_pool["Telefonnumre"])[:2]: browser_tasks.append((ReversePhoneIntelligence, phone, {}))
-        for regnr in list(self.intel_pool["Nummerplader"])[:2]: browser_tasks.append((VehicleIntelligence, regnr, {}))
-
-        # Kør API Tasks Parallelt
-        if api_tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                futures = [executor.submit(run_api_module, cls, tgt, kw) for cls, tgt, kw in api_tasks]
-                concurrent.futures.wait(futures)
-
-        # Kør Browser Tasks Parallelt
-        if browser_tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                futures = [executor.submit(run_browser_module, cls, tgt, kw) for cls, tgt, kw in browser_tasks]
-                concurrent.futures.wait(futures)
-
-    def _phase_7_finalize_models(self):§
-        """Kører Wordlist, AI og Graph generation sekventielt."""
-        try:
-            email_seed = list(self.intel_pool["Fundne_Emails"])[0] if self.intel_pool["Fundne_Emails"] else ""
-            cpr_seed = list(self.intel_pool["CPR_Fragments"])[0] if self.intel_pool["CPR_Fragments"] else ""
-            clues = ",".join(self.intel_pool["Fundne_Brugernavne"])
-            SniperModule(name=self.target_name, email=email_seed, cpr=cpr_seed, clues=clues).run(None)
-        except Exception: pass
-
-        try:
-            self._log("Processing Context via Local LLM (Titan AI)...", "INFO", indent=1)
-            TitanAIEnrichment().analyze_text(json.dumps(list(self.intel_pool.items()), default=str))
-        except Exception: pass
-
-        try:
-            self._log("Generating Relational Graphs & KML...", "INFO", indent=1)
-            GoliathGraphExporter().generate()
-            GoogleEarthExporter().generate()
-        except Exception: pass
-
-    def _phase_8_archive(self):
-        """Gemmer til Secure Data Lake og lokalt JSON."""
-        # Data Lake Ingestion
-        datalake.ingest(source_module=self.name, target=self.target_name, data=self.intel_pool)
-        
-        # Flad Fil Eksport
-        export_data = self.intel_pool.copy()
-        for key in export_data:
-            if isinstance(export_data[key], set):
-                export_data[key] = list(export_data[key])
-                
-        ws_folder = session.get("loot_folder", "loot_evidence")
-        os.makedirs(ws_folder, exist_ok=True)
-        path = Path(ws_folder) / f"30_JUGGERNAUT_{sanitize_filename(self.target_name)}.json"
-        
-        path.write_text(json.dumps(export_data, indent=4, ensure_ascii=False), encoding="utf-8")
-        self._log(f"Master Intelligence Profile archived: {path}", "SUCCESS")--- FIL: ./modules/mod_07_phone.py ---
+        print(f"{C.CYAN}    -> Åbn filen i Google Earth Pro for 3D-analyse: {file_path}{C.RESET}")--- FIL: ./modules/mod_07_phone.py ---
 # -*- coding: utf-8 -*-
 import os
 import json
@@ -8425,7 +6145,355 @@ class PhoneIntelligenceHunter:
             json.dumps(self.data, indent=4, ensure_ascii=False),
             encoding="utf-8"
         )
-        print(f"\n{C.GREEN}[✓] Rapport gemt (Overskrevet succesfuldt): {filename}{C.RESET}")--- FIL: ./main.py ---
+        print(f"\n{C.GREEN}[✓] Rapport gemt (Overskrevet succesfuldt): {filename}{C.RESET}")--- FIL: ./modules/mod_31_new_feature.py ---
+# modules/mod_31_new_feature.py
+import logging
+from typing import Optional, Dict
+import requests
+from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('omni_hunter.log'),
+        logging.StreamHandler()
+    ]
+)
+
+class Module:
+    """Core module class for omni_hunter."""
+
+    def __init__(self, timeout: int = 10, max_workers: int = 5):
+        self.timeout = timeout
+        self.max_workers = max_workers
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+
+    def _fetch_data(self, url: str) -> Optional[str]:
+        """Fetch data from a URL with error handling."""
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            logging.error(f"Failed to fetch {url}: {e}")
+            return None
+
+    def _parse_data(self, html: str) -> Optional[Dict]:
+        """Parse HTML data into structured output."""
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+            return {
+                "title": soup.title.string if soup.title else None,
+                "links": [a['href'] for a in soup.find_all('a', href=True)],
+                "metadata": {meta.get('name'): meta.get('content') for meta in soup.find_all('meta')}
+            }
+        except Exception as e:
+            logging.error(f"Failed to parse HTML: {e}")
+            return None
+
+    def analyze(self, target: str) -> Optional[Dict]:
+        """Main analysis function for the module."""
+        url = f"https://example.com/{target}"  # Replace with your target URL
+        html = self._fetch_data(url)
+        if not html:
+            return None
+        return self._parse_data(html)
+
+    def batch_analyze(self, targets: list) -> Dict[str, Optional[Dict]]:
+        """Batch analyze multiple targets in parallel."""
+        results = {}
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {executor.submit(self.analyze, target): target for target in targets}
+            for future in futures:
+                target = futures[future]
+                results[target] = future.result()
+        return results
+
+    @staticmethod
+    def main(target: str) -> Optional[Dict]:
+        """Static method to integrate with the core loader."""
+        module = Module()
+        return module.analyze(target)
+
+# Example usage (for testing)
+if __name__ == "__main__":
+    # Single target
+    result = Module().analyze("example-target")
+    print(result)
+
+    # Batch targets
+    batch_results = Module().batch_analyze(["target1", "target2"])
+    print(batch_results)
+--- FIL: ./modules/mod_01_krak.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class NationalDirectoryDorker(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "NATIONAL DIRECTORY MATRIX"
+        self.description = "Søgning i Krak, 118, DeGuleSider og Proff."
+        self.category = ModuleCategory.PERSON
+        self.data = {"Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== NATIONAL DIRECTORY MATRIX ==={C.RESET}")
+        if driver:
+            for dork in [f'"{target}" site:krak.dk', f'"{target}" site:proff.dk']:
+                for hit in omni_dork_search(driver, dork, max_links=2):
+                    self.data["Hits"].append(hit.get('url'))
+                    print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_06_emailgen.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class EmailPatternGenerator(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "EMAIL SNIPER"
+        self.description = "Genererer og verificerer emails."
+        self.category = ModuleCategory.PERSON
+        self.data = {"Breach_Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== EMAIL SNIPER ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}"', max_links=3):
+                self.data["Breach_Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] Verificeret: {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_08_darkweb.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class AbyssDarkwebCrawler(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "ABYSS DARKWEB CRAWLER"
+        self.description = "Søgning på Tor gateways (Ahmia/Torch) via Clearnet proxies."
+        self.category = ModuleCategory.NETWORK
+        self.data = {"Onion_Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== ABYSS DARKWEB CRAWLER ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" site:onion.ly OR site:onion.ws', max_links=3):
+                self.data["Onion_Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] Spor: {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_09_emailtrack.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class EmailTracker(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "EMAIL FOOTPRINT TRACKER"
+        self.description = "Sporer emails til platforme."
+        self.category = ModuleCategory.PERSON
+        self.data = {"Spor": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== EMAIL FOOTPRINT TRACKER ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" -site:haveibeenpwned.com', max_links=3):
+                self.data["Spor"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_12_revphone.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class ReversePhoneIntelligence(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "REVERSE PHONE INTELLIGENCE"
+        self.description = "OSINT på danske telefonnumre."
+        self.category = ModuleCategory.PERSON
+        self.data = {"Platform_Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== REVERSE PHONE INTELLIGENCE ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" site:facebook.com OR "MobilePay"', max_links=3):
+                self.data["Platform_Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_19_crypto.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class CryptoLedgerAnalyzer(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "CRYPTO WHALE-TRACE"
+        self.description = "Søgning efter kryptoadresser i ransomware rapporter."
+        self.category = ModuleCategory.FINANCE
+        self.data = {"Svindel_Advarsler": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== CRYPTO WHALE-TRACE ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" (scam OR hack OR stolen)', max_links=3):
+                self.data["Svindel_Advarsler"].append(hit.get('url'))
+                print(f"{C.RED}[!] Trussel: {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_20_vehicle.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class VehicleIntelligence(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "VEHICLE INTELLIGENCE"
+        self.description = "OSINT på danske nummerplader."
+        self.category = ModuleCategory.GENERAL
+        self.data = {"Dork_Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== VEHICLE INTEL ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" site:nummerplade.net', max_links=3):
+                self.data["Dork_Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] Hit: {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_21_bssid.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class BSSIDGeofencer(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "BSSID GEOFENCER"
+        self.description = "Søgning efter Router MAC-adresser."
+        self.category = ModuleCategory.NETWORK
+        self.data = {"Geo_Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== BSSID GEOFENCING ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" site:wigle.net', max_links=3):
+                self.data["Geo_Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_22_chatapp.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class ChatAppIntelligence(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "CHAT-APP SYNDICATE INTEL"
+        self.description = "Kortlægning af Telegram & Discord."
+        self.category = ModuleCategory.SOCIAL
+        self.data = {"Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== CHAT-APP INTEL ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'site:t.me "{target}" OR site:discord.com "{target}"', max_links=3):
+                self.data["Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_26_virustotal.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import omni_dork_search
+
+class VirusTotalScanner(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "VIRUSTOTAL THREAT GRAPH"
+        self.description = "Søgning på filer, domæner og IP'er."
+        self.category = ModuleCategory.FORENSICS
+        self.data = {"Hits": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.RED}=== VIRUSTOTAL SCAN ==={C.RESET}")
+        if driver:
+            for hit in omni_dork_search(driver, f'"{target}" site:virustotal.com', max_links=3):
+                self.data["Hits"].append(hit.get('url'))
+                print(f"{C.GREEN}[+] {hit.get('url')}{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data
+--- FIL: ./modules/mod_30_person_intel.py ---
+# -*- coding: utf-8 -*-
+from typing import Dict, Any
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake, ThreatIntelExtractor
+from core.network import omni_dork_search
+
+class AutonomousOrchestrator(BaseModule):
+    def __init__(self):
+        super().__init__()
+        self.name = "GRAND ORCHESTRATOR"
+        self.description = "Auto-Pivoterende Identity Resolution."
+        self.category = ModuleCategory.PERSON
+        self.data = {"Hits": [], "Lækager": []}
+
+    def run(self, driver, target: str) -> Dict[str, Any]:
+        print(f"\n{C.BG_RED}{C.WHITE} === GRAND ORCHESTRATOR ENGAGED === {C.RESET}\n")
+        print(f"{C.CYAN}[*] Udfører OSINT søgning mod: {target}{C.RESET}")
+        
+        if driver:
+            collected_text = ""
+            for hit in omni_dork_search(driver, f'"{target}" site:linkedin.com OR "{target}"', max_links=5):
+                print(f"{C.GREEN} [+] {hit.get('title')}{C.RESET}")
+                collected_text += f" {hit.get('snippet', '')}"
+            
+            iocs = ThreatIntelExtractor.extract_all(collected_text)
+            if iocs.get("email"): 
+                self.data["Lækager"] = iocs["email"]
+                print(f"{C.MAGENTA} [!] AUTO-PIVOT: Fandt emails: {iocs['email']}{C.RESET}")
+                
+        print(f"\n{C.GREEN}[✓] Orchestrator fuldført.{C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data--- FIL: ./main.py ---
 # -*- coding: utf-8 -*-
 """
 🚀 OMNI_HUNTER - THE APEX ORCHESTRATOR & TUI SHELL (main.py) v5.0 (PET-FE EXECUTIVE)

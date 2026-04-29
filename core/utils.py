@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-🚀 OMNI_HUNTER - ULTIMATE OSINT Utility Module v6.0 (THE WAF EDITION)
+🚀 OMNI_HUNTER - ULTIMATE OSINT Utility Module v6.5 (THE WAF & ASYNC EDITION)
 📌 Purpose: Core utilities for OSINT, security, data persistence, and automation.
 🔧 Features:
    - FASTSAT: bleach v6.0+ kompatibilitet løst.
    - Unicode Homoglyph Normalization (NFKC).
-   - Indbygget OmniWAF (SQLi, XSS, Path Traversal detektion).
+   - Indbygget OmniWAF (SQLi, XSS, Path Traversal, NoSQLi).
    - In-Memory Rate Limiter Engine.
-   - Bulletproof Boot Sequence & Dynamic Auto-Heal
-   - Military-Grade Input Sanitization & PBKDF2 Encryption
-   - Deep Threat Intel Extraction & JWT Decoder
-   - PII Sanitizer & GDPR Redaction Engine
-   - Binary Forensics Engine & SQLite Data Lake
+   - Bulletproof Boot Sequence & Dynamic Auto-Heal.
+   - Military-Grade Input Sanitization & PBKDF2 Encryption.
+   - Deep Threat Intel Extraction & JWT Decoder.
+   - PII Sanitizer & GDPR Redaction Engine.
+   - Binary Forensics Engine & SQLite Data Lake.
+   - Fejlfri OOP Caching Engine (Retter Linje 171 fejlen).
 """
 
 import os
@@ -53,7 +55,7 @@ class C:
     BG_RED = '\033[41m'
     RESET = '\033[0m'
 
-session = {
+session: Dict[str, Any] = {
     "name": "", 
     "city": "", 
     "email": "", 
@@ -63,15 +65,13 @@ session = {
     "loot_folder": "loot_evidence"
 }
 
-import requests_cache
-def setup_cache():    requests_cache.install_cache       'omni_hunter_cache',        expire_after=3600,  # Cache expires after 1 hour        allowable_methods=['GET', 'POST']
-
-def get_input(prompt_text, session_key):
+def get_input(prompt_text: str, session_key: str) -> str:
     val = input(f"{C.CYAN}{prompt_text}: {C.RESET}").strip()
     session[session_key] = val
+    return val
 
 # ==========================================
-# 🔹 2. LOGGING ENGINE (INITIALISERES FØRST!)
+# 🔹 2. LOGGING ENGINE
 # ==========================================
 import structlog
 structlog.configure(
@@ -103,6 +103,7 @@ class OmniWAF:
     SQLI_PATTERN = re.compile(r'(?i)(\b(UNION|SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|EXEC)\b|--|;)')
     XSS_PATTERN = re.compile(r'(?i)(<script>|javascript:|onerror=|onload=|eval\()')
     PATH_TRAVERSAL = re.compile(r'(\.\./|\.\.\\|/etc/passwd|\\Windows\\System32)')
+    NOSQL_PATTERN = re.compile(r'(?i)(\$gt|\$ne|\$where|\$regex)')
 
     @classmethod
     def inspect(cls, payload: str) -> bool:
@@ -115,6 +116,9 @@ class OmniWAF:
         if cls.PATH_TRAVERSAL.search(payload):
             logger.warning(f"OmniWAF: Path Traversal detected in payload: {payload[:50]}")
             raise ValueError("Path Traversal pattern detected.")
+        if cls.NOSQL_PATTERN.search(payload):
+            logger.warning(f"OmniWAF: NoSQL Injection detected in payload: {payload[:50]}")
+            raise ValueError("NoSQL Injection pattern detected.")
         return True
 
 # ==========================================
@@ -124,13 +128,13 @@ class DummyModule:
     def __init__(self, name: str):
         self._name = name
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable:
         def _dummy_func(*args, **kwargs):
             logger.warning(f"Dummy fallback kaldt på manglende modul: {self._name}.{name}()")
             return {"error": f"Module '{self._name}' is missing. Feature disabled."}
         return _dummy_func
         
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False
 
 def auto_install_package(pip_name: str) -> bool:
@@ -144,7 +148,7 @@ def auto_install_package(pip_name: str) -> bool:
         print(f"{C.RED}    [-] Auto-Heal fejlede for {pip_name}. Kør manuelt: pip install {pip_name}{C.RESET}")
         return False
 
-def safe_import(module_name: str, pip_name: Optional[str] = None):
+def safe_import(module_name: str, pip_name: Optional[str] = None) -> Any:
     try:
         if "." in module_name:
             components = module_name.split('.')
@@ -165,7 +169,6 @@ def safe_import(module_name: str, pip_name: Optional[str] = None):
 
 # --- UDFØRER SIKRE IMPORTS ---
 import requests
-import requests_cache
 import bleach
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -198,19 +201,32 @@ except ImportError:
     has_sklearn = False
 
 # ==========================================
-# 🔹 5. SYSTEM INITIALIZATION & CACHE
+# 🔹 5. SYSTEM INITIALIZATION & FEJLFRI CACHE
 # ==========================================
 load_dotenv()
 
-requests_cache.install_cache(
-    "omni_hunter_cache_v5",
-    expire_after=86400,
-    allowable_methods=["GET", "POST"],
-    allowable_codes=[200, 404],
-    stale_if_error=True,
-    backend="sqlite",
-    use_temp=False
-)
+class OmniCacheManager:
+    """Fejlfri og sikker OOP-baseret HTTP Caching Engine."""
+    @staticmethod
+    def init_cache() -> None:
+        try:
+            import requests_cache
+            requests_cache.install_cache(
+                "omni_hunter_cache_v6",
+                expire_after=3600,
+                allowable_methods=["GET", "POST"],
+                allowable_codes=[200, 404],
+                stale_if_error=True,
+                backend="sqlite",
+                use_temp=False
+            )
+            logger.info("Requests Cache successfully initialized.")
+        except ImportError:
+            logger.warning("requests_cache ikke installeret. Fortsætter uden cache.")
+        except Exception as e:
+            logger.error(f"Cache engine fejl: {e}")
+
+OmniCacheManager.init_cache()
 
 SHODAN_API_KEY = os.getenv("SHODAN_API_KEY")
 CENSYS_API_ID = os.getenv("CENSYS_API_ID")
@@ -230,23 +246,15 @@ else:
 # 🔹 6. SECURITY, CRYPTO & OPSEC
 # ==========================================
 class MilitarySafeInput(BaseModel):
-    query: str = Field(..., max_length=500)
+    query: str = Field(..., max_length=1000)
     
     @validator("query", mode='before')
     def military_sanitize(cls, v: str) -> str:
-        # 1. Homoglyph Normalization
         normalized = unicodedata.normalize('NFKC', str(v))
-        
-        # 2. Local WAF Inspection
         OmniWAF.inspect(normalized)
-        
-        # 3. Bleach HTML Stripping (Fixed for v6.0+)
         sanitized = bleach.clean(normalized, tags=[], strip=True, attributes={}, strip_comments=True)
-        
-        # 4. Strict Regex Validation
         sanitized = re.sub(r"[^a-zA-Z0-9\-._@ ]", "", sanitized)
-        
-        if len(sanitized) > 500: raise ValueError("Input too long!")
+        if len(sanitized) > 1000: raise ValueError("Input too long!")
         return sanitized
 
 def military_sanitize_input(user_input: str) -> str:
@@ -269,20 +277,24 @@ class AdvancedCrypto:
             kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=480000)
             return base64.urlsafe_b64encode(kdf.derive(password.encode()))
         
-        if self.key_file.exists(): return self.key_file.read_bytes()
+        if self.key_file.exists(): 
+            return self.key_file.read_bytes()
         else:
             new_key = Fernet.generate_key()
             self.key_file.write_bytes(new_key)
             return new_key
 
-    def encrypt(self, data: str) -> str: return self.cipher.encrypt(data.encode()).decode()
+    def encrypt(self, data: str) -> str: 
+        return self.cipher.encrypt(data.encode()).decode()
+        
     def decrypt(self, encrypted_data: Union[str, bytes]) -> str:
-        if isinstance(encrypted_data, str): encrypted_data = encrypted_data.encode()
+        if isinstance(encrypted_data, str): 
+            encrypted_data = encrypted_data.encode()
         return self.cipher.decrypt(encrypted_data).decode()
 
 crypto = AdvancedCrypto(master_password=os.getenv("OMNI_MASTER_PASSWORD"))
 
-def sanitize_filename(name):
+def sanitize_filename(name: str) -> str:
     return re.sub(r'[\\/*?:"<>|]', "", str(name)).replace(" ", "_")[:50]
 
 class PIISanitizer:
@@ -327,7 +339,7 @@ class ThreatIntelExtractor:
         return results
 
     @staticmethod
-    def extract_danish_phones(text: str) -> Set[str]:
+    def extract_danish_phones(text: str, validate: bool = False) -> Set[str]:
         pattern = r'(?:(?:\+45|0045)\s?)?(?:[2-9][0-9]\s?[0-9]{2}\s?[0-9]{2}\s?[0-9]{2})'
         raw_matches = re.findall(pattern, text)
         clean_phones = set()
@@ -375,7 +387,7 @@ class OmniDataLake:
         self.db_path = self.base_dir / "omni_datalake.db"
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''CREATE TABLE IF NOT EXISTS osint_records
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -385,7 +397,7 @@ class OmniDataLake:
                              data_json TEXT)''')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_target ON osint_records(target)')
 
-    def ingest(self, source_module: str, target: str, data: Dict[str, Any]):
+    def ingest(self, source_module: str, target: str, data: Dict[str, Any]) -> None:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
                          (datetime.now().isoformat(), source_module, target, json.dumps(data, ensure_ascii=False)))
@@ -410,7 +422,6 @@ def save_to_json(data: Dict[str, Any], filename: str, encrypt: bool = False) -> 
 # ==========================================
 # 🔹 9. BACKWARDS COMPATIBILITY LAYER
 # ==========================================
-# Sikrer at ældre moduler (Modul 01, 02, 04, 09) ikke crasher på manglende imports
 REGEX_EMAIL = ThreatIntelExtractor.PATTERNS["email"]
 REGEX_CPR = ThreatIntelExtractor.PATTERNS["danish_cpr"]
 REGEX_CVR = ThreatIntelExtractor.PATTERNS["danish_cvr"]
@@ -421,5 +432,17 @@ REGEX_IBAN = ThreatIntelExtractor.PATTERNS["iban"]
 REGEX_IPV4 = ThreatIntelExtractor.PATTERNS["ipv4"]
 REGEX_MAC = ThreatIntelExtractor.PATTERNS["mac"]
 
-def extract_danish_phones(text):
+def extract_danish_phones(text: str) -> Set[str]:
     return ThreatIntelExtractor.extract_danish_phones(text)
+
+def validate_danish_address(text: str) -> Optional[Dict[str, str]]:
+    """Basic extraction of Danish addresses for backward compatibility."""
+    match = re.search(r'([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\.\-]+?\s\d+[A-Z0-9a-z]*?)\s*,\s*(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)', text)
+    if match:
+        return {
+            "vej": match.group(1).strip(),
+            "post": match.group(2).strip(),
+            "by": match.group(3).strip(),
+            "full": f"{match.group(1).strip()}, {match.group(2).strip()} {match.group(3).strip()}"
+        }
+    return None

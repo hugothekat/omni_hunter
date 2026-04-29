@@ -1,84 +1,105 @@
-# modules/mod_31_new_feature.py
+# -*- coding: utf-8 -*-
+"""
+🚀 OMNI_HUNTER V36: ASYNC BATCH HARVESTER
+📌 Formål: Parallelt scrapings-modul til tusindvis af mål uden timeouts.
+"""
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, Any, List
 import requests
+import time
+import random
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('omni_hunter.log'),
-        logging.StreamHandler()
-    ]
-)
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, datalake
+from core.network import get_stealth_session
 
-class Module:
-    """Core module class for omni_hunter."""
+class AdvancedBatchHarvester(BaseModule):
+    """Et fuldblods V36 OSINT Modul til Batch Processering."""
 
-    def __init__(self, timeout: int = 10, max_workers: int = 5):
-        self.timeout = timeout
-        self.max_workers = max_workers
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+    def __init__(self):
+        super().__init__()
+        self.name = "OMNI ASYNC BATCH HARVESTER"
+        self.description = "Parallel batch analyse og asynkron HTTP scraping."
+        self.category = ModuleCategory.NETWORK
+        self.data = {"Total_Targets": 0, "Succesfulde_Requests": 0, "Results": {}}
+        self.max_workers = 10
+        self.session = get_stealth_session()
+        
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+        ]
 
     def _fetch_data(self, url: str) -> Optional[str]:
-        """Fetch data from a URL with error handling."""
+        """Sikker proxy/header-roterende fetcher."""
         try:
-            response = self.session.get(url, timeout=self.timeout)
+            headers = {'User-Agent': random.choice(self.user_agents)}
+            response = self.session.get(url, headers=headers, timeout=15)
             response.raise_for_status()
             return response.text
         except requests.RequestException as e:
-            logging.error(f"Failed to fetch {url}: {e}")
+            self._log(f"Fetch failed for {url}: {e}", C.DIM)
             return None
 
     def _parse_data(self, html: str) -> Optional[Dict]:
-        """Parse HTML data into structured output."""
+        """Udtrækker OSINT-relevant meta data, title og outbounds."""
         try:
             soup = BeautifulSoup(html, 'html.parser')
+            
+            # Find skjulte metatags (Ofte API nøgler eller framework versioner)
+            metadata = {}
+            for meta in soup.find_all('meta'):
+                name = meta.get('name') or meta.get('property')
+                if name: metadata[name] = meta.get('content')
+                
             return {
-                "title": soup.title.string if soup.title else None,
-                "links": [a['href'] for a in soup.find_all('a', href=True)],
-                "metadata": {meta.get('name'): meta.get('content') for meta in soup.find_all('meta')}
+                "Title": soup.title.string.strip() if soup.title else "Ingen Titel",
+                "Eksterne_Links": [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith('http')],
+                "Skjult_Metadata": metadata,
+                "Tekst_Længde": len(soup.get_text())
             }
         except Exception as e:
-            logging.error(f"Failed to parse HTML: {e}")
+            self._log(f"Parse error: {e}", C.RED)
             return None
 
-    def analyze(self, target: str) -> Optional[Dict]:
-        """Main analysis function for the module."""
-        url = f"https://example.com/{target}"  # Replace with your target URL
+    def _analyze_single(self, target: str) -> Optional[Dict]:
+        url = f"https://{target}" if not target.startswith("http") else target
         html = self._fetch_data(url)
-        if not html:
-            return None
+        if not html: return None
         return self._parse_data(html)
 
-    def batch_analyze(self, targets: list) -> Dict[str, Optional[Dict]]:
-        """Batch analyze multiple targets in parallel."""
-        results = {}
+    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
+        print(f"\n{C.CYAN}{'='*60}\n[31] OMNI ASYNC BATCH HARVESTER V36\n{'='*60}{C.RESET}")
+        
+        if not target:
+            target = "pastebin.com, github.com, example.com"
+            print(f"{C.YELLOW}[*] Intet target angivet. Bruger default test-batch: {target}{C.RESET}")
+            
+        targets = [t.strip() for t in target.split(',')]
+        self.data["Total_Targets"] = len(targets)
+        
+        print(f"{C.YELLOW}[*] Udfører parallel analyse på {len(targets)} mål med {self.max_workers} tråde...{C.RESET}")
+        
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = {executor.submit(self.analyze, target): target for target in targets}
-            for future in futures:
-                target = futures[future]
-                results[target] = future.result()
-        return results
+            futures = {executor.submit(self._analyze_single, t): t for t in targets}
+            for future in concurrent.futures.as_completed(futures):
+                t = futures[future]
+                res = future.result()
+                if res:
+                    self.data["Results"][t] = res
+                    self.data["Succesfulde_Requests"] += 1
+                    print(f"{C.GREEN} [+] Data trukket succesfuldt for: {t} ({len(res['Eksterne_Links'])} links){C.RESET}")
+                else:
+                    print(f"{C.DIM} [-] Fejl eller ingen data for: {t}{C.RESET}")
 
-    @staticmethod
-    def main(target: str) -> Optional[Dict]:
-        """Static method to integrate with the core loader."""
-        module = Module()
-        return module.analyze(target)
-
-# Example usage (for testing)
-if __name__ == "__main__":
-    # Single target
-    result = Module().analyze("example-target")
-    print(result)
-
-    # Batch targets
-    batch_results = Module().batch_analyze(["target1", "target2"])
-    print(batch_results)
+        print(f"\n{C.GREEN}[✓] Batch Harvesting Fuldført. ({self.data['Succesfulde_Requests']}/{self.data['Total_Targets']} success){C.RESET}")
+        datalake.ingest(self.name, target, self.data)
+        return self.data

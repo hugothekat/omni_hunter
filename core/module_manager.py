@@ -10,12 +10,11 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from core.utils import C, logger
 
-# AUTO-HEAL: Mock gamle afhængigheder der ikke findes mere (f.eks. 'frontend')
 if 'frontend' not in sys.modules:
     sys.modules['frontend'] = MagicMock()
 
 class ModuleManager:
-    """GOLIATH V8: Dynamisk modul-loader med Auto-Patching og Karantæne."""
+    """GOLIATH V36: Dynamisk modul-loader med Advanced Error Traceback."""
     def __init__(self, modules_dir="modules"):
         self.modules_dir = Path(modules_dir)
         self.modules = {}
@@ -45,7 +44,6 @@ class ModuleManager:
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
                     if isinstance(attr, type) and attr.__module__ == mod_name:
-                        # AUTO-HEAL: Hvis modulet bruger generate() i stedet for run() (Modul 28 & 29)
                         if hasattr(attr, 'generate') and not hasattr(attr, 'run'):
                             attr.run = attr.generate 
                             
@@ -59,10 +57,12 @@ class ModuleManager:
                             break
                 
                 if not module_found:
-                    self.quarantine[mod_id] = {"file": file.name, "error": "Ingen run() eller generate() klasse."}
+                    self.quarantine[mod_id] = {"file": file.name, "error": "Mangler run() funktion."}
                     
             except SyntaxError as e:
-                self.quarantine[mod_id] = {"file": file.name, "error": f"Syntax Fejl (Linje {e.lineno})"}
+                # [FEJL RETTET: Viser nu den PRÆCISE fil, der har Syntax Error]
+                error_file = os.path.basename(e.filename) if getattr(e, 'filename', None) else file.name
+                self.quarantine[mod_id] = {"file": file.name, "error": f"Syntax Fejl i {error_file} (Linje {e.lineno})"}
             except ImportError as e:
                 self.quarantine[mod_id] = {"file": file.name, "error": f"Mangler afhængighed: {e.name}"}
             except Exception as e:

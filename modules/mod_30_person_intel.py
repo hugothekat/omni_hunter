@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-🚀 OMNI_HUNTER V6.0: THE JUGGERNAUT ORCHESTRATOR
-MODUL 30: TOTAL IDENTITY RESOLUTION, RECURSIVE PIVOTING & AI FUSION
-------------------------------------------------------------------
+🚀 OMNI_HUNTER V36: THE JUGGERNAUT ORCHESTRATOR
+📌 Formål: Total Identity Resolution, Recursive Pivoting & AI Fusion.
 OPERATIONAL SPECIFICATIONS:
 - 8-Phase Autonomous Intelligence Pipeline.
 - Historical Data Lake Correlation (Cross-Case Memory).
@@ -11,6 +10,10 @@ OPERATIONAL SPECIFICATIONS:
 - Full AI (Titan), Graph (Vis.js) og GEOINT (KML) integration.
 """
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import time
 import json
 import os
@@ -18,53 +21,32 @@ import re
 import urllib.parse
 import threading
 import concurrent.futures
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Optional
 
 from core.base_module import BaseModule, ModuleCategory
 from core.utils import C, session, ThreatIntelExtractor, datalake, sanitize_filename
 from core.network import omni_dork_search, safe_get_with_retry
-from core.browser import get_stealth_driver
 
 try:
     from core.nexus import nexus, EntityType
 except ImportError:
     nexus = None
 
-# DYNAMISK IMPORT AF UNDERMODULER TIL FASE 6
-from modules.mod_02_business import BusinessIntelligenceAnalyst
-from modules.mod_03_breach import BreachIntelligenceAnalyst
-from modules.mod_04_social import SocialMediaProfiler
-from modules.mod_10_ip import IPNetworkAnalyzer
-from modules.mod_12_revphone import ReversePhoneIntelligence
-from modules.mod_17_sniper import SniperModule
-from modules.mod_19_crypto import CryptoLedgerAnalyzer
-from modules.mod_20_vehicle import VehicleIntelligence
-from modules.mod_21_bssid import BSSIDGeofencer
-from modules.mod_23_matrix import MatrixAnalyzer
-from modules.mod_25_wayback import WaybackMachineIntelligence
-from modules.mod_27_ai import TitanAIEnrichment
-from modules.mod_28_graph import GoliathGraphExporter
-from modules.mod_29_kml import GoogleEarthExporter
-
-
 class AutonomousOrchestrator(BaseModule):
-    
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.name = "GRAND ORCHESTRATOR (Identity Resolution & Omni-Pivot)"
         self.description = "Autonom 8-faset identitets-kortlægning, historisk korrelation og AI-integration."
         self.category = ModuleCategory.PERSON
         self.print_lock = threading.Lock()
         
-        self.target_name = ""
-        self.max_recursion_depth = 2
-        self.seen_targets = set()
-        
+        self.target_name: str = ""
+        self.max_recursion_depth: int = 2
+        self.seen_targets: Set[str] = set()
         self.noise_domains = ["microsoft.com", "outlook.office", "support.google", "login.live", "wikipedia.org", "eniro.dk"]
         
-        self.intel_pool = {
+        self.intel_pool: Dict[str, Any] = {
             "Mål": "",
             "Gættede_Aliaser": set(),
             "Fundne_Emails": set(),
@@ -82,11 +64,11 @@ class AutonomousOrchestrator(BaseModule):
             "Confidence_Score": 0,
             "Metadata": {
                 "Timestamp": datetime.now().isoformat(),
-                "Software": "GOLIATH V6.0 JUGGERNAUT ORCHESTRATOR"
+                "Software": "GOLIATH V36 JUGGERNAUT ORCHESTRATOR"
             }
         }
 
-    def _log(self, message, level="INFO", indent=0):
+    def _log(self, message: str, level: str = "INFO", indent: int = 0) -> None:
         """Thread-safe standardiseret logning."""
         colors = {"INFO": C.CYAN, "WARN": C.YELLOW, "ERROR": C.RED, "SUCCESS": C.GREEN, "PIVOT": C.MAGENTA}
         color = colors.get(level, C.RESET)
@@ -95,9 +77,13 @@ class AutonomousOrchestrator(BaseModule):
         with self.print_lock:
             sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {prefix}[{color}{level}{C.RESET}] {message}\n")
 
-    def run(self, driver, target: str) -> Dict[str, Any]:
+    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
         """Den massive 8-fasede eksekverings-pipeline."""
         self.target_name = target.strip()
+        if not self.target_name:
+            self._log("Ingen target angivet. Afbryder.", "ERROR")
+            return self.data
+            
         self.intel_pool["Mål"] = self.target_name
         self.seen_targets.add(self.target_name.lower())
         
@@ -130,7 +116,7 @@ class AutonomousOrchestrator(BaseModule):
 
         # FASE 6: THREADED OMNI-PIVOT
         self._log("FASE 6: INITIATING PARALLEL OMNI-PIVOT ENGINE", "SUCCESS")
-        self._phase_6_threaded_omni_pivot()
+        self._phase_6_threaded_omni_pivot(driver)
 
         # FASE 7: AI & VISUALIZATION
         self._log("FASE 7: Finalizing Intelligence Models (AI, Graph & GEOINT)", "INFO")
@@ -140,31 +126,39 @@ class AutonomousOrchestrator(BaseModule):
         self._phase_8_archive()
         
         self._log("MISSION COMPLETE. Orchestrator Disengaging.", "SUCCESS")
-        return {"status": "success", "target": self.target_name, "pool": self.intel_pool}
+        return self.intel_pool
 
     # =========================================================================
     # DE 8 DRIFTSFASER
     # =========================================================================
 
-    def _phase_0_historical_lake(self):
+    def _phase_0_historical_lake(self) -> None:
         """Tjekker OmniDataLake for historiske spor."""
         self._log("FASE 0: Cross-referencing Target in OmniDataLake...", "INFO")
-        records = datalake.query_cross_reference(self.target_name)
-        if records:
-            self._log(f"Found {len(records)} previous occurrences in Intelligence Database!", "SUCCESS", indent=1)
-            for r in records[:3]:
-                self._log(f"Past Entry -> Date: {r['timestamp']} | Source: {r['source_module']}", "WARN", indent=2)
+        try:
+            if hasattr(datalake, 'query_cross_reference'):
+                records = datalake.query_cross_reference(self.target_name)
+                if records:
+                    self._log(f"Found {len(records)} previous occurrences in Intelligence Database!", "SUCCESS", indent=1)
+                    for r in records[:3]:
+                        self._log(f"Past Entry -> Date: {r['timestamp']} | Source: {r['source_module']}", "WARN", indent=2)
+            else:
+                self._log("Ingen query metode i datalake. Fortsætter.", "WARN", indent=1)
+        except Exception as e:
+            self._log(f"Data Lake Query Error: {e}", "ERROR", indent=1)
 
-    def _phase_1_generate_permutations(self):
+    def _phase_1_generate_permutations(self) -> None:
         """Genererer aliaser til brug i Dorking."""
         parts = self.target_name.lower().split()
         if len(parts) >= 2:
             f, l = parts[0], parts[-1]
             yr = str(datetime.now().year)[-2:] 
             aliases = [f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", f"{f}_{l}", f"{f}{l}123", f"{f}{l}{yr}"]
-            for a in aliases: self.intel_pool["Gættede_Aliaser"].add(a)
+            for a in aliases: 
+                self.intel_pool["Gættede_Aliaser"].add(a)
+        self._log(f"FASE 1: Genereret {len(self.intel_pool['Gættede_Aliaser'])} Alias-permutationer.", "SUCCESS", indent=1)
 
-    def _phase_2_recursive_dorking(self, driver, target: str, current_depth: int):
+    def _phase_2_recursive_dorking(self, driver: Any, target: str, current_depth: int) -> None:
         """Udfører Clearnet Dorking og Auto-Pivoterer på nye fund."""
         if current_depth > self.max_recursion_depth: return
         self._log(f"[DEPTH {current_depth}] Sweeping vectors for: {target}", "PIVOT", indent=current_depth)
@@ -181,12 +175,11 @@ class AutonomousOrchestrator(BaseModule):
         all_hits = []
         collected_text = ""
 
-        # Parallel dorking
-        def run_dork(q):
+        def run_dork(q: str) -> List[Dict]:
             try: return omni_dork_search(driver, q, max_links=4)
             except Exception: return []
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(run_dork, q) for q in queries]
             for future in concurrent.futures.as_completed(futures):
                 hits = future.result()
@@ -219,7 +212,7 @@ class AutonomousOrchestrator(BaseModule):
             self._log(f"Auto-Pivot Triggered on new identifier: {nt}", "SUCCESS", indent=current_depth+1)
             self._phase_2_recursive_dorking(driver, nt, current_depth + 1)
 
-    def _ingest_iocs(self, iocs: Dict, phones: Set[str], hits: List[Dict], source_target: str):
+    def _ingest_iocs(self, iocs: Dict, phones: Set[str], hits: List[Dict], source_target: str) -> None:
         """Hælder alle fundne IOCs ned i den globale Intel Pool og Nexus Grafen."""
         with self.print_lock:
             self.intel_pool["Fundne_Emails"].update(iocs.get("email", []))
@@ -249,10 +242,11 @@ class AutonomousOrchestrator(BaseModule):
                     nexus.ingest(EntityType.PHONE, p, source=f"Dorking:{source_target}", confidence=0.8)
                     nexus.link(self.target_name, p, "Tilknyttet Tlf")
 
-    def _phase_3_virk_pivot(self, driver, url):
-        """Scraper virksomhedsdata."""
+    def _phase_3_virk_pivot(self, driver: Any, url: str) -> None:
+        """Scraper virksomhedsdata og fysiske adresser fra CVR/Virk links."""
+        if not driver: return
         if "person" in url and "deltager" not in url: url = url.rstrip('/') + "/deltager"
-        if safe_get_with_retry(driver, url):
+        if safe_get_with_retry(driver, url, max_retries=1):
             try:
                 from selenium.webdriver.common.by import By
                 rows = driver.find_elements(By.CSS_SELECTOR, "tr, div.address")
@@ -260,14 +254,15 @@ class AutonomousOrchestrator(BaseModule):
                     if any(x in r.text for x in ["Bopæl", "Vej", "Adresse", "Postnr"]):
                         clean_addr = r.text.replace("\n", " | ")
                         self.intel_pool["Tidslinje_Bopæl"].append(clean_addr)
+                        self._log(f"Bopæl Udtrukket: {clean_addr}", "SUCCESS", indent=2)
             except Exception: pass
 
-    def _phase_4_darknet_recon(self, driver):
-        """Tjekker target og e-mails mod pastebins og darkweb indexere."""
+    def _phase_4_darknet_recon(self, driver: Any) -> None:
+        """Tjekker target og e-mails mod pastebins og clearnet darkweb indexere."""
         targets = [self.target_name] + list(self.intel_pool["Fundne_Emails"])[:2]
         for t in targets:
             ahmia_url = f"https://ahmia.fi/search/?q={urllib.parse.quote(t)}"
-            if safe_get_with_retry(driver, ahmia_url):
+            if driver and safe_get_with_retry(driver, ahmia_url, max_retries=1):
                 if "No results" not in driver.page_source:
                     self._log(f"Darknet hits verified for indicator: {t}", "WARN", indent=1)
                     
@@ -276,7 +271,7 @@ class AutonomousOrchestrator(BaseModule):
             for h in omni_dork_search(driver, dork, max_links=2):
                 self.intel_pool["Eksponerede_Dokumenter"].add(h.get('url'))
 
-    def _phase_5_confidence_scoring(self):
+    def _phase_5_confidence_scoring(self) -> None:
         score = 0
         if self.intel_pool["Virk_Links"]: score += 15
         if self.intel_pool["Fundne_Brugernavne"]: score += 15
@@ -288,7 +283,7 @@ class AutonomousOrchestrator(BaseModule):
         if self.intel_pool["MAC_Adresser"]: score += 10
         self.intel_pool["Confidence_Score"] = min(score, 100)
 
-    def _print_intel_summary(self):
+    def _print_intel_summary(self) -> None:
         with self.print_lock:
             print(f"\n{C.CYAN}--- TACTICAL INTELLIGENCE SUMMARY: {self.target_name.upper()} ---{C.RESET}")
             print(f"Data Confidence: {C.GREEN}{self.intel_pool['Confidence_Score']}/100{C.RESET}")
@@ -300,89 +295,79 @@ class AutonomousOrchestrator(BaseModule):
             if self.intel_pool['IP_Adresser']: print(f"IP Addresses:    {C.RED}{', '.join(self.intel_pool['IP_Adresser'])}{C.RESET}")
             print(f"{C.DIM}" + "-"*60 + f"{C.RESET}")
 
-    def _phase_6_threaded_omni_pivot(self):
-        """Eksekverer sekundære moduler parallelt for at berige fundne datapunkter."""
-        def run_api_module(module_class, target, kwargs=None):
+    def _phase_6_threaded_omni_pivot(self, main_driver: Any) -> None:
+        """Eksekverer sekundære moduler parallelt (eller sekventielt) for at berige fundne datapunkter."""
+        
+        # Dynamisk import for at undgå cirkulære afhængigheder i toppen
+        def _safe_run(module_name: str, class_name: str, target: str, driver=None):
             try:
-                self._log(f"Firing {module_class.__name__} against {target}", "PIVOT", indent=1)
-                instance = module_class(target, **(kwargs or {}))
-                instance.run(None)
-            except Exception as e: self._log(f"{module_class.__name__} failed: {e}", "ERROR", indent=2)
+                import importlib
+                mod = importlib.import_module(f"modules.{module_name}")
+                cls = getattr(mod, class_name)
+                instance = cls(target) if 'name' not in inspect.signature(cls.__init__).parameters else cls()
+                self._log(f"Firing {class_name} against {target}", "PIVOT", indent=1)
+                instance.run(driver, target)
+            except Exception as e:
+                self._log(f"{class_name} failed or not found: {e}", "ERROR", indent=2)
 
-        def run_browser_module(module_class, target, kwargs=None):
-            driver = None
-            try:
-                self._log(f"Spooling Sandbox WebDriver for {module_class.__name__} -> {target}", "PIVOT", indent=1)
-                driver = get_stealth_driver()
-                instance = module_class(target, **(kwargs or {}))
-                instance.run(driver)
-            except Exception as e: self._log(f"{module_class.__name__} failed: {e}", "ERROR", indent=2)
-            finally:
-                if driver: driver.quit()
+        # For API baserede (hurtige) moduler
+        api_tasks = []
+        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: api_tasks.append(("mod_23_matrix", "MatrixAnalyzer", handle))
+        for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append(("mod_10_ip", "IPNetworkAnalyzer", ip))
+        for wallet in list(self.intel_pool["Kryptovaluta_Wallets"])[:2]: 
+            w_clean = wallet.split(": ")[1] if ": " in wallet else wallet
+            api_tasks.append(("mod_19_crypto", "CryptoLedgerAnalyzer", w_clean))
 
-        api_tasks, browser_tasks = [], []
-
-        # Tildel API Tasks (Lynhurtige)
-        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:3]: api_tasks.append((MatrixAnalyzer, handle, {}))
-        for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append((IPNetworkAnalyzer, ip, {}))
-        for wallet in list(self.intel_pool["Kryptovaluta_Wallets"])[:2]:
-            api_tasks.append((CryptoLedgerAnalyzer, wallet.split(": ")[1] if ": " in wallet else wallet, {}))
-        for mac in list(self.intel_pool["MAC_Adresser"])[:2]: api_tasks.append((BSSIDGeofencer, mac, {}))
-        for doc in list(self.intel_pool["Eksponerede_Dokumenter"])[:2]: api_tasks.append((WaybackMachineIntelligence, doc, {}))
-
-        # Tildel Browser Tasks (Tunge)
-        browser_tasks.append((BusinessIntelligenceAnalyst, self.target_name, {}))
-        for email in list(self.intel_pool["Fundne_Emails"])[:2]: browser_tasks.append((BreachIntelligenceAnalyst, email, {}))
-        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: browser_tasks.append((SocialMediaProfiler, handle, {}))
-        for phone in list(self.intel_pool["Telefonnumre"])[:2]: browser_tasks.append((ReversePhoneIntelligence, phone, {}))
-        for regnr in list(self.intel_pool["Nummerplader"])[:2]: browser_tasks.append((VehicleIntelligence, regnr, {}))
-
-        # Kør API Tasks Parallelt
         if api_tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                futures = [executor.submit(run_api_module, cls, tgt, kw) for cls, tgt, kw in api_tasks]
-                concurrent.futures.wait(futures)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                for mod, cls, tgt in api_tasks:
+                    executor.submit(_safe_run, mod, cls, tgt, None)
 
-        # Kør Browser Tasks Parallelt
-        if browser_tasks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                futures = [executor.submit(run_browser_module, cls, tgt, kw) for cls, tgt, kw in browser_tasks]
-                concurrent.futures.wait(futures)
+        # For Browser baserede (tunge) moduler - Vi bruger main_driver for ikke at åbne 20 vinduer!
+        _safe_run("mod_02_business", "BusinessIntelligenceAnalyst", self.target_name, main_driver)
+        
+        for email in list(self.intel_pool["Fundne_Emails"])[:2]: 
+            _safe_run("mod_03_breach", "BreachIntelligenceAnalyst", email, main_driver)
+            
+        for phone in list(self.intel_pool["Telefonnumre"])[:2]: 
+            _safe_run("mod_12_revphone", "ReversePhoneIntelligence", phone, main_driver)
 
-    def _phase_7_finalize_models(self):
-        """Kører Wordlist, AI og Graph generation sekventielt."""
+    def _phase_7_finalize_models(self) -> None:
+        """Kører AI vurdering og Grafer."""
         try:
-            email_seed = list(self.intel_pool["Fundne_Emails"])[0] if self.intel_pool["Fundne_Emails"] else ""
-            cpr_seed = list(self.intel_pool["CPR_Fragments"])[0] if self.intel_pool["CPR_Fragments"] else ""
-            clues = ",".join(self.intel_pool["Fundne_Brugernavne"])
-            SniperModule(name=self.target_name, email=email_seed, cpr=cpr_seed, clues=clues).run(None)
-        except Exception: pass
-
-        try:
+            from modules.mod_27_ai import TitanAIEnrichment
             self._log("Processing Context via Local LLM (Titan AI)...", "INFO", indent=1)
-            TitanAIEnrichment().analyze_text(json.dumps(list(self.intel_pool.items()), default=str))
-        except Exception: pass
+            ai_mod = TitanAIEnrichment(self.target_name)
+            
+            # Sorter de komplekse sets væk før JSON stringification
+            clean_pool = {k: list(v) if isinstance(v, set) else v for k, v in self.intel_pool.items()}
+            res = ai_mod.analyze_text(json.dumps(clean_pool, ensure_ascii=False))
+            if res: self.intel_pool["AI_Assessment"] = res
+        except Exception as e: 
+            self._log(f"AI Enrichment Error: {e}", "WARN", indent=2)
 
         try:
+            from modules.mod_28_graph import GoliathGraphExporter
+            from modules.mod_29_kml import GoogleEarthExporter
             self._log("Generating Relational Graphs & KML...", "INFO", indent=1)
             GoliathGraphExporter().generate()
             GoogleEarthExporter().generate()
         except Exception: pass
 
-    def _phase_8_archive(self):
+    def _phase_8_archive(self) -> None:
         """Gemmer til Secure Data Lake og lokalt JSON."""
-        # Data Lake Ingestion
+        for key in self.intel_pool:
+            if isinstance(self.intel_pool[key], set):
+                self.intel_pool[key] = list(self.intel_pool[key])
+                
         datalake.ingest(source_module=self.name, target=self.target_name, data=self.intel_pool)
         
-        # Flad Fil Eksport
-        export_data = self.intel_pool.copy()
-        for key in export_data:
-            if isinstance(export_data[key], set):
-                export_data[key] = list(export_data[key])
-                
         ws_folder = session.get("loot_folder", "loot_evidence")
         os.makedirs(ws_folder, exist_ok=True)
-        path = Path(ws_folder) / f"30_JUGGERNAUT_{sanitize_filename(self.target_name)}.json"
+        path = Path(ws_folder) / f"30_ORCHESTRATOR_{sanitize_filename(self.target_name)}.json"
         
-        path.write_text(json.dumps(export_data, indent=4, ensure_ascii=False), encoding="utf-8")
-        self._log(f"Master Intelligence Profile archived: {path}", "SUCCESS")
+        if os.path.exists(path):
+            try: os.remove(path)
+            except: pass
+            
+        path.write_text(json.dumps(self.intel_pool, indent=4, ensure_ascii=False), encoding="utf-8")
