@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Modul 01: Directory & Property Intelligence
-Operativ Specifikation:
-- Primær dataindsamling via Search Engine Results Pages (SERP) for at omgå WAF/Cloudflare.
-- Sekundær dybde-analyse af ejendomsdata (BBR, Skat, Miljø) via DinGeo.
-- Zero-Disk-Footprint: Alt data holdes i RAM indtil eksplicit arkivering godkendes.
-"""
-
 import sys
 import time
 import json
+import os
 import re
 import urllib.parse
 from datetime import datetime
@@ -19,16 +12,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from core.utils import C, session, extract_danish_phones
-from core.network import safe_get_with_retry
+from core.network import safe_get_with_retry, omni_dork_search
 
 class DirectoryIntelligenceHunter:
     
     def __init__(self, name, city=""):
         self.name = name.strip()
         self.city = city.strip()
-        self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.start_time = datetime.now()
         
-        # Datastruktur holdes i RAM
         self.data = {
             "Identitet": self.name,
             "Lokation": self.city,
@@ -40,227 +32,233 @@ class DirectoryIntelligenceHunter:
                 "Type": "Ukendt",
                 "Koordinater": ""
             },
-            "BBR_Data": {},
-            "Vurdering_Skat": {},
-            "Miljoe_Data": {},
-            "Bofaeller": [],
+            "DinGeo_Intelligence": {
+                "BBR_Stamdata": {},
+                "Vurdering": {},
+                "Skat": {},
+                "Dokumenter": {},
+                "Infrastruktur": {},
+                "Miljø_Risici": {},
+                "Nabolag_Profil": {}
+            },
+            "Bofæller_Netværk": [],
             "Metadata": {
-                "Scan_Tidspunkt": self.timestamp,
-                "Datakilde": "SERP Extraction & DinGeo"
+                "Timestamp": self.start_time.isoformat(),
+                "Software": "GOLIATH V28",
+                "Bypass_Method": "Native Google SERP Extraction"
             }
         }
 
-    def _log(self, level, message):
-        """Klinisk standardiseret logning."""
-        colors = {"INFO": C.CYAN, "WARN": C.YELLOW, "ERROR": C.RED, "SUCCESS": C.GREEN}
-        color = colors.get(level, C.RESET)
-        print(f"{C.DIM}[{datetime.now().strftime('%H:%M:%S')}]{C.RESET} [{color}{level}{C.RESET}] {message}")
+    def _log(self, message, color=C.CYAN):
+        ts = datetime.now().strftime("%H:%M:%S")
+        sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {color}{message}{C.RESET}\n")
+
+    def _update_progress(self, pct, message):
+        sys.stdout.write("\r" + " " * 100 + "\r")
+        sys.stdout.write(f"{C.MAGENTA}[*] {message}... {pct}%{C.RESET}")
+        sys.stdout.flush()
 
     def run(self, driver):
-        """Initierer indsamlingsprotokol."""
-        print(f"\n{C.DIM}" + "-"*80 + f"{C.RESET}")
-        self._log("INFO", f"Initierer person-efterforskning: {self.name}, {self.city}")
-        
+        print(f"\n{C.WHITE}{'='*80}{C.RESET}")
+        print(f"{C.WHITE} MODULE 01: DIRECTORY & PROPERTY INTELLIGENCE (V28){C.RESET}")
+        print(f"{C.WHITE}{'='*80}{C.RESET}")
+        self._log(f"Target: {self.name} | Location: {self.city}", C.YELLOW)
+
         try:
             driver.set_window_position(-2000, 0)
         except Exception:
             pass
 
-        # 1. Dataindsamling (Telefon & Adresse) via Google SERP for at omgå Krak Cloudflare
-        self._serp_data_extraction(driver)
+        self._update_progress(10, "Executing Native Google SERP Strike")
+        self._google_serp_strike(driver)
 
-        # 2. Ejendomsanalyse (Hvis adresse er identificeret)
+        if not self.data["Ejendom"].get("Vej"):
+            self._update_progress(30, "Fallback: Standard Search Engine Dorking")
+            self._fallback_dorking(driver)
+
         if self.data["Ejendom"].get("Vej"):
-            self._property_deep_audit(driver)
-            self._network_mapping(driver)
+            self._update_progress(60, f"Initiating DinGeo Deep-Audit ({self.data['Ejendom']['Vej']})")
+            self._juggernaut_dingeo_engine(driver)
+            
+            self._update_progress(85, "Mapping Cohabitants via Network Query")
+            self._find_cohabitants(driver)
         else:
-            self._log("WARN", "Utilstrækkelige lokationsdata. Ejendomsanalyse suspenderet.")
+            self._log("Insufficient location data. DinGeo audit bypassed.", C.RED)
 
-        # 3. Databehandling og output
+        self._update_progress(100, "Intelligence gathering complete")
         self.data["Telefonnumre"] = list(self.data["Telefonnumre"])
-        self._render_tactical_report()
-        self._handle_archiving()
+        
+        self._print_dashboard()
+        
+        choice = input(f"\n{C.YELLOW}[?] Archive intelligence report to disk? (y/n): {C.RESET}").lower()
+        if choice in ['y', 'j', 'yes', 'ja']:
+            self.save()
+        else:
+            self._log("Data purged from RAM.", C.DIM)
 
         return self.data
 
-    def _serp_data_extraction(self, driver):
-        """
-        Udtrækker Krak/DGS data direkte fra Google søgeresultater for at omgå 
-        aggressive Cloudflare Turnstile blokeringer på selve platformene.
-        """
-        self._log("INFO", "Eksekverer SERP data extraction (Google Bypass)...")
-        
+    def _google_serp_strike(self, driver):
+        """Native Google search implementation to bypass missing engines in core.network"""
         query = f'site:krak.dk OR site:degulesider.dk "{self.name}" "{self.city}"'
-        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        url = f"https://www.google.dk/search?q={urllib.parse.quote(query)}"
         
         try:
             driver.get(url)
-            time.sleep(2)
+            time.sleep(1.5)
             
-            # Håndtering af Google Cookie Consent
+            # Handle Google Consent
             try:
-                consent_btn = WebDriverWait(driver, 3).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[.//div[contains(text(), 'Accept') or contains(text(), 'Accepter')]] | //button[@id='L2AGLb']"))
+                consent = WebDriverWait(driver, 2).until(
+                    EC.presence_of_element_located((By.XPATH, "//*[@id='L2AGLb'] | //button[.//div[text()='Accepter alle']]"))
                 )
-                consent_btn.click()
+                driver.execute_script("arguments[0].click();", consent)
                 time.sleep(1)
             except Exception:
                 pass
 
-            # Parse DOM
-            results = driver.find_elements(By.CSS_SELECTOR, "div.g")
-            if not results:
-                self._log("WARN", "Ingen resultater identificeret i SERP index.")
-                return
-
-            for result in results:
-                text = result.text
+            # Parse SERP Elements
+            elements = driver.find_elements(By.CSS_SELECTOR, "div.g")
+            for el in elements:
+                text = el.text
                 
-                # Ekstraher telefonnumre fra snippet
-                phones = extract_danish_phones(text)
-                for p in phones:
-                    self.data["Telefonnumre"].add(f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}")
+                for phone in extract_danish_phones(text):
+                    self.data["Telefonnumre"].add(f"{phone[:2]} {phone[2:4]} {phone[4:6]} {phone[6:8]}")
                 
-                # Ekstraher adresse fra titel/snippet
-                if not self.data["Ejendom"].get("Vej"):
-                    # Mønster der fanger 'Vejnavn 12A, 8000 By'
-                    addr_match = re.search(r'([A-ZÆØÅa-zæøå\s\.\-]+?\s\d+[A-Z0-9a-z\s,]*?)[\s,]+(\d{4})\s+([A-ZÆØÅa-zæøå\s\-]+)', text)
-                    if addr_match:
-                        vej = addr_match.group(1).strip().strip(',')
-                        if any(c.isdigit() for c in vej):
-                            self.data["Ejendom"]["Vej"] = vej
-                            self.data["Ejendom"]["Post"] = addr_match.group(2).strip()
-                            self.data["Ejendom"]["By"] = addr_match.group(3).strip()
-                            self._log("SUCCESS", f"Adresse bekræftet: {vej}, {self.data['Ejendom']['Post']} {self.data['Ejendom']['By']}")
+                # Regex targetting standard Danish address format and Krak snippet structure
+                match = re.search(r'([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\.\-]+?\s\d+[A-Z0-9a-z]*?)\s*,\s*(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)', text)
+                if match and not self.data["Ejendom"].get("Vej"):
+                    vej = match.group(1).strip()
+                    if any(c.isdigit() for c in vej) and "område" not in vej.lower():
+                        self.data["Ejendom"]["Vej"] = vej
+                        self.data["Ejendom"]["Post"] = match.group(2).strip()
+                        self.data["Ejendom"]["By"] = match.group(3).strip()
+                        self._log(f"SERP Address Confirmed: {vej}, {match.group(2)}", C.GREEN)
 
         except Exception as e:
-            self._log("ERROR", f"SERP extraction fejlede: {str(e)}")
+            self._log(f"Google SERP Strike encountered an error: {e}", C.RED)
 
-    def _property_deep_audit(self, driver):
-        """Indhenter BBR, skatte- og miljødata fra offentlige og semi-offentlige registre."""
-        self._log("INFO", "Eksekverer dybdegående ejendomsanalyse...")
+    def _fallback_dorking(self, driver):
+        """Fallback to core network omni_dork (DDG/Bing/Yahoo)"""
+        dork = f'(site:krak.dk OR site:degulesider.dk) "{self.name}" "{self.city}"'
+        hits = omni_dork_search(driver, dork, max_links=5)
         
-        vej = self.data["Ejendom"]["Vej"].split(',')[0].strip()
+        for hit in hits:
+            full_text = f"{hit.get('title','')} {hit.get('snippet','')}"
+            for p in extract_danish_phones(full_text):
+                self.data["Telefonnumre"].add(f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}")
+            
+            match = re.search(r'([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\.\-]+?\s\d+[A-Z0-9a-z]*?)\s*,\s*(\d{4})\s+([A-ZÆØÅ][a-zæøåA-ZÆØÅ\s\-]+)', full_text)
+            if match and not self.data["Ejendom"].get("Vej"):
+                vej = match.group(1).strip()
+                if any(c.isdigit() for c in vej) and "område" not in vej.lower():
+                    self.data["Ejendom"]["Vej"] = vej
+                    self.data["Ejendom"]["Post"] = match.group(2).strip()
+                    self.data["Ejendom"]["By"] = match.group(3).strip()
+                    self._log(f"Fallback Address Confirmed: {vej}, {match.group(2)}", C.GREEN)
+
+    def _juggernaut_dingeo_engine(self, driver):
+        """Modular data extraction from DinGeo"""
+        vej_clean = self.data["Ejendom"]["Vej"].split(',')[0].strip()
         post = self.data["Ejendom"]["Post"]
-        by = self.data["Ejendom"]["By"].split(' ')[0].strip()
+        by_clean = self.data["Ejendom"]["By"].split(' ')[0].strip()
         
-        slug_city = f"{post}-{by}".lower().replace("æ","ae").replace("ø","oe").replace("å","aa")
-        slug_street = vej.lower().replace(" ","-").replace("æ","ae").replace("ø","oe").replace("å","aa").replace(".","")
-        base_url = f"https://www.dingeo.dk/adresse/{slug_city}/{slug_street}"
+        slug_c = f"{post}-{by_clean}".lower().replace("æ","ae").replace("ø","oe").replace("å","aa")
+        slug_v = vej_clean.lower().replace(" ","-").replace("æ","ae").replace("ø","oe").replace("å","aa").replace(".","")
+        base = f"https://www.dingeo.dk/adresse/{slug_c}/{slug_v}"
 
-        # Definerer moduler og deres tilhørende parser-funktion
-        audit_modules = {
-            "BBR": ("", self._parse_bbr),
-            "Skat": ("/skat/", self._parse_tax),
-            "Vurdering": ("/vurdering/", self._parse_value),
-            "Miljø": ("/miljoe/", self._parse_env)
+        endpoints = {
+            "BBR_Stamdata": "",
+            "Skat": "/skat/",
+            "Vurdering": "/vurdering/",
+            "Infrastruktur": "/internet-mobil/",
+            "Miljø_Risici": "/miljoe/",
+            "Nabolag": "/nabolag/"
         }
 
-        for module_name, (path, parser_func) in audit_modules.items():
+        for key, path in endpoints.items():
             try:
-                driver.get(base_url + path)
-                time.sleep(1.5)
-                
-                if "verify you are human" in driver.page_source.lower():
-                    self._log("WARN", f"WAF blokering detekteret på modul: {module_name}. Springer over.")
-                    continue
-                
-                body_text = driver.find_element(By.TAG_NAME, "body").text
-                lines = [line.strip() for line in body_text.split('\n') if line.strip()]
-                
-                parser_func(lines, body_text.lower())
-                
-            except Exception as e:
-                self._log("ERROR", f"Analyse af {module_name} mislykkedes.")
+                if safe_get_with_retry(driver, base + path, max_retries=1):
+                    time.sleep(1.5)
+                    
+                    if "verify you are human" in driver.page_source.lower():
+                        continue
 
-    def _parse_bbr(self, lines, body_lower):
-        for i, l in enumerate(lines):
-            for key in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype", "Anvendelse"]:
-                if l == key and i+1 < len(lines):
-                    self.data["BBR_Data"][key] = lines[i+1]
+                    lines = [l.strip() for l in driver.find_element(By.TAG_NAME, "body").text.split('\n') if l.strip()]
+                    body_lower = driver.page_source.lower()
+                    
+                    if key == "BBR_Stamdata":
+                        for i, l in enumerate(lines):
+                            for k in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype", "Varmeinstallation"]:
+                                if l == k and i+1 < len(lines): self.data["DinGeo_Intelligence"][key][k] = lines[i+1]
+                    
+                    elif key == "Skat":
+                        for i, l in enumerate(lines):
+                            if "Boligskat 2024" in l: self.data["DinGeo_Intelligence"][key]["Skat_2024"] = lines[i+1]
+                            if "Grundskyld" in l: self.data["DinGeo_Intelligence"][key]["Grundskyld"] = lines[i+1]
+                            
+                    elif key == "Vurdering":
+                        for i, l in enumerate(lines):
+                            if "Dingestimat" in l: self.data["DinGeo_Intelligence"][key]["Dingestimat"] = lines[i+1]
+                            if "Seneste salgspris" in l: self.data["DinGeo_Intelligence"][key]["Seneste_Salg"] = lines[i+1]
+                    
+                    elif key == "Infrastruktur":
+                        if "fibernet" in body_lower: self.data["DinGeo_Intelligence"][key]["Fiber"] = "Ja"
+                        if "5g" in body_lower: self.data["DinGeo_Intelligence"][key]["5G"] = "Ja"
+                        
+                    elif key == "Miljø_Risici":
+                        if "støj" in body_lower: self.data["DinGeo_Intelligence"][key]["Støj_Niveau"] = "Data registreret"
+                        if "oversvømmelse" in body_lower: self.data["DinGeo_Intelligence"][key]["Oversvømmelse_Risiko"] = "Data registreret"
 
-    def _parse_tax(self, lines, body_lower):
-        for i, l in enumerate(lines):
-            if "Boligskat 2024" in l: self.data["Vurdering_Skat"]["Skat_2024"] = lines[i+1]
-            if "Grundskyld" in l: self.data["Vurdering_Skat"]["Grundskyld"] = lines[i+1]
+                    elif key == "Nabolag":
+                        for i, l in enumerate(lines):
+                            if "bor i" in l.lower() and "naboer" in body_lower:
+                                self.data["DinGeo_Intelligence"]["Nabolag_Profil"]["Demografi"] = l + " " + (lines[i+1] if i+1 < len(lines) else "")
 
-    def _parse_value(self, lines, body_lower):
-        for i, l in enumerate(lines):
-            if "Dingestimat" in l: self.data["Vurdering_Skat"]["Estimeret_Værdi"] = lines[i+1]
-            if "Seneste salgspris" in l: self.data["Vurdering_Skat"]["Seneste_Salg"] = lines[i+1]
+            except Exception:
+                pass
 
-    def _parse_env(self, lines, body_lower):
-        if "støj" in body_lower: self.data["Miljoe_Data"]["Støjniveau"] = "Data tilgængelig"
-        if "oversvømmelse" in body_lower: self.data["Miljoe_Data"]["Oversvømmelsesrisiko"] = "Tjek manuelt"
-        if "radon" in body_lower: self.data["Miljoe_Data"]["Radonrisiko"] = "Data tilgængelig"
+    def _find_cohabitants(self, driver):
+        vej = self.data["Ejendom"].get("Vej", "")
+        if not vej: return
+        addr = vej.split(',')[0].strip()
+        
+        for hit in omni_dork_search(driver, f'site:krak.dk "{addr}" "{self.data["Ejendom"]["Post"]}"', max_links=4):
+            n = hit.get('title', '').split('-')[0].strip()
+            if n and self.name.lower() not in n.lower() and "Krak" not in n:
+                if n not in self.data["Bofæller_Netværk"]:
+                    self.data["Bofæller_Netværk"].append(n)
 
-    def _network_mapping(self, driver):
-        """Identificerer potentielle bofæller via adressesøgning på SERP."""
-        self._log("INFO", "Kortlægger relationer på adressen...")
-        vej = self.data["Ejendom"]["Vej"].split(',')[0].strip()
-        query = f'site:krak.dk "{vej}" "{self.data["Ejendom"]["Post"]}"'
-        url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+    def _print_dashboard(self):
+        print(f"\n{C.WHITE}[+] INTELLIGENCE SUMMARY: {self.name.upper()}{C.RESET}")
+        
+        t_list = ", ".join(self.data["Telefonnumre"]) if self.data["Telefonnumre"] else "INGEN FUNDET"
+        print(f"    Telefoner: {C.GREEN}{t_list}{C.RESET}")
+        
+        addr = f"{self.data['Ejendom'].get('Vej', '')}, {self.data['Ejendom'].get('Post', '')} {self.data['Ejendom'].get('By', '')}".strip(" ,")
+        print(f"    Adresse:   {C.GREEN}{addr if addr else 'INGEN FUNDET'}{C.RESET}")
+        
+        bbr = self.data["DinGeo_Intelligence"]["BBR_Stamdata"]
+        if bbr:
+            print(f"    BBR Data:  {C.CYAN}Opført {bbr.get('Opførselsesår', 'N/A')} | {bbr.get('Boligtype', 'N/A')} | {bbr.get('Etageareal', 'N/A')}{C.RESET}")
+            print(f"    Vurdering: {C.CYAN}{self.data['DinGeo_Intelligence']['Vurdering'].get('Seneste_Salg', 'Ukendt')}{C.RESET}")
+            
+        if self.data["Bofæller_Netværk"]:
+            print(f"    Netværk:   {C.MAGENTA}{', '.join(self.data['Bofæller_Netværk'])}{C.RESET}")
+
+        print(f"{C.DIM}" + "-"*80 + f"{C.RESET}")
+
+    def save(self):
+        os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
+        path = f"{session.get('loot_folder', 'loot_evidence')}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
         
         try:
-            driver.get(url)
-            time.sleep(2)
-            results = driver.find_elements(By.CSS_SELECTOR, "div.g")
-            for res in results:
-                title = res.text.split('\n')[0]
-                name_match = title.split('-')[0].strip()
-                if name_match and self.name.lower() not in name_match.lower() and "Krak" not in name_match:
-                    if name_match not in self.data["Bofaeller"]:
-                        self.data["Bofaeller"].append(name_match)
-        except Exception:
-            pass
+            if os.path.exists(path): os.remove(path)
+            with open(path, "w", encoding="utf-8") as file:
+                json.dump(self.data, file, indent=4, ensure_ascii=False)
+            self._log(f"Report securely archived: {path}", C.GREEN)
+        except Exception as e:
+            self._log(f"Failed to archive report: {e}", C.RED)
 
-    def _render_tactical_report(self):
-        """Udskriver data klinisk i terminalen uden at skrive til disken."""
-        print(f"\n{C.BOLD}=== INTELLIGENCE RAPPORT: {self.name.upper()} ==={C.RESET}")
-        
-        tlf = ", ".join(self.data["Telefonnumre"]) if self.data["Telefonnumre"] else "Ingen data"
-        print(f"{C.CYAN}Telefonnumre:{C.RESET} {tlf}")
-        
-        ejd = self.data["Ejendom"]
-        addr = f"{ejd.get('Vej', '')}, {ejd.get('Post', '')} {ejd.get('By', '')}".strip(" ,")
-        print(f"{C.CYAN}Adresse:{C.RESET}      {addr if addr else 'Ingen data'}")
-        
-        bbr = self.data["BBR_Data"]
-        if bbr:
-            print(f"{C.CYAN}BBR Data:{C.RESET}")
-            for k, v in bbr.items():
-                print(f"  - {k}: {v}")
-                
-        skat = self.data["Vurdering_Skat"]
-        if skat:
-            print(f"{C.CYAN}Økonomi:{C.RESET}")
-            for k, v in skat.items():
-                print(f"  - {k}: {v}")
-
-        if self.data["Bofaeller"]:
-            print(f"{C.CYAN}Bofæller/Netværk:{C.RESET}")
-            for b in self.data["Bofaeller"]:
-                print(f"  - {b}")
-
-        print(f"{C.DIM}--------------------------------------------------{C.RESET}")
-
-    def _handle_archiving(self):
-        """Operatør-godkendelse til arkivering (Zero-Disk Footprint by default)."""
-        save_choice = input(f"\n{C.YELLOW}[?] Arkiver rapport til disk? (j/n): {C.RESET}").lower()
-        if save_choice == 'j':
-            folder = session.get("loot_folder", "loot_evidence")
-            os.makedirs(folder, exist_ok=True)
-            path = f"{folder}/01_DIRECTORY_{self.name.replace(' ', '_')}.json"
-            
-            if os.path.exists(path):
-                os.remove(path)
-                
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(self.data, f, indent=4, ensure_ascii=False)
-            self._log("SUCCESS", f"Data sikret: {path}")
-        else:
-            self._log("INFO", "Data slettet fra RAM. Ingen spor efterladt.")
-
-# Nødvendige aliaser for main.py integration (Forhindrer "name is not defined" fejl)
 DirectoryIntelligenceHunter = DirectoryIntelligenceHunter
 KrakIntelligenceAnalyst = DirectoryIntelligenceHunter
