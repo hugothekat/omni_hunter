@@ -6,11 +6,17 @@ import requests # NY V8 TILFØJELSE: Til Pre-Flight og Wayback opslag
 import concurrent.futures # NY V8 TILFØJELSE: Til multi-threaded hurtigsøgning
 from datetime import datetime
 from pathlib import Path
+from core.base_module import BaseModule, ModuleCategory
 from core.utils import C, session
 
 # NY V8 FIX: Klassen er omdøbt til MatrixAnalyzer for at matche Modul 02's Pivot Engine!
-class MatrixAnalyzer:
+class MatrixAnalyzer(BaseModule):
     def __init__(self, username):
+        super().__init__()
+        self.name = "USERNAME MATRIX"
+        self.description = "Global profil-detektion via asynkront ghost-check og Sherlock."
+        self.category = ModuleCategory.SOCIAL
+        
         # Håndterer både rå brugernavne og data-dictionaries fra Omni-Pivot
         if isinstance(username, dict):
             self.username = username.get("Brugernavn") or \
@@ -76,7 +82,7 @@ class MatrixAnalyzer:
         if self.data["Platforme"] or self.data.get("High_Value_Hits"):
             self._check_wayback_archives()
 
-        self.save()
+        self.save_loot(self.username)
 
     def _quick_fire_scan(self):
         """NY V8 TILFØJELSE: Lynhurtig API Ghost-check på Top Tier OSINT mål udenom Sherlock"""
@@ -138,21 +144,6 @@ class MatrixAnalyzer:
                     })
             except Exception:
                 pass
-
-    def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        filename = f"{session['loot_folder']}/23_MATRIX_{self.username}.json"
-        
-        # NY V8 TILFØJELSE: Sikker overskrivning
-        if os.path.exists(filename):
-            try:
-                os.remove(filename)
-            except Exception:
-                pass
-                
-        Path(filename).write_text(json.dumps(self.data, indent=4, ensure_ascii=False), encoding="utf-8")
-        total_hits = len(self.data['Platforme'])
-        print(f"\n{C.GREEN}[✓] Matrix rapport gemt ({total_hits} hits): {filename}{C.RESET}")
 
 # Alias for backwards compatibility, hvis et af dine ældre scripts bruger det gamle navn
 UsernameMatrixAnalyzer = MatrixAnalyzer

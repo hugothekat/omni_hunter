@@ -14,10 +14,12 @@ import asyncio
 import json
 import logging
 import os
+import hashlib
 import random
 import time
 import re
 import shutil
+from urllib.parse import urljoin
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
@@ -51,6 +53,8 @@ class BrowserConfig:
     retry_delay: float = 1.0
     screenshot_dir: str = "screenshots"
     download_dir: str = "downloads"
+    ephemeral: bool = True
+    behavior_level: str = "medium"
     cookies_file: str = "cookies.json"
     local_storage_file: str = "local_storage.json"
     js_rendering: bool = True
@@ -77,16 +81,37 @@ def get_random_user_agent() -> str:
 def create_dirs(*dirs: str) -> None:
     for d in dirs: Path(d).mkdir(parents=True, exist_ok=True)
 
+class PageAssetAnalyzer:
+    """Beregner hashes (fx SHA-256) af favicons og manifests for Shodan/Censys pivotering."""
+    @staticmethod
+    def analyze(soup: BeautifulSoup, base_url: str) -> Dict[str, str]:
+        assets = {}
+        try:
+            for link in soup.find_all('link', rel=lambda x: x and ('icon' in x.lower() or 'manifest' in x.lower())):
+                rel_type = "manifest" if "manifest" in link.get("rel", []) else "favicon"
+                href = link.get("href")
+                if href:
+                    full_url = urljoin(base_url, href)
+                    # Fetch without heavy browser engine to get raw bytes stealthily
+                    res = requests.get(full_url, timeout=5, verify=False)
+                    if res.status_code == 200:
+                        assets[f"{rel_type}_sha256"] = hashlib.sha256(res.content).hexdigest()
+        except Exception:
+            pass
+        return assets
+
 class OSINTExtractor:
     """NYT V36: Automatisk pre-processor der finder data i enhver HTML response."""
     @staticmethod
-    def extract_from_html(html_content: str, url: str) -> Dict[str, set]:
+    def extract_from_html(html_content: str, url: str) -> Dict[str, Any]:
         data = {
             "emails": set(),
             "phones": set(),
             "crypto": set(),
             "social_links": set(),
-            "hidden_apis": set()
+            "hidden_apis": set(),
+            "hidden_css_traps": set(),
+            "asset_hashes": {}
         }
         if not html_content: return data
         
@@ -103,12 +128,20 @@ class OSINTExtractor:
         data["crypto"].update(re.findall(r'\b0x[a-fA-F0-9]{40}\b', text_content))
         
         # Social & API Links
-        for a in soup.find_all('a', href=True):
+        for a in soup.find_all(['a', 'link'], href=True):
             href = a['href']
             if any(x in href.lower() for x in ['facebook.com', 'twitter.com', 't.me', 'instagram.com', 'linkedin.com']):
                 data["social_links"].add(href)
             if '/api/v' in href or 'graphql' in href:
                 data["hidden_apis"].add(href)
+                
+        # CSS Traps / Hidden honey-tokens
+        for hidden in soup.find_all(style=lambda value: value and ('display: none' in value.lower() or 'visibility: hidden' in value.lower())):
+            if len(hidden.text.strip()) > 3:
+                data["hidden_css_traps"].add(hidden.text.strip()[:100])
+                
+        # Favicon Hashing
+        data["asset_hashes"] = PageAssetAnalyzer.analyze(soup, url)
                 
         return data
 
@@ -286,6 +319,27 @@ class SeleniumBrowser:
     def close(self) -> None:
         if self.driver: self.driver.quit()
 
+# ====================== FINGERPRINT & BEHAVIOR ======================
+class FingerprintProfileManager:
+    @staticmethod
+    def get_injection_script(config: BrowserConfig) -> str:
+        return """
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'da', 'en-US', 'en']});
+            window.chrome = { runtime: {} };
+        """
+
+class BehaviorEngine:
+    @staticmethod
+    async def async_random_idle(page, level="medium"):
+        delays = {"low": (0.5, 1.5), "medium": (1.5, 3.5), "high": (3.5, 7.0)}
+        low, high = delays.get(level, (1.5, 3.5))
+        await asyncio.sleep(random.uniform(low, high))
+        # Simuler mus bevægelse
+        await page.mouse.move(random.randint(0, 500), random.randint(0, 500))
+
+
+
 # ====================== PLAYWRIGHT WRAPPER (OPGRADET) ======================
 class PlaywrightBrowser:
     def __init__(self, config: BrowserConfig):
@@ -305,23 +359,15 @@ class PlaywrightBrowser:
         if not sitekey: return
         
         solver = CaptchaSolver(self.config.captcha_api_key)
-        # Kør synkron requests kode i asynkron thread
-        token = await asyncio.to_thread(solver.solve_recaptcha_v2, sitekey, url)
+        res = await asyncio.to_thread(solver.solve_recaptcha_v2, sitekey, url)
         
-        if token:
-            self.logger.info("💉 Injicerer token i DOM...")
-            await page.evaluate(f'document.getElementById("g-recaptcha-response").innerHTML="{token}";')
-            # Trigger callback if exists
-            await page.evaluate('if(typeof grecaptcha !== "undefined") { grecaptcha.getResponse = function() { return "' + token + '"; } }')
-
-    async def _human_scroll_async(self, page):
-        """NYT V36: Asynkron Gaussian scroll."""
-        try:
-            for _ in range(3):
-                step = int(random.gauss(400, 100))
-                await page.mouse.wheel(0, step)
-                await asyncio.sleep(max(0.1, random.gauss(0.5, 0.2)))
-        except: pass
+        if res and res.get("token"):
+            self.logger.info(f"💉 Injicerer token i DOM...")
+            # Simpel injektion til reCAPTCHA v2
+            await page.evaluate(f'if(document.getElementById("g-recaptcha-response")) {{ document.getElementById("g-recaptcha-response").innerHTML="{res}"; }}')
+            
+            if await page.query_selector("input[name='cf-turnstile-response']"):
+                await page.evaluate(f'document.getElementsByName("cf-turnstile-response")[0].value="{res["token"]}";')
 
     async def get_async(self, url: str, retries: int = 0) -> Dict[str, Any]:
         playwright = await async_playwright().start()
@@ -334,38 +380,36 @@ class PlaywrightBrowser:
             viewport={"width": 1920, "height": 1080}
         )
         
-        if self.config.anti_detection:
-            await context.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-                Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'en-US']});
-                
-                // Overstyr WebRTC for at skjule lokal IP
-                Object.defineProperty(navigator, 'mediaDevices', {
-                    get: () => ({ enumerateDevices: () => Promise.resolve([]) })
-                });
-            """)
+        # Avanceret Fingerprint Spoofing
+        injection_script = FingerprintProfileManager.get_injection_script(self.config)
+        await context.add_init_script(injection_script)
             
         page = await context.new_page()
         
         try:
             await page.goto(url, timeout=self.config.timeout * 1000)
+            self.proxy_manager.report_success()
             if self.config.js_rendering:
                 await page.wait_for_load_state("networkidle")
-                await self._human_scroll_async(page)
+                await BehaviorEngine.async_random_idle(page, level=self.config.behavior_level)
                 
-            # Captcha Interception
-            if await page.query_selector("iframe[title*='reCAPTCHA']"):
+            # Avanceret Event-baseret Captcha Interception
+            if await page.query_selector("iframe[title*='reCAPTCHA']") or await page.query_selector("input[name='cf-turnstile-response']"):
                 await self._solve_captcha_async(page, url)
                 await asyncio.sleep(2)
                 
             html = await page.content()
             osint_data = OSINTExtractor.extract_from_html(html, url) if self.config.auto_extract_osint else {}
             
+            if self.config.ephemeral:
+                await context.close() # Zerotrace oprydning!
+                
             await browser.close()
             await playwright.stop()
             return {"html": html, "osint": osint_data, "url": page.url}
             
         except Exception as e:
+            self.proxy_manager.report_failure()
             await browser.close()
             await playwright.stop()
             if retries < self.config.max_retries:
@@ -420,6 +464,10 @@ class OmniHunterBrowser:
             return PlaywrightBrowser(self.config)
         else:
             return RequestsBrowser(self.config)
+
+    def report_success(self):
+        if hasattr(self.browser, 'proxy_manager'):
+            self.browser.proxy_manager.failed_attempts = 0
 
     def get(self, url: str) -> Dict[str, Any]:
         """Backwards compatibility wrapper for fetch."""
