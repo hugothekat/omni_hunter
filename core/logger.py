@@ -25,6 +25,13 @@ class OpsecFormatter(logging.Formatter):
             'Bearer [REDACTED_JWT_TOKEN]', 
             log_message
         )
+
+        # 3. Maskerer systemstier for at forhindre Path Disclosure
+        log_message = re.sub(
+            r'(?i)(/home/[a-z0-9_]+|C:\\Users\\[a-z0-9_]+)[/\\]',
+            '[CLASSIFIED_PATH]/',
+            log_message
+        )
         
         return log_message
 

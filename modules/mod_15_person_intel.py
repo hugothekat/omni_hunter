@@ -6,6 +6,7 @@ OPERATIONAL SPECIFICATIONS:
 - Pydantic Multi-Dimensional Confidence Scoring (Identity, Exposure, Footprint, Physical).
 - Phase 1: Asynchronous SMTP MX Email Generation & Validation.
 - Phase 2.5: Danish Gov Dorking (Statstidende, Tinglysning).
+- Phase 2.6: NATIVE Directory & Property Intel (Krak, DinGeo, BBR).
 - Phase 2.8: Async Social Media Enumeration (Sherlock-style integration).
 - Phase 4: Integrated Breach API Matrix & Darknet Recon.
 - Threaded Omni-Pivot & Historical Data Lake Correlation.
@@ -33,6 +34,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 import requests
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -40,7 +42,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
 from core.base_module import BaseModule, ModuleCategory
-from core.utils import C, session, ThreatIntelExtractor, datalake, sanitize_filename
+from core.utils import C, session, ThreatIntelExtractor, datalake, sanitize_filename, extract_danish_phones, validate_danish_address
 from core.network import http, omni_dork_search, safe_get_with_retry
 
 try:
@@ -135,6 +137,13 @@ def calculate_intelligence_matrix(intel_data: Dict) -> IntelligenceScores:
     if intel_data.get("Virk_Links"): physical += 0.4
     if intel_data.get("Tidslinje_Bopæl"): physical += 0.5
     if intel_data.get("Netværk_Associates"): physical += 0.2
+    
+    # NYT V39: Point for fysisk ejendoms-bekræftelse og bofæller
+    ejendom = intel_data.get("Ejendom", {})
+    if ejendom.get("Vej"): physical += 0.3
+    if intel_data.get("DinGeo_Intelligence", {}).get("BBR_Stamdata"): physical += 0.2
+    if intel_data.get("Bofæller_Netværk"): physical += 0.2
+    
     physical = min(1.0, physical)
 
     # Overall Index
@@ -193,6 +202,20 @@ class AutonomousOrchestrator(BaseModule):
             "Tidslinje_Bopæl": set(),
             "Netværk_Associates": set(),
             
+            "Ejendom": {
+                "Vej": "",
+                "Post": "",
+                "By": "",
+                "Type": "Ukendt",
+                "Koordinater": "",
+                "Historik": []
+            },
+            "DinGeo_Intelligence": {
+                "BBR_Stamdata": {}, "Vurdering": {}, "Skat": {}, 
+                "Infrastruktur": {}, "Historiske_Vurderinger": []
+            },
+            "Bofæller_Netværk": set(),
+            
             "Breach_Data": {
                 "Total_Verified_Breaches": 0,
                 "Lækkede_Passwords_Fundet": False,
@@ -248,6 +271,9 @@ class AutonomousOrchestrator(BaseModule):
         self._phase_1_generate_and_smtp_validate()
         self._log("FASE 2: Executing Recursive Clearnet Intelligence Sweep...", "INFO")
         self._phase_2_recursive_dorking(driver, self.target_name, current_depth=0)
+
+        self._log("FASE 2.6: Executing Native Directory & Property Intel (DinGeo/Krak)...", "INFO")
+        self._phase_2_6_directory_property_intelligence(driver)
 
         # FASE 2.8: NATIVE ASYNC SOCIAL ENUMERATION
         self._log("FASE 2.8: Executing Async Username Enumeration (Sherlock-Protocol)...", "INFO")
@@ -386,6 +412,141 @@ class AutonomousOrchestrator(BaseModule):
         for nt in new_targets[:3]:
             self._log(f"Auto-Pivot Triggered on new identifier: {nt}", "SUCCESS", indent=current_depth+1)
             self._phase_2_recursive_dorking(driver, nt, current_depth + 1)
+
+    # =========================================================================
+    # FASE 2.6: NATIVE DIRECTORY & PROPERTY INTELLIGENCE (Modul 01 Fusion)
+    # =========================================================================
+    def _phase_2_6_directory_property_intelligence(self, driver: Any) -> None:
+        """Indsamler adresse og slår op i DinGeo og Krak."""
+        if not driver: return
+        
+        self._log("Striking Krak & DeGuleSider via SERP...", "INFO", indent=1)
+        self._google_serp_directory_strike(driver)
+        self._bing_directory_dork(driver)
+        
+        if self.intel_pool["Ejendom"].get("Vej"):
+            addr = f"{self.intel_pool['Ejendom']['Vej']}, {self.intel_pool['Ejendom']['Post']} {self.intel_pool['Ejendom']['By']}"
+            self._log(f"Address Confirmed: {addr}. Executing Async DinGeo Deep-Audit...", "PIVOT", indent=1)
+            
+            encoded = urllib.parse.quote(addr)
+            self.intel_pool["Ejendom"]["Koordinater"] = f"https://www.google.com/maps/search/?api=1&query={encoded}"
+            
+            try:
+                loop = asyncio.get_event_loop()
+                if not loop.is_running(): 
+                    loop.run_until_complete(self._async_property_audit(driver))
+            except Exception as e:
+                self._log(f"Async Property Audit Error: {e}", "WARN", indent=2)
+
+    def _google_serp_directory_strike(self, driver):
+        query = f'site:krak.dk OR site:degulesider.dk "{self.target_name}" ejendom OR bolig'
+        url = f"https://www.google.dk/search?q={urllib.parse.quote(query)}"
+        try:
+            driver.get(url)
+            time.sleep(2)
+            elements = driver.find_elements(By.CSS_SELECTOR, "div.g")
+            for el in elements:
+                text = el.text
+                phones = extract_danish_phones(text)
+                for p in phones:
+                    formatted = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
+                    self.intel_pool["Telefonnumre"].add(formatted)
+
+                match = validate_danish_address(text)
+                if match and not self.intel_pool["Ejendom"].get("Vej"):
+                    with self.print_lock:
+                        self.intel_pool["Ejendom"]["Vej"] = match["vej"]
+                        self.intel_pool["Ejendom"]["Post"] = match["post"]
+                        self.intel_pool["Ejendom"]["By"] = match["by"]
+                        self.intel_pool["Ejendom"]["Historik"].append({"source": "Google SERP", "address": match["full"]})
+        except Exception: pass
+
+    def _bing_directory_dork(self, driver):
+        dork = f'(site:krak.dk OR site:degulesider.dk) "{self.target_name}"'
+        hits = omni_dork_search(driver, dork, max_links=4)
+        for hit in hits:
+            full_text = f"{hit.get('title','')} {hit.get('snippet','')}"
+            phones = extract_danish_phones(full_text)
+            for p in phones:
+                formatted = f"{p[:2]} {p[2:4]} {p[4:6]} {p[6:8]}"
+                self.intel_pool["Telefonnumre"].add(formatted)
+
+            match = validate_danish_address(full_text)
+            if match and not self.intel_pool["Ejendom"].get("Vej"):
+                with self.print_lock:
+                    self.intel_pool["Ejendom"]["Vej"] = match["vej"]
+                    self.intel_pool["Ejendom"]["Post"] = match["post"]
+                    self.intel_pool["Ejendom"]["By"] = match["by"]
+                    self.intel_pool["Ejendom"]["Historik"].append({"source": "Bing", "address": match["full"]})
+
+    async def _async_property_audit(self, driver):
+        vej_clean = self.intel_pool["Ejendom"]["Vej"].split(',')[0].strip()
+        post = self.intel_pool["Ejendom"]["Post"]
+        by_clean = self.intel_pool["Ejendom"]["By"].split(' ')[0].strip()
+
+        slug_c = f"{post}-{by_clean}".lower()
+        slug_v = re.sub(r'[^a-z0-9æøå\-]', '', vej_clean.replace(" ", "-").replace("æ","ae").replace("ø","oe").replace("å","aa"))
+        base = f"https://www.dingeo.dk/adresse/{slug_c}/{slug_v}"
+
+        endpoints = {
+            "BBR_Stamdata": {"path": "", "parser": self._parse_bbr_data},
+            "Skat": {"path": "/skat/", "parser": self._parse_skat_data},
+            "Vurdering": {"path": "/vurdering/", "parser": self._parse_vurdering_data},
+            "Infrastruktur": {"path": "/internet-mobil/", "parser": self._parse_infrastructure}
+        }
+
+        async with aiohttp.ClientSession() as http_session:
+            tasks = []
+            for key, config in endpoints.items():
+                tasks.append(self._fetch_dingeo_endpoint(http_session, base + config["path"], config["parser"], key))
+            await asyncio.gather(*tasks)
+            
+        # Find bofæller via asynkron trådpool wrapper
+        loop = asyncio.get_event_loop()
+        query = f'site:krak.dk "{vej_clean}" "{post}"'
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            try:
+                hits = await loop.run_in_executor(executor, lambda: omni_dork_search(driver, query, max_links=4))
+                for hit in hits:
+                    name = hit.get('title', '').split('-')[0].strip()
+                    if name and self.target_name.lower() not in name.lower() and "Krak" not in name:
+                        self.intel_pool["Bofæller_Netværk"].add(name)
+            except Exception: pass
+
+    async def _fetch_dingeo_endpoint(self, http_session, url, parser, data_key):
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        for _ in range(2):
+            try:
+                async with http_session.get(url, headers=headers, timeout=10) as response:
+                    if response.status == 200:
+                        html = await response.text()
+                        await parser(html, data_key)
+                        break
+            except Exception: await asyncio.sleep(1)
+
+    async def _parse_bbr_data(self, html: str, data_key: str):
+        soup = BeautifulSoup(html, 'html.parser')
+        for row in soup.select('table.bbr-data tr, tr'):
+            cells = row.find_all(['td', 'th'])
+            if len(cells) >= 2:
+                key = cells[0].get_text(strip=True).replace(':', '')
+                if key in ["Opførselsesår", "Antal værelser", "Etageareal", "Boligtype", "Varmeinstallation"]:
+                    self.intel_pool["DinGeo_Intelligence"][data_key][key] = cells[1].get_text(strip=True)
+
+    async def _parse_skat_data(self, html: str, data_key: str):
+        m = re.search(r'Boligskat.*?(?:2024)?[:\s]*([0-9\.]+)\s*kr', BeautifulSoup(html, 'html.parser').get_text())
+        if m: self.intel_pool["DinGeo_Intelligence"][data_key]["Boligskat"] = m.group(1)
+
+    async def _parse_vurdering_data(self, html: str, data_key: str):
+        text = BeautifulSoup(html, 'html.parser').get_text()
+        m = re.search(r'Dingestimat[:\s]*([0-9\.]+)\s*kr', text, re.IGNORECASE)
+        m2 = re.search(r'Seneste salgspris[:\s]*([0-9\.]+)\s*kr', text, re.IGNORECASE)
+        if m: self.intel_pool["DinGeo_Intelligence"][data_key]["Dingestimat"] = m.group(1)
+        if m2: self.intel_pool["DinGeo_Intelligence"][data_key]["Seneste_Salg"] = m2.group(1)
+
+    async def _parse_infrastructure(self, html: str, data_key: str):
+        if "fibernet" in html.lower(): self.intel_pool["DinGeo_Intelligence"][data_key]["Fiber"] = "Ja"
+        if "5g" in html.lower(): self.intel_pool["DinGeo_Intelligence"][data_key]["5G"] = "Ja"
 
     def _phase_2_8_async_social_enumeration(self) -> None:
         """Kører et 'Sherlock'-style asynkront tjek på alle aliaser/usernames på tværs af sociale medier."""
@@ -664,6 +825,15 @@ class AutonomousOrchestrator(BaseModule):
             if self.intel_pool["Netværk_Associates"]:
                 print(f"Associates:      {C.WHITE}{', '.join(list(self.intel_pool['Netværk_Associates'])[:5])}{C.RESET}")
             
+            ejendom = self.intel_pool.get("Ejendom", {})
+            if ejendom.get("Vej"):
+                print(f"Address:         {C.WHITE}{ejendom['Vej']}, {ejendom['Post']} {ejendom['By']}{C.RESET}")
+            bbr = self.intel_pool.get("DinGeo_Intelligence", {}).get("BBR_Stamdata", {})
+            if bbr:
+                print(f"BBR Info:        {C.WHITE}Opført {bbr.get('Opførselsesår','N/A')} | {bbr.get('Boligtype','N/A')} | {bbr.get('Etageareal','N/A')}{C.RESET}")
+            if self.intel_pool.get("Bofæller_Netværk"):
+                print(f"Cohabitants:     {C.WHITE}{', '.join(list(self.intel_pool['Bofæller_Netværk']))}{C.RESET}")
+
             b_total = self.intel_pool["Breach_Data"]["Total_Verified_Breaches"]
             if b_total > 0:
                 print(f"Verified Breaches: {C.RED}{b_total} (Critical){C.RESET}")
@@ -693,8 +863,8 @@ class AutonomousOrchestrator(BaseModule):
                 self._log(f"{class_name} failed or not found: {e}", "ERROR", indent=2)
 
         api_tasks = []
-        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: api_tasks.append(("mod_23_matrix", "MatrixAnalyzer", handle))
-        for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append(("mod_10_ip", "IPNetworkAnalyzer", ip))
+        for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: api_tasks.append(("mod_02_social", "SocialMediaProfiler", handle))
+        for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append(("mod_06_ip", "IPNetworkAnalyzer", ip))
         for wallet in list(self.intel_pool["Kryptovaluta_Wallets"])[:2]: 
             w_clean = wallet.split(": ")[1] if ": " in wallet else wallet
             api_tasks.append(("mod_19_crypto", "CryptoLedgerAnalyzer", w_clean))
@@ -703,13 +873,13 @@ class AutonomousOrchestrator(BaseModule):
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
                 for mod, cls, tgt in api_tasks: executor.submit(_safe_run, mod, cls, tgt, None)
 
-        _safe_run("mod_02_business", "BusinessIntelligenceAnalyst", self.target_name, main_driver)
+        _safe_run("mod_01_business", "BusinessIntelligenceAnalyst", self.target_name, main_driver)
         for phone in list(self.intel_pool["Telefonnumre"])[:2]: 
             _safe_run("mod_12_revphone", "ReversePhoneIntelligence", phone, main_driver)
 
     def _phase_7_finalize_models(self) -> None:
         try:
-            from modules.mod_27_ai import TitanAIEnrichment
+            from modules.mod_12_ai import TitanAIEnrichment
             self._log("Processing Context via Local LLM (Titan AI)...", "INFO", indent=1)
             ai_mod = TitanAIEnrichment(self.target_name)
             
@@ -724,8 +894,8 @@ class AutonomousOrchestrator(BaseModule):
         except Exception: pass
 
         try:
-            from modules.mod_28_graph import GoliathGraphExporter
-            from modules.mod_29_kml import GoogleEarthExporter
+            from modules.mod_13_graph import GoliathGraphExporter
+            from modules.mod_14_kml import GoogleEarthExporter
             self._log("Generating Relational Graphs & KML...", "INFO", indent=1)
             GoliathGraphExporter().generate()
             GoogleEarthExporter().generate()

@@ -217,6 +217,12 @@ class SeleniumBrowser:
                     Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
                     Object.defineProperty(navigator, 'deviceMemory', {get: () => 8});
                     Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 4});
+                    
+                    // Canvas & WebGL Spoofing
+                    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+                    HTMLCanvasElement.prototype.getContext = function() {
+                        return originalGetContext.apply(this, arguments);
+                    };
                 '''
             })
         return driver
@@ -323,6 +329,11 @@ class PlaywrightBrowser:
             await context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
                 Object.defineProperty(navigator, 'languages', {get: () => ['da-DK', 'en-US']});
+                
+                // Overstyr WebRTC for at skjule lokal IP
+                Object.defineProperty(navigator, 'mediaDevices', {
+                    get: () => ({ enumerateDevices: () => Promise.resolve([]) })
+                });
             """)
             
         page = await context.new_page()

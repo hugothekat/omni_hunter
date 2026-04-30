@@ -104,6 +104,10 @@ class OmniWAF:
     XSS_PATTERN = re.compile(r'(?i)(<script>|javascript:|onerror=|onload=|eval\()')
     PATH_TRAVERSAL = re.compile(r'(\.\./|\.\.\\|/etc/passwd|\\Windows\\System32)')
     NOSQL_PATTERN = re.compile(r'(?i)(\$gt|\$ne|\$where|\$regex)')
+    
+    _is_trained = False
+    _vectorizer = None
+    _centroid = None
 
     @classmethod
     def inspect(cls, payload: str) -> bool:
@@ -119,6 +123,29 @@ class OmniWAF:
         if cls.NOSQL_PATTERN.search(payload):
             logger.warning(f"OmniWAF: NoSQL Injection detected in payload: {payload[:50]}")
             raise ValueError("NoSQL Injection pattern detected.")
+            
+        # Machine Learning 0-Day Clustering (TF-IDF Distance)
+        if has_sklearn:
+            if not getattr(cls, '_is_trained', False):
+                try:
+                    corpus = ["admin", "john_doe", "test@test.com", "hvidovre", "12345678", "normal_user", "search_query"]
+                    cls._vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(1,3))
+                    X = cls._vectorizer.fit_transform(corpus)
+                    cls._centroid = np.mean(X.toarray(), axis=0)
+                    cls._is_trained = True
+                except Exception as e:
+                    logger.error(f"OmniWAF ML Training Failed: {e}")
+                    cls._is_trained = False
+                    
+            if getattr(cls, '_is_trained', False):
+                try:
+                    vec = cls._vectorizer.transform([payload]).toarray()
+                    dist = np.linalg.norm(vec - cls._centroid)
+                    if dist > 1.3: # Anomaligænse for skæve tegn
+                        logger.critical(f"OmniWAF ML Anomaly: Zero-Day payload detected (Distance: {dist:.2f})")
+                        raise ValueError("🚨 ML Anomaly / Zero-Day pattern detected.")
+                except Exception: pass
+                
         return True
 
 # ==========================================

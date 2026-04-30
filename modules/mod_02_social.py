@@ -8,6 +8,8 @@ MODUL 04: ADVANCED DIGITAL FOOTPRINT & USERNAME ENUMERATION
 - UID Extraction: Captures immutable database IDs (Instagram/TikTok)
 - Avatar Cryptography: On-the-fly hashing of profile pictures
 - Operator Consent Flow: Zero-Disk Footprint until authorized
+- NY V31: Integreret Sherlock CLI Fallback & ChatApp Dorking (Telegram/Discord)
+- NY V31: Wayback Machine Archive Sweep for slettede profiler
 """
 
 import requests
@@ -16,6 +18,7 @@ import os
 import sys
 import time
 import re
+import subprocess
 import urllib.parse
 import concurrent.futures
 import hashlib
@@ -39,6 +42,7 @@ class SocialMediaProfiler:
             "Fuldt_Navn": self.full_name,
             "Immutable_UIDs": {},            # NY V30: Unikke, uforanderlige database ID'er
             "Sherlock_Direct_Hits": [],      # Opgraderet til 40+ platforme
+            "Arkiverede_Profiler": [],       # Fra mod_23 (Wayback)
             "Link_In_Bio_Udtræk": [],        
             "Deep_Scrape": {}, 
             "Fundne_Profiler": [],
@@ -96,6 +100,12 @@ class SocialMediaProfiler:
         # --- FASE 4: OMNI-DORKING ---
         self._update_progress(80, "Udruller Multi-Vector Dorking Matrix")
         self._execute_omni_dorking(driver)
+
+        # --- FASE 4.5: SHERLOCK FALLBACK & WAYBACK (FUSION FRA MOD_23) ---
+        self._update_progress(90, "Udfører Sherlock Deep-Scan og Wayback Profilsikring")
+        self._run_sherlock_cli()
+        if self.data["Sherlock_Direct_Hits"] or self.data["Fundne_Profiler"]:
+            self._check_wayback_archives()
 
         # --- FASE 5: OPSAMLING & ARKIVERING ---
         self._update_progress(100, "Profilering Fuldført")
@@ -281,7 +291,8 @@ class SocialMediaProfiler:
             "twitter.com", "x.com", "reddit.com/user", "pinterest.com", 
             "youtube.com", "twitch.tv", "steamcommunity.com/id", 
             "tinder.com", "badoo.com", "vk.com", "medium.com", "github.com",
-            "t.me", "vimeo.com", "soundcloud.com", "snapchat.com/add"
+            "t.me", "vimeo.com", "soundcloud.com", "snapchat.com/add",
+            "discord.com" # Fusion fra mod_22
         ]
         
         danish_sites = [
@@ -322,6 +333,44 @@ class SocialMediaProfiler:
                         print(f"{C.GREEN}    🔥 DORK HIT: {url}{C.RESET}")
                         if not any(p['URL'] == url for p in self.data["Fundne_Profiler"]):
                             self.data["Fundne_Profiler"].append({"URL": url, "Kontekst": titel})
+
+    # =========================================================================
+    # FASE 4.5: SHERLOCK & WAYBACK FUSION (Tidligere mod_23)
+    # =========================================================================
+    def _run_sherlock_cli(self):
+        print(f"\n{C.YELLOW}[*] Udfører fallback fuld-spektrum scan via Sherlock CLI...{C.RESET}")
+        try:
+            process = subprocess.Popen(['sherlock', self.clean_user, '--timeout', '5', '--print-found'],
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            for line in iter(process.stdout.readline, ''):
+                line = line.strip()
+                if "[+]" in line:
+                    site_url = line.split("[+]")[1].strip()
+                    if site_url not in self.data["Sherlock_Direct_Hits"]:
+                        self.data["Sherlock_Direct_Hits"].append(site_url)
+                        print(f"{C.GREEN}    🔥 SHERLOCK HIT: {C.CYAN}{site_url}{C.RESET}")
+            process.wait()
+        except FileNotFoundError:
+            print(f"{C.DIM}    [-] Sherlock ikke installeret (pip install sherlock-project). Springer over.{C.RESET}")
+        except Exception as e: pass
+
+    def _check_wayback_archives(self):
+        print(f"\n{C.YELLOW}[*] Søger i Wayback Machine efter slettede versioner af profilerne...{C.RESET}")
+        urls_to_check = self.data["Sherlock_Direct_Hits"] + [p['URL'] for p in self.data["Fundne_Profiler"]]
+        unique_urls = list(set(urls_to_check))[:5] # Max 5 for rate-limits
+        
+        for url in unique_urls:
+            wb_api = f"http://archive.org/wayback/available?url={url}"
+            try:
+                res = requests.get(wb_api, timeout=5).json()
+                if res.get("archived_snapshots", {}).get("closest"):
+                    snap_url = res["archived_snapshots"]["closest"]["url"]
+                    print(f"{C.MAGENTA}    🔥 HISTORISK SNAPSHOT FUNDET: {snap_url}{C.RESET}")
+                    self.data["Arkiverede_Profiler"].append({
+                        "Original_URL": url,
+                        "Archive_URL": snap_url
+                    })
+            except Exception: pass
 
     # =========================================================================
     # HJÆLPEFUNKTIONER & FORENSICS
@@ -378,6 +427,10 @@ class SocialMediaProfiler:
         print(f"\n{C.GREEN}[+] OMNI-Dork Hits: {dork}{C.RESET}")
         for p in self.data['Fundne_Profiler'][:3]: print(f"    └─ {p['URL']}")
         
+        if self.data['Arkiverede_Profiler']:
+            print(f"\n{C.MAGENTA}[!] Arkiverede Snapshots (Slettet Indhold):{C.RESET}")
+            for a in self.data['Arkiverede_Profiler']: print(f"    └─ {a['Archive_URL']}")
+
         if uids > 0:
             print(f"\n{C.MAGENTA}[!] IMMUTABLE UIDs (Database Identifikatorer):{C.RESET}")
             for k, v in self.data['Immutable_UIDs'].items():

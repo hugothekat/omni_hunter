@@ -452,17 +452,6 @@ class BusinessIntelligenceAnalyst:
         ejer_email = emails[0] if emails else None
         ejer_telefon = telefoner[0] if telefoner else None
 
-        # --- MODUL 01: KRAK / PIVOT ---
-        print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 01 (Offentlige Registre / Krak) på: {ejer_navn} / {ejer_telefon}{C.RESET}")
-        try:
-            from modules.mod_01_krak import DirectoryIntelligenceHunter 
-            m1_query = ejer_navn
-            m1 = DirectoryIntelligenceHunter(m1_query, "")
-            m1.run(driver)
-            self.results["Samlet_Pivot_Data"]["Krak"] = m1.data if hasattr(m1, 'data') else "Fuldført"
-            print(f"{C.GREEN}  ✓ Modul 01 data tilføjet.{C.RESET}")
-        except Exception as e: print(f"{C.DIM}  [-] Modul 01 overprunget: {e}{C.RESET}")
-
         # --- MODUL 03: BREACH PIVOT ---
         if ejer_email:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 03 (Breach Analyse) på: {ejer_email}{C.RESET}")
@@ -478,7 +467,7 @@ class BusinessIntelligenceAnalyst:
         if ejer_navn:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 04 (Social Media Stalker) på: {ejer_navn}{C.RESET}")
             try:
-                from modules.mod_04_social import SocialMediaProfiler
+                from modules.mod_02_social import SocialMediaProfiler
                 soc = SocialMediaProfiler(ejer_navn)
                 soc.run(driver)
                 self.results["Samlet_Pivot_Data"]["Social_Media"] = soc.data if hasattr(soc, 'data') else "Fuldført"
@@ -489,7 +478,7 @@ class BusinessIntelligenceAnalyst:
         if ejer_navn or ejer_email:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 05 (Offline DB) på: {ejer_navn} / {ejer_email}{C.RESET}")
             try:
-                from modules.mod_05_offline import OfflineDatabaseAnalyzer
+                from modules.mod_03_offline import OfflineDatabaseAnalyzer
                 off_query = ejer_email if ejer_email else ejer_navn
                 # Kræver en sti, antager standard sti eller skipper
                 off_db = OfflineDatabaseAnalyzer(off_query, "/home/hugo/omni_hunter/loot_evidence")
@@ -501,28 +490,17 @@ class BusinessIntelligenceAnalyst:
         if ejer_telefon:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 07 (Telefon-Opslag) på: {ejer_telefon}{C.RESET}")
             try:
-                from modules.mod_07_phone import PhoneIntelligenceHunter
+                from modules.mod_04_phone import PhoneIntelligenceHunter
                 phone_check = PhoneIntelligenceHunter(ejer_telefon)
                 phone_check.run(driver)
                 print(f"{C.GREEN}  ✓ Telefon data tilføjet.{C.RESET}")
             except Exception as e: print(f"{C.DIM}  [-] Modul 07 overprunget: {e}{C.RESET}")
 
-        # --- MODUL 09 & 08: DARKWEB PIVOT ---
-        if ejer_navn or ejer_email:
-            print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 08 (Darkweb Scanner) på: {ejer_navn} / {ejer_email}{C.RESET}")
-            try:
-                from modules.mod_08_darkweb import DarkWebIntelligence 
-                dw_query = ejer_email if ejer_email else ejer_navn
-                dw = DarkWebIntelligence(dw_query)
-                dw.run(None)
-                print(f"{C.GREEN}  ✓ Modul 08 data tilføjet.{C.RESET}")
-            except Exception as e: print(f"{C.DIM}  [-] Modul 08 overprunget: {e}{C.RESET}")
-
         # --- MODUL 10: IP / DOMAIN PIVOT ---
         if domaene:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 10 (IP & Server Analyse) på: {domaene}{C.RESET}")
             try:
-                from modules.mod_10_ip import IPNetworkAnalyzer 
+                from modules.mod_06_ip import IPNetworkAnalyzer 
                 ip_scan = IPNetworkAnalyzer(domaene)
                 ip_scan.run(None)
                 print(f"{C.GREEN}  ✓ Modul 10 data tilføjet.{C.RESET}")
@@ -532,23 +510,12 @@ class BusinessIntelligenceAnalyst:
         if ejer_navn and ejer_email:
             print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 17 (Sniper Profiling) på: {ejer_navn} / {ejer_email}{C.RESET}")
             try:
-                from modules.mod_17_sniper import SniperModule
+                from modules.mod_08_sniper import SniperModule
                 # FIX: Navngivne argumenter forhindrer fejl-tildeling af emails!
                 sniper = SniperModule(name=ejer_navn, email=ejer_email)
                 sniper.run()
                 print(f"{C.GREEN}  ✓ Modul 17 Sniper fuldført.{C.RESET}")
             except Exception as e: print(f"{C.DIM}  [-] Modul 17 overprunget: {e}{C.RESET}")
-
-        # --- MODUL 23: MATRIX PIVOT ---
-        if ejer_email:
-            print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 23 (Username Matrix) på email-præfiks...{C.RESET}")
-            try:
-                from modules.mod_23_matrix import MatrixAnalyzer # V8 Alias
-                username = ejer_email.split('@')[0]
-                matrix = MatrixAnalyzer(username)
-                matrix.run(None)
-                print(f"{C.GREEN}  ✓ Modul 23 Matrix fuldført.{C.RESET}")
-            except Exception as e: print(f"{C.DIM}  [-] Modul 23 overprunget: {e}{C.RESET}")
 
         # --- MODUL 25: WAYBACK PIVOT ---
         if domaene:
@@ -559,16 +526,6 @@ class BusinessIntelligenceAnalyst:
                 wb.run(None)
                 print(f"{C.GREEN}  ✓ Modul 25 Bevissikring fuldført.{C.RESET}")
             except Exception as e: print(f"{C.DIM}  [-] Modul 25 overprunget: {e}{C.RESET}")
-
-        # --- MODUL 26: VIRUSTOTAL PIVOT ---
-        if domaene:
-            print(f"\n{C.CYAN}[*] PIVOT -> Kører Modul 26 (VirusTotal Threat Intel) på: {domaene}{C.RESET}")
-            try:
-                from modules.mod_26_virustotal import VirusTotalAnalyzer 
-                vt = VirusTotalAnalyzer(domaene)
-                vt.run(None)
-                print(f"{C.GREEN}  ✓ Modul 26 VirusTotal fuldført.{C.RESET}")
-            except Exception as e: print(f"{C.DIM}  [-] Modul 26 overprunget: {e}{C.RESET}")
 
         self.save()
 

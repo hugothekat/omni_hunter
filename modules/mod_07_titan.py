@@ -31,10 +31,13 @@ from PIL.ExifTags import TAGS
 from core.base_module import BaseModule, ModuleCategory
 from core.utils import C, session, REGEX_EMAIL, datalake
 from core.network import safe_get_with_retry
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # Undgår cirkulære imports under init
 try:
-    from modules.mod_27_ai import TitanAIEnrichment
+    from modules.mod_12_ai import TitanAIEnrichment
     from modules.mod_03_breach import BreachIntelligenceAnalyst
 except ImportError:
     TitanAIEnrichment = None
@@ -55,7 +58,7 @@ class AutoForensicMassScanner(BaseModule):
         self.start_time = time.time()
         
         self.master_data = {
-            "Meta": {"Sagsmappe": self.folder_path, "Timestamp": datetime.now().isoformat(), "Filer_Behandlet": 0},
+            "Meta": {"Sagsmappe": self.folder_path, "Timestamp": datetime.now().isoformat(), "Filer_Behandlet": 0, "Images_For_RevSearch": []},
             "Case_Intelligence": {
                 "Verified_Identities": {}, 
                 "Digital_Footprint": {"Emails": {}, "Social_Handles": set(), "IP_Adresser": set(), "Telefonnumre": set()},
@@ -66,7 +69,9 @@ class AutoForensicMassScanner(BaseModule):
             },
             "Metadata_Report": {}, 
             "Forensic_Hashes": {}, 
-            "Source_Map": {},      
+            "Reverse_Image_Hits": {},
+            "AI_Deepfake_Mistanke": [],
+            "Source_Map": {},
             "File_Integrity_Alerts": [], 
             "Berigelse_Resultater": {"Phone_Data": [], "Breach_Reports": [], "IP_Reports": []},
             "Raw_Text_Archive": {} 
@@ -126,6 +131,8 @@ class AutoForensicMassScanner(BaseModule):
         
         if "Devices" in self.master_data["Case_Intelligence"]:
             print(f"Identificerede Enheder: {', '.join(self.master_data['Case_Intelligence']['Devices'].keys())}")
+        if self.master_data.get("Reverse_Image_Hits"):
+            print(f"Ansigter reverse-searched: {len(self.master_data['Reverse_Image_Hits'])}")
         print(f"{C.CYAN}----------------------------{C.RESET}")
         
         return self.master_data
@@ -185,6 +192,19 @@ class AutoForensicMassScanner(BaseModule):
         except Exception:
             return None
 
+    def _detect_faces(self, img_path: str) -> bool:
+        """Bruger OpenCV Haar Cascades til at detektere ansigter til Auto-Pivot."""
+        try:
+            img = cv2.imread(img_path)
+            if img is None: return False
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            return len(faces) > 0
+        except Exception:
+            return False
+
     def _extract_office_metadata(self, f_path: str) -> dict:
         """Dyb ekstraktion af metadata fra .docx, .xlsx, .pptx"""
         meta = {}
@@ -208,9 +228,32 @@ class AutoForensicMassScanner(BaseModule):
         except Exception: pass
         return meta
 
+    def _extract_video_metadata(self, path: str) -> dict:
+        """Udtrækker tekniske specs via OpenCV og metadata via ExifTool."""
+        meta = {}
+        try:
+            cap = cv2.VideoCapture(path)
+            if cap.isOpened():
+                meta["Video_FPS"] = round(cap.get(cv2.CAP_PROP_FPS), 2)
+                meta["Video_Frames"] = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                meta["Video_Resolution"] = f"{int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}"
+                codec = int(cap.get(cv2.CAP_PROP_FOURCC))
+                meta["Video_Codec"] = "".join([chr((codec >> 8 * i) & 0xFF) for i in range(4)])
+                cap.release()
+        except Exception: pass
+        try:
+            import subprocess
+            res = subprocess.run(['exiftool', '-json', path], capture_output=True, text=True)
+            if res.returncode == 0:
+                edata = json.loads(res.stdout)[0]
+                for k in ["CreateDate", "ModifyDate", "GPSCoordinates", "Make", "Model", "Software", "Duration"]:
+                    if k in edata: meta[f"Exif_{k}"] = edata[k]
+        except Exception: pass
+        return meta
+
     def _titan_process_file(self, f_path):
         fname = os.path.basename(f_path)
-        res = {"file": fname, "path": f_path, "text": "", "meta": {}, "mime": "unknown", "entities": {}}
+        res = {"file": fname, "path": f_path, "text": "", "meta": {}, "mime": "unknown", "entities": {}, "face_detected": False}
         
         if f_path.lower().endswith('.zip') or f_path.lower().endswith('.tar.gz') or f_path.lower().endswith('.tar'):
             return res
@@ -219,6 +262,7 @@ class AutoForensicMassScanner(BaseModule):
             with open(f_path, 'rb') as bin_f:
                 f_bytes = bin_f.read()
                 res["meta"]["MD5"] = hashlib.md5(f_bytes).hexdigest()
+                res["meta"]["SHA1"] = hashlib.sha1(f_bytes).hexdigest()
                 res["meta"]["SHA256"] = hashlib.sha256(f_bytes).hexdigest()
                 
                 # Entropi & Heuristik
@@ -230,6 +274,13 @@ class AutoForensicMassScanner(BaseModule):
                     res["meta"]["Steganografi_Advarsel"] = f"Ekstremt høj entropi ({round(entropy,2)}). Krypteret payload eller pakket malware mistænkes."
                 if malware_alerts:
                     res["meta"]["Malware_Signaturer"] = malware_alerts
+                    
+                # RAW String Extraction (Søger efter skjulte netværksspor forbi obfuscation)
+                raw_str = f_bytes.decode('ascii', errors='ignore')
+                raw_emails = set(re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', raw_str))
+                for em in raw_emails:
+                    if "adobe" not in em.lower() and "w3.org" not in em.lower():
+                        res["entities"].setdefault("emails", []).append({"val": em.lower(), "score": 30})
 
             mime_type = magic.from_file(f_path, mime=True)
             res["mime"] = mime_type if mime_type else "unknown"
@@ -241,12 +292,21 @@ class AutoForensicMassScanner(BaseModule):
                         if "Steganografi_Advarsel" not in res["meta"]:
                             res["meta"]["Steganografi_Advarsel"] = f"Fundet {len(f_bytes) - (eof_idx + 2)} skjulte bytes bag EOF!"
 
+                # AI & Deepfake Heuristics
+                ai_signatures = ["midjourney", "dall-e", "stable diffusion", "ai generated", "comfyui"]
+                res["meta"].update(self._extract_exif(f_path))
+                for k, v in res["meta"].items():
+                    if any(sig in str(v).lower() for sig in ai_signatures):
+                        res["meta"]["AI_Deepfake_Mistanke"] = True
+                        
+                if self._detect_faces(f_path):
+                    res["face_detected"] = True
+
                 # Udtrækker dHash for billedet
                 dhash_val = self._calculate_dhash(f_path)
                 if dhash_val:
                     res["meta"]["Visuel_Hash_dHash"] = dhash_val
 
-                res["meta"].update(self._extract_exif(f_path))
                 if HAS_OCR: res["text"] = self._ocr_pro(f_path)
                 
             elif "pdf" in res["mime"] and HAS_PDF:
@@ -271,6 +331,9 @@ class AutoForensicMassScanner(BaseModule):
             
             elif f_path.lower().endswith(('.docx', '.xlsx', '.pptx')):
                 res["meta"].update(self._extract_office_metadata(f_path))
+                
+            elif "video" in res["mime"] or f_path.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
+                res["meta"].update(self._extract_video_metadata(f_path))
                 
             elif any(x in res["mime"] for x in ["text", "json", "csv", "plain", "log"]):
                 with open(f_path, 'r', encoding='utf-8', errors='ignore') as f: res["text"] = f.read()
@@ -364,6 +427,62 @@ class AutoForensicMassScanner(BaseModule):
                 except Exception: pass
                 time.sleep(2)
 
+        # PIVOT PÅ ANSIGTER (REVERSE IMAGE SEARCH)
+        if self.master_data["Meta"]["Images_For_RevSearch"] and driver:
+            print(f"\n{C.YELLOW}[*] Reverse Image Search: Fandt {len(self.master_data['Meta']['Images_For_RevSearch'])} billeder med ansigter!{C.RESET}")
+            for img_path in self.master_data["Meta"]["Images_For_RevSearch"][:3]: # Max 3 for at undgå Yandex bans
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] {C.CYAN}[*] Udfører Reverse Image Pivot på: {os.path.basename(img_path)}...{C.RESET}")
+                self.master_data["Reverse_Image_Hits"][img_path] = {}
+                self._yandex_auto_upload(driver, img_path)
+                self._tineye_auto_upload(driver, img_path)
+                self._google_lens_auto_upload(driver, img_path)
+
+    # --- REVERSE IMAGE SEARCH METHODS ---
+    def _yandex_auto_upload(self, driver, img_path):
+        try:
+            driver.switch_to.window(driver.window_handles[0])
+            driver.get("https://yandex.com/images/")
+            try:
+                cam_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Image search'], button[title='Image search']")))
+                cam_btn.click()
+            except: driver.get("https://yandex.com/images/search?rpt=imageview")
+            
+            time.sleep(1.5)
+            file_input = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']")))
+            file_input.send_keys(os.path.abspath(img_path))
+            WebDriverWait(driver, 25).until(lambda d: "rpt=imageview" not in d.current_url or len(d.find_elements(By.CSS_SELECTOR, ".CbirItem")) > 0)
+            self.master_data["Reverse_Image_Hits"][img_path]["Yandex"] = driver.current_url
+            print(f"{C.GREEN}      ✓ Yandex Face-Match URL sikret.{C.RESET}")
+        except Exception: pass
+
+    def _tineye_auto_upload(self, driver, img_path):
+        try:
+            driver.execute_script("window.open('https://tineye.com/', '_blank');")
+            driver.switch_to.window(driver.window_handles[-1])
+            time.sleep(2)
+            file_input = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file'], input#upload_box")))
+            file_input.send_keys(os.path.abspath(img_path))
+            WebDriverWait(driver, 20).until(lambda d: "result" in d.current_url.lower() or "search" in d.current_url.lower())
+            self.master_data["Reverse_Image_Hits"][img_path]["TinEye"] = driver.current_url
+            print(f"{C.GREEN}      ✓ TinEye Kilde-Match URL sikret.{C.RESET}")
+        except Exception: pass
+
+    def _google_lens_auto_upload(self, driver, img_path):
+        try:
+            driver.execute_script("window.open('https://images.google.com/', '_blank');")
+            driver.switch_to.window(driver.window_handles[-1])
+            time.sleep(2)
+            try:
+                lens_btn = driver.find_element(By.CSS_SELECTOR, "div[role='button'][aria-label*='Søg på billede'], div[role='button'][aria-label*='Search by image']")
+                driver.execute_script("arguments[0].click();", lens_btn)
+            except: pass
+            file_input = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']")))
+            file_input.send_keys(os.path.abspath(img_path))
+            WebDriverWait(driver, 20).until(lambda d: "lens" in d.current_url.lower() or "search" in d.current_url.lower())
+            self.master_data["Reverse_Image_Hits"][img_path]["GoogleLens"] = driver.current_url
+            print(f"{C.GREEN}      ✓ Google Lens Objekt-Match URL sikret.{C.RESET}")
+        except Exception: pass
+
     def _ingest_results(self, res):
         intel = self.master_data["Case_Intelligence"]
         
@@ -377,6 +496,11 @@ class AutoForensicMassScanner(BaseModule):
                 self.master_data["File_Integrity_Alerts"].append({"File": res["file"], "Alert": res["meta"]["Steganografi_Advarsel"]})
             if "Malware_Signaturer" in res["meta"]:
                 self.master_data["File_Integrity_Alerts"].append({"File": res["file"], "Alert": f"Malware Signatur: {res['meta']['Malware_Signaturer']}"})
+            if res.get("meta", {}).get("AI_Deepfake_Mistanke"):
+                self.master_data["AI_Deepfake_Mistanke"].append(res["file"])
+                
+        if res.get("face_detected"):
+            self.master_data["Meta"]["Images_For_RevSearch"].append(res["path"])
                 
             if "Document_Author" in res["meta"]:
                 intel["Verified_Identities"][res["file"]] = res["meta"]["Document_Author"]
@@ -493,3 +617,7 @@ class AutoForensicMassScanner(BaseModule):
                 try:
                     with tarfile.open(tf, 'r:*') as tar_ref: tar_ref.extractall(extract_dir)
                 except Exception: pass
+
+# --- BACKWARDS COMPATIBILITY ALIASES ---
+DigitalForensicsExaminer = AutoForensicMassScanner
+ReverseImageIntelligence = AutoForensicMassScanner

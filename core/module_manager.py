@@ -5,6 +5,7 @@ import time
 import importlib.util
 import inspect
 import traceback
+import gc
 from functools import wraps
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -24,6 +25,7 @@ class ModuleManager:
         self.modules.clear()
         self.quarantine.clear()
         self.discover()
+        gc.collect() # Tvinger frigørelse af forældede moduler fra RAM
 
     def discover(self):
         if not self.modules_dir.exists(): return
