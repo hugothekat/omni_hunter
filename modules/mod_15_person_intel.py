@@ -56,6 +56,11 @@ try:
 except ImportError:
     nexus = None
 
+try:
+    from modules.mod_06_ip import OmniInfrastructureTracker as IPNetworkAnalyzer
+except ImportError:
+    IPNetworkAnalyzer = None
+
 # =========================================================================
 # ADVANCED PYDANTIC SCORING MODELS (INTELLIGENCE GRADE)
 # =========================================================================
@@ -865,17 +870,17 @@ class AutonomousOrchestrator(BaseModule):
         api_tasks = []
         for handle in list(self.intel_pool["Fundne_Brugernavne"])[:2]: api_tasks.append(("mod_02_social", "SocialMediaProfiler", handle))
         for ip in list(self.intel_pool["IP_Adresser"])[:2]: api_tasks.append(("mod_06_ip", "IPNetworkAnalyzer", ip))
+        # Note: mod_06_ip class name is OmniInfrastructureTracker in the provided context
+        for ip in list(self.intel_pool["IP_Adresser"])[:1]: api_tasks.append(("mod_06_ip", "OmniInfrastructureTracker", ip))
         for wallet in list(self.intel_pool["Kryptovaluta_Wallets"])[:2]: 
             w_clean = wallet.split(": ")[1] if ": " in wallet else wallet
             api_tasks.append(("mod_19_crypto", "CryptoLedgerAnalyzer", w_clean))
 
         if api_tasks:
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                for mod, cls, tgt in api_tasks: executor.submit(_safe_run, mod, cls, tgt, None)
-
-        _safe_run("mod_01_business", "BusinessIntelligenceAnalyst", self.target_name, main_driver)
-        for phone in list(self.intel_pool["Telefonnumre"])[:2]: 
-            _safe_run("mod_12_revphone", "ReversePhoneIntelligence", phone, main_driver)
+                for mod, cls, tgt in api_tasks:
+                    if cls == "IPNetworkAnalyzer": cls = "OmniInfrastructureTracker"
+                    executor.submit(_safe_run, mod, cls, tgt, None)
 
     def _phase_7_finalize_models(self) -> None:
         try:

@@ -17,6 +17,11 @@ from core.base_module import BaseModule, ModuleCategory
 from core.utils import C, session, datalake
 from core.network import omni_dork_search, safe_get_with_retry
 
+try:
+    from core.config_vault import vault
+    CONFIG = vault.state if vault else {}
+except ImportError: CONFIG = {}
+
 class TelecomIntelligenceEngine(BaseModule):
     """THE APEX TELECOM ENGINE (GOLIATH V39) - Fletter Modul 07 og 12"""
     def __init__(self, phone):
@@ -42,6 +47,7 @@ class TelecomIntelligenceEngine(BaseModule):
                 "Emails": [],
                 "CVR": []
             },
+            "Nummer_Info": {},
             "Timestamp": datetime.now().isoformat()
         }
 
@@ -88,6 +94,32 @@ class TelecomIntelligenceEngine(BaseModule):
                             self._log(f"Krak Residency Confirmed: {self.data['Identitet']['Adresse']}", C.GREEN, indent=2)
             except Exception as e:
                 self._log(f"Krak Native API Timeout/Fejl: {e}", C.DIM, indent=2)
+
+    async def _numverify_lookup(self):
+        api_key = CONFIG.get("api_keys", {}).get("numverify_api_key", "")
+        if not api_key: return
+        
+        self._log("Forespørger NumVerify API for Carrier & Location data...", C.YELLOW, indent=1)
+        url = f"http://apilayer.net/api/validate?access_key={api_key}&number=45{self.phone}&country_code=DK&format=1"
+        
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url, timeout=10) as response:
+                    if response.status == 200:
+                        res_data = await response.json()
+                        if res_data.get("valid"):
+                            carrier = res_data.get("carrier", "Ukendt")
+                            line_type = res_data.get("line_type", "Ukendt")
+                            location = res_data.get("location", "Danmark")
+                            
+                            self.data["Nummer_Info"] = {
+                                "Carrier": carrier,
+                                "Type": line_type,
+                                "Location": location
+                            }
+                            self._log(f"Carrier: {carrier} | Type: {line_type}", C.GREEN, indent=2)
+            except Exception as e:
+                self._log(f"NumVerify API Fejl: {e}", C.DIM, indent=2)
 
     def _execute_dorks(self, driver):
         formats = [
@@ -165,7 +197,10 @@ class TelecomIntelligenceEngine(BaseModule):
         self._log("FASE 1: Executing Async Caller-ID Resolution (Krak/118)...", C.CYAN)
         try:
             loop = asyncio.get_event_loop()
-            if not loop.is_running(): loop.run_until_complete(self._async_caller_id())
+            if not loop.is_running():
+                loop.run_until_complete(asyncio.gather(
+                    self._async_caller_id(),
+                    self._numverify_lookup()))
         except Exception as e:
             self._log(f"Async Caller ID failed: {e}", C.RED, indent=1)
 

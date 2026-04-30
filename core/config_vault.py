@@ -144,7 +144,7 @@ class GoliathVault:
             decrypted_data = self.cipher.decrypt(encrypted_payload)
             with self.lock:
                 self.state = json.loads(decrypted_data)
-                self.history = [self.cipher.decrypt(h.encode('utf-8')) for h in vault_content.get("history", [])]
+                self.history = [self.cipher.decrypt(h.encode('utf-8')).decode('utf-8') for h in vault_content.get("history", [])]
                 
             logger.info("🔓 Secure Vault dekrypteret og indlæst i hukommelsen.")
             
@@ -170,7 +170,7 @@ class GoliathVault:
                 
                 with self.lock:
                     self.state = state
-                    self.history = [self.cipher.decrypt(h.encode('utf-8')) for h in corrupted_content["history"][i+1:]]
+                    self.history = [self.cipher.decrypt(h.encode('utf-8')).decode('utf-8') for h in corrupted_content["history"][i+1:]]
                     self._save_to_vault(self.state)
                     
                 print(f"{C_GREEN}[+] Auto-Rollback succes! Gendannede fra historisk version {i+1}.{C_RESET}")

@@ -11,6 +11,7 @@
 
 import os
 import json
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Set, Any
@@ -32,6 +33,7 @@ class AutomatedCaseReporter:
         self.all_usernames: Set[str] = set()
         self.all_cpr: Set[str] = set()
         self.geopoints: List[Dict[str, Any]] = []
+        self.threat_intel: List[Dict[str, Any]] = []
         self.ai_summaries: List[str] = []
         self.master_score = "Ikke beregnet"
 
@@ -59,6 +61,10 @@ class AutomatedCaseReporter:
                 # Modul 10 & 34 (Netværk) Extraction for AI & GEOINT
                 if "ai_threat_assessment" in data and data["ai_threat_assessment"]:
                     self.ai_summaries.append(data["ai_threat_assessment"])
+
+                # Modul 06 (Infra) Threat Intel
+                if "threat_intel" in data and data["threat_intel"].get("malicious_votes", 0) > 0:
+                    self.threat_intel.append(data["threat_intel"])
                     
                 if "GeoData" in data and data["GeoData"].get("lat"):
                     self.geopoints.append({
@@ -119,6 +125,13 @@ class AutomatedCaseReporter:
         self._parse_loot_files(files)
         graph_json = self._build_graph_data()
         geo_json = json.dumps(self.geopoints)
+        
+        # Build Threat Intel HTML
+        threat_html = ""
+        for intel in self.threat_intel:
+            source = intel.get("source", "Unknown")
+            votes = intel.get("malicious_votes", 0)
+            threat_html += f"<li><span style='color:var(--danger)'>[!] {source}:</span> {votes} malicious detections</li>"
 
         html_content = f"""
         <!DOCTYPE html>
@@ -175,6 +188,11 @@ class AutomatedCaseReporter:
                         
                         <p style="margin-top: 15px;"><strong>Telefoner</strong> <span class="badge">{len(self.all_phones)}</span></p>
                         <ul class="list-group">{''.join([f"<li>+45 {p}</li>" for p in self.all_phones]) if self.all_phones else "<li>Ingen data</li>"}</ul>
+                    </div>
+
+                    <div class="box danger" style="border-left: 4px solid #f1c40f;">
+                        <h2 style="color: #f1c40f;">Threat Intelligence Hits</h2>
+                        <ul class="list-group">{threat_html if threat_html else "<li>Ingen kritiske hits fundet</li>"}</ul>
                     </div>
 
                     <div class="box danger">

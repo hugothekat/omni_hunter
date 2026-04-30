@@ -18,12 +18,11 @@ class OfflineDatabaseAnalyzer:
             "Hits": [], 
             "Credentials": [], 
             "Hashes": [],
-            "Cracked_Hashes": [], # NY V8 TILFØJELSE: Automatiske dekrypteringer
-            "Tokens": [],         # NY V8 TILFØJELSE: JWT og API nøgler
+            "Cracked_Hashes": [], 
+            "Tokens": [],         
             "Timestamp": datetime.now().isoformat()
         }
         
-        # Regex for at fange almindelige kryptografiske hashes i lækager
         self.hash_patterns = [
             r'\b[A-Fa-f0-9]{32}\b',           # MD5
             r'\b[A-Fa-f0-9]{40}\b',           # SHA1
@@ -31,14 +30,20 @@ class OfflineDatabaseAnalyzer:
             r'\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9\.\/]{53}' # Bcrypt
         ]
         
-        # NY V8 TILFØJELSE: Tokens og Secrets Regex
         self.token_patterns = [
             r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*', # JWT Token
             r'ghp_[a-zA-Z0-9]{36}',                                       # GitHub Token
             r'xox[baprs]-[0-9]{12}-[0-9]{12}-[a-zA-Z0-9]{24}'             # Slack Token
         ]
 
-    def run(self, driver=None): # Tilføjet driver parameter for at matche Omni-Pivot standarden
+    def run(self, driver=None, target=""):
+        if target:
+            self.target = target.strip()
+            self.data["Mål"] = self.target
+        
+        if not self.file_path:
+            self.file_path = session.get("loot_folder", "loot_evidence")
+
         print(f"\n{C.CYAN}{'='*60}\n[05] Offline Database Analyse (Ripgrep & Auto-Dehash V8)\n{'='*60}{C.RESET}")
         
         if not os.path.exists(self.file_path):
@@ -51,7 +56,6 @@ class OfflineDatabaseAnalyzer:
             print(f"{C.YELLOW}[*] Kører High-Speed scan på {os.path.basename(self.file_path)} med kontekst...{C.RESET}")
             
         try:
-            # Ripgrep (rg) er ekstremt hurtig til store filer. Vi inkluderer undermapper og zips.
             result = subprocess.run(['rg', '-z', '-i', '-m', '100', '-C', '1', self.target, self.file_path], capture_output=True, text=True)
             if result.stdout:
                 lines = result.stdout.split('\n')
@@ -61,13 +65,10 @@ class OfflineDatabaseAnalyzer:
                         print(f"{C.GREEN}    🔥 HIT: {clean_line[:150]}...{C.RESET}")
                         self.data["Hits"].append(clean_line)
                         
-                        # 1. Auto-ekstrahering af plaintext passwords (fx email:pass eller email;pass)
-                        # Tillader :, ; og | som adskiller
                         split_chars = re.split(r'[:;|]', clean_line)
                         if len(split_chars) >= 2 and self.target.lower() in split_chars[0].lower():
                             self.data["Credentials"].append({"Konto": split_chars[0].strip(), "Secret": split_chars[-1].strip()})
                             
-                        # 2. Advanced Hash Detection
                         for pattern in self.hash_patterns:
                             hashes = re.findall(pattern, clean_line)
                             for h in hashes:
@@ -75,7 +76,6 @@ class OfflineDatabaseAnalyzer:
                                     self.data["Hashes"].append(h)
                                     print(f"{C.RED}      -> KRYPTOGRAFISK HASH FUNDET: {h}{C.RESET}")
                                     
-                        # 3. NY V8: Token Detection (JWT, Github, Slack etc.)
                         for t_pat in self.token_patterns:
                             tokens = re.findall(t_pat, clean_line)
                             for t in tokens:
@@ -85,7 +85,6 @@ class OfflineDatabaseAnalyzer:
                                 
                 print(f"\n{C.YELLOW}[*] Fandt {len(self.data['Hits'])} rå matches, {len(self.data['Credentials'])} mulige passwords og {len(self.data['Hashes'])} hashes.{C.RESET}")
                 
-                # NY V8: Kør Auto-Dehash hvis vi fandt hashes!
                 if self.data["Hashes"]:
                     self._auto_dehash()
                     
@@ -98,38 +97,33 @@ class OfflineDatabaseAnalyzer:
             print(f"{C.RED}[!] Systemfejl under database scanning: {e}{C.RESET}")
             
         self.save()
+        return self.data
 
     def _auto_dehash(self):
-        """NY V8: Slår automatisk MD5 og SHA1 op i åbne databaser for at knække dem i realtid"""
         print(f"\n{C.YELLOW}[*] INITIERER AUTO-DEHASH: Forsøger at knække fundne hashes i realtid...{C.RESET}")
         
         for h in self.data["Hashes"]:
-            # MD5 er 32 tegn langt
             if len(h) == 32:
                 try:
-                    # Anvender Nitrxgen API til lynhurtigt MD5 opslag
                     res = requests.get(f"https://nitrxgen.net/md5db/{h}", timeout=5)
                     if res.status_code == 200 and res.text:
                         cracked = res.text.strip()
                         print(f"{C.RED}      💥 HASH KNÆKKET: {h} -> {cracked}{C.RESET}")
                         self.data["Cracked_Hashes"].append({"Hash": h, "Plaintext": cracked})
-                        # Vi tilføjer den også som et direkte credential
                         self.data["Credentials"].append({"Konto": self.target, "Secret": cracked, "Source": "Auto-Dehash"})
                     else:
                         print(f"{C.DIM}      [-] Kunne ikke knække MD5: {h}{C.RESET}")
                 except Exception:
                     pass
-            # Vi kan udvide med SHA1/Bcrypt API'er her senere, men MD5 er det mest almindelige i gamle leaks
             elif len(h) > 32:
                 print(f"{C.DIM}      [-] Hash typen (SHA1/SHA256/Bcrypt) er for kompleks til Auto-Dehash. Gemmes til Hashcat.{C.RESET}")
 
     def save(self):
-        os.makedirs(session["loot_folder"], exist_ok=True)
-        # Renser filnavnet for specialtegn
-        clean_target = self.target.replace('@','_at_').replace(' ', '_').replace('"', '')
-        filename = f"{session['loot_folder']}/05_OFFLINE_{clean_target}.json"
+        folder = session.get("loot_folder", "loot_evidence")
+        os.makedirs(folder, exist_ok=True)
+        clean_target = sanitize_filename(self.target.replace('@','_at_'))
+        filename = f"{folder}/05_OFFLINE_{clean_target}.json"
         
-        # NY V8: Sikker overskrivning af fil
         if os.path.exists(filename):
             try:
                 os.remove(filename)

@@ -17,6 +17,7 @@ import os
 import random
 import time
 import re
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
@@ -195,11 +196,15 @@ class SeleniumBrowser:
         if self.config.headless:
             options.add_argument("--headless=new")
         
+        # Fix for Chrome binary path in some environments
+        chrome_path = shutil.which("google-chrome") or shutil.which("chrome")
+        if chrome_path:
+            options.binary_location = chrome_path
+
         proxy = self.proxy_manager.get_next_proxy()
         if proxy:
             proxy_clean = proxy.split('://')[1] if '://' in proxy else proxy
             options.add_argument(f"--proxy-server={'socks5://' if 'socks5' in proxy else 'http://'}{proxy_clean}")
-            
         options.add_argument(f"user-agent={self.config.user_agent or get_random_user_agent()}")
         options.add_argument("--disable-popup-blocking")
         options.add_argument("--disable-notifications")
@@ -208,7 +213,11 @@ class SeleniumBrowser:
         if "chrome" in self.config.browser_type.lower():
             driver = uc.Chrome(options=options)
         else:
-            driver = webdriver.Chrome(options=options)
+            try:
+                from selenium.webdriver.chrome.service import Service
+                driver = webdriver.Chrome(options=options)
+            except Exception:
+                driver = uc.Chrome(options=options)
 
         # Deep Evasion
         if self.config.anti_detection:
@@ -396,25 +405,35 @@ class RequestsBrowser:
 
 # ====================== MAIN BROWSER FACTORY ======================
 class OmniHunterBrowser:
-    def __init__(self, use_tor=False, captcha_key=None):
-        self.use_tor = use_tor
-        self.captcha_key = captcha_key
-        self.driver = None  # Selenium/Playwright driver
-
-    def get(self, url):
-        if self.use_tor:
-            pass
-        response = requests.get(url)
-        return response
-
+    def __init__(self, config: Optional[BrowserConfig] = None):
+        self.config = config or BrowserConfig()
+        self.logger = logging.getLogger("OmniHunterBrowser")
+        self.browser = None
+        self.tor_manager = TORManager(self.config) if self.config.proxy and "9050" in self.config.proxy else None
 
     def _select_best_browser(self) -> Union[SeleniumBrowser, PlaywrightBrowser, RequestsBrowser]:
-        if "chrome" in self.config.browser_type.lower():
+        if self.config.browser_type == "requests":
+            return RequestsBrowser(self.config)
+        elif "chrome" in self.config.browser_type.lower():
             return SeleniumBrowser(self.config)
         elif self.config.browser_type in ["chromium", "firefox", "webkit"]:
             return PlaywrightBrowser(self.config)
         else:
             return RequestsBrowser(self.config)
+
+    def get(self, url: str) -> Dict[str, Any]:
+        """Backwards compatibility wrapper for fetch."""
+        return self.fetch(url)
+
+    def rotate_ip(self):
+        """Trigger TOR IP rotation if enabled."""
+        if self.tor_manager:
+            self.tor_manager.new_identity()
+            if isinstance(self.browser, SeleniumBrowser):
+                self.browser.close()
+                self.browser.start()
+            return True
+        return False
 
     def start(self) -> None:
         self.browser = self._select_best_browser()

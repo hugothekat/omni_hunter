@@ -26,6 +26,7 @@ import cv2
 import pytesseract
 import fitz  # PyMuPDF
 from PIL import Image
+from PIL import UnidentifiedImageError
 from PIL.ExifTags import TAGS
 
 from core.base_module import BaseModule, ModuleCategory
@@ -189,6 +190,8 @@ class AutoForensicMassScanner(BaseModule):
                         hex_string.append(hex(decimal_value)[2:].rjust(2, '0'))
                         decimal_value = 0
                 return ''.join(hex_string)
+        except (UnidentifiedImageError, OSError):
+            return None
         except Exception:
             return None
 
@@ -288,7 +291,7 @@ class AutoForensicMassScanner(BaseModule):
             if "image" in res["mime"]:
                 if res["mime"] in ["image/jpeg", "image/jpg"]:
                     eof_idx = f_bytes.rfind(b"\xff\xd9")
-                    if eof_idx != -1 and eof_idx + 2 < len(f_bytes):
+                    if eof_idx != -1 and (len(f_bytes) - (eof_idx + 2)) > 10:
                         if "Steganografi_Advarsel" not in res["meta"]:
                             res["meta"]["Steganografi_Advarsel"] = f"Fundet {len(f_bytes) - (eof_idx + 2)} skjulte bytes bag EOF!"
 
@@ -554,6 +557,8 @@ class AutoForensicMassScanner(BaseModule):
                         elif decoded in ['DateTime', 'Make', 'Model']: 
                             meta[decoded] = str(value)
         except Exception: pass
+        except (UnidentifiedImageError, OSError):
+            pass
         return meta
 
     def _get_gps_link(self, gps_info):

@@ -25,12 +25,14 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from selenium.webdriver.common.by import By
+from core.base_module import BaseModule, ModuleCategory
 
 from core.utils import C, session, extract_danish_phones
 from core.network import omni_dork_search, safe_get_with_retry
 
-class SocialMediaProfiler:
-    def __init__(self, username):
+class SocialMediaProfiler(BaseModule):
+    def __init__(self, username=""):
+        super().__init__()
         self.username = username.strip()
         self.full_name = username if " " in username else None
         self.clean_user = self.username.replace(" ", "").lower()
@@ -67,7 +69,11 @@ class SocialMediaProfiler:
         sys.stdout.write(f"{C.MAGENTA}    [PHANTOM-V30] {message}... {C.BOLD}{pct}%{C.RESET}")
         sys.stdout.flush()
 
-    def run(self, driver):
+    def run(self, driver, target=""):
+        if target:
+            self.username = target.strip()
+            self.full_name = self.username if " " in self.username else None
+            self.clean_user = self.username.replace(" ", "").lower()
         print(f"\n{C.BG_RED}{C.WHITE} {'='*100} {C.RESET}")
         print(f"{C.BG_RED}{C.WHITE} [04] GOLIATH V30: PHANTOM SOCIAL PROFILER (ASYNC MATRIX) {'='*41} {C.RESET}")
         self._log(f"Target Acquired: {self.username} (Clean: {self.clean_user})", C.YELLOW)

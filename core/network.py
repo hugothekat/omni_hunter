@@ -15,6 +15,7 @@ import dns.resolver
 import dns.exception
 import concurrent.futures
 import json
+import sys
 import csv
 import time
 import logging
@@ -205,11 +206,12 @@ class NetworkScanner:
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             executor.submit(get_shodan)
 
-    # [FEJL RETTET: INDRYKNING FIXET HER!]
     def enumerate_subdomains_passive(self) -> List[str]:
         """NYT: Finder subdomæner passivt via Native Certificate Transparency Engine."""
         logger.info("[*] Udfører passiv subdomain enumeration (Native CRT)...")
-        if not self.domain or self.domain == self.ip: return []
+        if not self.domain or self.domain == self.ip:
+            logger.warning("Ingen domæne fundet eller målet er en IP. Springer passiv scan over.")
+            return []
 
         try:
             if CertificateIntelligenceEngine:
@@ -233,11 +235,13 @@ class NetworkScanner:
         logger.info("[*] Starter Asynkron Subdomain Bruteforce...")
         if not self.domain or self.domain == self.ip: return []
         
-        wordlist_path = wordlist or str(Path(__file__).parent / "wordlists" / "subdomains.txt")
-        if not Path(wordlist_path).exists(): return []
-
-        with open(wordlist_path, "r") as f:
-            words = [line.strip() for line in f if line.strip()]
+        wordlist_path = Path(wordlist) if wordlist else Path(__file__).parent.parent / "wordlists" / "subdomains.txt"
+        if not wordlist_path.exists():
+            # Fallback til en minimal liste hvis filen mangler
+            words = ["www", "mail", "remote", "blog", "webmail", "server", "ns1", "ns2", "smtp", "vpn", "m", "dev"]
+            logger.warning(f"Wordlist {wordlist_path} ikke fundet. Bruger intern fallback.")
+        else:
+            words = [line.strip() for line in wordlist_path.read_text().splitlines() if line.strip()]
 
         found = set(self.results.subdomains)
         loop = asyncio.get_event_loop()
@@ -265,7 +269,11 @@ class NetworkScanner:
         if not self.ip: return
         try:
             nm = nmap.PortScanner()
-            nm.scan(self.ip, arguments='-Pn -sV -p 80,443,8080')
+            # Tjekker om vi kører som root for mere avancerede scans
+            args = '-Pn -sV -T4 --top-ports 100'
+            if os.geteuid() == 0: args += ' -sS'
+            
+            nm.scan(self.ip, arguments=args)
             for host in nm.all_hosts():
                 for proto in nm[host].all_protocols():
                     lport = nm[host][proto].keys()
@@ -284,11 +292,15 @@ class NetworkScanner:
             executor.submit(self.enumerate_subdomains_passive)
             executor.submit(self.fetch_threat_intel)
 
+        # Kør asynkron bruteforce
         try:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(self.subdomain_bruteforce_async())
+            if sys.version_info >= (3, 7):
+                asyncio.run(self.subdomain_bruteforce_async())
+            else:
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(self.subdomain_bruteforce_async())
         except Exception as e:
-            logger.error(f"Async operations fejlede: {e}")
+            logger.error(f"Async Subdomain Bruteforce fejlede: {e}")
 
         self.scan_with_nmap()
         return asdict(self.results)

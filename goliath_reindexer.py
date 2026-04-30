@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-🚀 GOLIATH V36: AUTONOMOUS MASS RE-INDEXER
-📌 Formål: Omdøber intelligent alle mod_XX.py filer i sekventiel rækkefølge, 
-og opdaterer alle interne import-referencer i `core/` og tværgående moduler.
-"""
 import os
 import glob
 import re

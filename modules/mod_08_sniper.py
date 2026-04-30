@@ -6,10 +6,11 @@ import itertools
 import re
 from datetime import datetime
 from pathlib import Path
-from core.utils import C, session
+from core.base_module import BaseModule, ModuleCategory
+from core.utils import C, session, datalake
 
 # Omdøbt fra GoliathSniperEngine til SniperModule for kompatibilitet med Modul 02 Pivot
-class SniperModule:
+class SniperModule(BaseModule):
     """Universal og interaktiv wordlist generator med avanceret mangling (GOLIATH V8)."""
     
     # Opdateret init for at tillade Pivot kald (name, email) OG manuelt kald
@@ -17,6 +18,10 @@ class SniperModule:
         self.target_name = name.strip()
         self.email = email.strip()
         self.city = city.strip()
+        
+        super().__init__()
+        self.name = "SNIPER WORDLIST GENERATOR"
+        self.category = ModuleCategory.FORENSICS
         self.cpr = cpr.replace("-", "").strip()
         self.clues = [c.strip() for c in clues.split(",") if c.strip()]
         
@@ -32,10 +37,10 @@ class SniperModule:
         
         self.leaked_passwords = set() # NY V8 TILFØJELSE: Til tidligere passwords
 
-    def run(self, driver=None):
+    def run(self, driver=None, target=""):
         """NY V8: Standard run() funktion for Omni-Pivot integration"""
         print(f"\n{C.CYAN}{'='*60}\n[17] GOLIATH SNIPER (Targeted Password Profiling V8)\n{'='*60}{C.RESET}")
-        print(f"[*] Initialiserer Sniper Profiling for: {self.target_name.upper()}")
+        print(f"[*] Initialiserer Sniper Profiling for: {self.target_name.upper() if self.target_name else target.upper()}")
         
         # Udfører data ingestion på tværs af moduler
         if self.json_folder:
@@ -177,6 +182,15 @@ class SniperModule:
         with open(path, "w", encoding="utf-8") as f:
             for w in final:
                 f.write(f"{w}\n")
+
+        # Ingest metadata til datalake
+        self.data = {
+            "Target": self.target_name,
+            "Wordlist_Path": path,
+            "Word_Count": len(final),
+            "Timestamp": datetime.now().isoformat()
+        }
+        datalake.ingest(self.name, self.target_name, self.data)
                 
         print(f"{C.GREEN}[✓] WORDLIST KLAR: {path} ({len(final)} unikke, målrettede kombinationer){C.RESET}")
         

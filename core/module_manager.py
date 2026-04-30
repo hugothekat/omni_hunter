@@ -38,11 +38,11 @@ class ModuleManager:
             
             try:
                 spec = importlib.util.spec_from_file_location(mod_name, file)
+                if spec is None or spec.loader is None:
+                    continue
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[mod_name] = module
                 spec.loader.exec_module(module)
-                
-                module_found = False
                 for attr_name in dir(module):
                     attr = getattr(module, attr_name)
                     if isinstance(attr, type) and attr.__module__ == mod_name:
@@ -55,10 +55,8 @@ class ModuleManager:
                                 "name": getattr(attr, 'name', attr_name),
                                 "file_path": str(file)
                             }
-                            module_found = True
                             break
-                
-                if not module_found:
+                else:
                     self.quarantine[mod_id] = {"file": file.name, "error": "Mangler run() funktion."}
                     
             except SyntaxError as e:

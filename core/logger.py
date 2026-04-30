@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from core.utils import session
 
 class OpsecFormatter(logging.Formatter):
@@ -37,10 +38,10 @@ class OpsecFormatter(logging.Formatter):
 
 def setup_logger():
     # Sikrer at log-mappen eksisterer pænt inde i dit loot-miljø
-    loot_dir = session.get("loot_folder", "loot_evidence")
-    log_dir = os.path.join(loot_dir, "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    
+    loot_dir = Path(session.get("loot_folder", "loot_evidence"))
+    log_dir = loot_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
     log_file = os.path.join(log_dir, "goliath_audit_trail.log")
 
     # Udvidet V8 Formatter (Inkluderer nu præcist linjenummer for lynhurtig debugging)

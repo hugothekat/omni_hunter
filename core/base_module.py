@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, Any, Optional
 import sys
+import json
 from datetime import datetime
 
 class ModuleCategory(Enum):
@@ -40,3 +41,14 @@ class BaseModule(ABC):
     def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
         """Selve eksekverings-motoren. SKAL overskrives af child-klassen."""
         pass
+
+    def save_to_loot(self, filename: str) -> None:
+        """Standardiseret metode til at gemme modul-data i loot-mappen."""
+        from core.utils import session, datalake
+        import os
+        loot_dir = session.get("loot_folder", "loot_evidence")
+        os.makedirs(loot_dir, exist_ok=True)
+        path = os.path.join(loot_dir, filename)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, indent=4, ensure_ascii=False)
+        self._log(f"Data arkiveret: {path}", '\033[92m')

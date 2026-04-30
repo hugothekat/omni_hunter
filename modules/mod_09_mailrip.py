@@ -6,6 +6,7 @@ import json
 import re
 import time
 from email.header import decode_header
+from email.utils import parsedate_to_datetime
 from datetime import datetime
 from pathlib import Path
 from core.utils import C, session
@@ -124,11 +125,18 @@ class GoliathMailRipper:
         if isinstance(subject, bytes): 
             subject = subject.decode(encoding or "utf-8", errors="ignore")
         
+        # Extract date for sorting/naming
+        date_str = msg.get("Date")
+        try:
+            dt = parsedate_to_datetime(date_str)
+            date_prefix = dt.strftime("%Y%m%d_%H%M")
+        except Exception:
+            date_prefix = "00000000_0000"
+
         safe_subject = "".join([c for c in str(subject) if c.isalnum() or c in (' ', '_')]).rstrip()
         folder_path = os.path.join(self.save_dir, folder.replace("/", "_"))
         os.makedirs(folder_path, exist_ok=True)
-        
-        file_path = os.path.join(folder_path, f"{mid}_{safe_subject[:50]}.txt")
+        file_path = os.path.join(folder_path, f"{date_prefix}_{mid}_{safe_subject[:50]}.txt")
         
         full_text_content = ""
         
