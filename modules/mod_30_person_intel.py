@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-🚀 OMNI_HUNTER V36: THE APEX JUGGERNAUT ORCHESTRATOR
-📌 Formål: Total Identity Resolution, Recursive Pivoting, Breach Hunting & AI Fusion.
+🚀 OMNI_HUNTER V39: THE APEX JUGGERNAUT ORCHESTRATOR (PET/FE EDITION)
+📌 Formål: Total Identity Resolution, Breach Hunting, Async Enumeration & Pydantic Scoring.
 OPERATIONAL SPECIFICATIONS:
-- 10-Phase Autonomous Intelligence Pipeline.
-- Historical Data Lake Correlation.
-- Recursive Clearnet Dorking & Footprint Tracking.
-- Native Asynchronous Breach API Matrix (HIBP, XposedOrNot, LeakCheck).
-- Native Darkweb Proxy Recon (Ahmia scrape).
-- Threaded Omni-Pivot.
+- Pydantic Multi-Dimensional Confidence Scoring (Identity, Exposure, Footprint, Physical).
+- Phase 1: Asynchronous SMTP MX Email Generation & Validation.
+- Phase 2.5: Danish Gov Dorking (Statstidende, Tinglysning).
+- Phase 2.8: Async Social Media Enumeration (Sherlock-style integration).
+- Phase 4: Integrated Breach API Matrix & Darknet Recon.
+- Threaded Omni-Pivot & Historical Data Lake Correlation.
 """
 
 import sys
@@ -19,12 +19,19 @@ import time
 import json
 import os
 import re
+import random
 import urllib.parse
 import threading
 import concurrent.futures
+import smtplib
+import dns.resolver
+import asyncio
+import aiohttp
 from datetime import datetime
 from typing import Dict, Any, List, Set, Optional
+from enum import Enum
 
+from pydantic import BaseModel, Field
 import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -47,15 +54,121 @@ try:
 except ImportError:
     nexus = None
 
+# =========================================================================
+# ADVANCED PYDANTIC SCORING MODELS (INTELLIGENCE GRADE)
+# =========================================================================
+class DataType(str, Enum):
+    CREDENTIALS = "credentials"
+    PII = "PII"
+    FINANCIAL = "financial_data"
+    MEDICAL = "medical_data"
+    SOCIAL = "social_media"
+    GEOINT = "geospatial_data"
+
+class BreachSeverity(BaseModel):
+    score: float = Field(..., ge=0.0, le=1.0)
+    rationale: List[str]
+
+class IntelligenceScores(BaseModel):
+    identity_confidence: float = Field(..., ge=0.0, le=1.0)
+    exposure_threat: float = Field(..., ge=0.0, le=1.0)
+    digital_footprint: float = Field(..., ge=0.0, le=1.0)
+    physical_trace: float = Field(..., ge=0.0, le=1.0)
+    overall_threat_index: float = Field(..., ge=0.0, le=1.0)
+    intelligence_grade: str
+
+def calculate_breach_severity(breach_data: Dict) -> BreachSeverity:
+    """Beregner severity-score for et specifikt datalæk baseret på PET-FE metrikker."""
+    severity_weights = {
+        DataType.CREDENTIALS: 0.9,
+        DataType.PII: 0.7,
+        DataType.FINANCIAL: 0.8,
+        DataType.MEDICAL: 0.6,
+        DataType.SOCIAL: 0.5,
+        DataType.GEOINT: 0.75
+    }
+
+    base_score = severity_weights.get(DataType(breach_data.get("data_type", "PII")), 0.5)
+    breach_count = breach_data.get("breach_count", 1)
+    count_multiplier = min(1.0, breach_count * 0.1)
+
+    source = breach_data.get("source", "clearnet")
+    source_weights = {"darkweb": 1.2, "underground": 1.3, "clearnet": 1.0}
+    source_multiplier = source_weights.get(source, 1.0)
+
+    final_score = min(1.0, base_score * count_multiplier * source_multiplier)
+    rationale = [
+        f"Base score: {base_score:.2f} (type={breach_data.get('data_type', 'PII')})",
+        f"Count multiplier: {count_multiplier:.2f} (count={breach_count})",
+        f"Source multiplier: {source_multiplier:.2f} (source={source})",
+    ]
+    return BreachSeverity(score=final_score, rationale=rationale)
+
+def calculate_intelligence_matrix(intel_data: Dict) -> IntelligenceScores:
+    """Beregner den overordnede multi-dimensionelle GOLIATH Intelligence Grade."""
+    # 1. Identity Confidence
+    id_score = 0.0
+    if intel_data.get("Fundne_Emails"): id_score += 0.4
+    if intel_data.get("Telefonnumre"): id_score += 0.3
+    if intel_data.get("CPR_Fragments"): id_score += 0.3
+    if intel_data.get("Nummerplader"): id_score += 0.1
+    id_score = min(1.0, id_score)
+
+    # 2. Exposure Threat
+    exp_score = 0.0
+    breaches = intel_data.get("Scored_Breaches", [])
+    if breaches:
+        breach_severity = sum(b.get("severity", {}).get("score", 0) for b in breaches) / len(breaches)
+        exp_score = min(1.0, breach_severity * 0.8)
+    if intel_data.get("Darkweb_Spor"): exp_score = min(1.0, exp_score + 0.3)
+
+    # 3. Digital Footprint (Opgraderet til at inddrage Async Enumeration)
+    footprint = 0.0
+    if intel_data.get("Footprint_Spor") or intel_data.get("Fundne_Brugernavne"): footprint += 0.4
+    if intel_data.get("Verified_Social_Profiles"): footprint += 0.4 # Ekstra point for rigtige profiler
+    if intel_data.get("Kryptovaluta_Wallets"): footprint += 0.3
+    if intel_data.get("Eksponerede_Dokumenter"): footprint += 0.2
+    footprint = min(1.0, footprint)
+
+    # 4. Physical Trace
+    physical = 0.0
+    if intel_data.get("Virk_Links"): physical += 0.4
+    if intel_data.get("Tidslinje_Bopæl"): physical += 0.5
+    if intel_data.get("Netværk_Associates"): physical += 0.2
+    physical = min(1.0, physical)
+
+    # Overall Index
+    overall = (id_score * 0.4) + (exp_score * 0.3) + (footprint * 0.15) + (physical * 0.15)
+    
+    # Intelligence Grade
+    grade = "F"
+    if overall >= 0.85: grade = "A"
+    elif overall >= 0.70: grade = "B"
+    elif overall >= 0.50: grade = "C"
+    elif overall >= 0.30: grade = "D"
+
+    return IntelligenceScores(
+        identity_confidence=id_score,
+        exposure_threat=exp_score,
+        digital_footprint=footprint,
+        physical_trace=physical,
+        overall_threat_index=overall,
+        intelligence_grade=grade
+    )
+
+# =========================================================================
+# THE APEX JUGGERNAUT CORE
+# =========================================================================
 class AutonomousOrchestrator(BaseModule):
     def __init__(self) -> None:
         super().__init__()
-        self.name = "APEX ORCHESTRATOR (Identity Resolution, Breach & Omni-Pivot)"
-        self.description = "Autonom 10-faset identitets-kortlægning, breach hunting og AI-integration."
+        self.name = "APEX ORCHESTRATOR (Identity Resolution, Async Enum & Omni-Pivot)"
+        self.description = "Autonom 10-faset identitets-kortlægning, SMTP validering og Pydantic Matrix."
         self.category = ModuleCategory.PERSON
         self.print_lock = threading.Lock()
         
         self.target_name: str = ""
+        self.target_domain: str = ""
         self.max_recursion_depth: int = 2
         self.seen_targets: Set[str] = set()
         self.noise_domains = ["microsoft.com", "outlook.office", "support.google", "login.live", "wikipedia.org", "eniro.dk"]
@@ -64,9 +177,11 @@ class AutonomousOrchestrator(BaseModule):
         
         self.intel_pool: Dict[str, Any] = {
             "Mål": "",
-            "Gættede_Aliaser": set(),
+            "Domæne": "",
+            "Genererede_Aliaser": set(),
             "Fundne_Emails": set(),
             "Fundne_Brugernavne": set(),
+            "Verified_Social_Profiles": [], # NY V39: Async Enumeration resultater
             "Telefonnumre": set(),
             "Nummerplader": set(),
             "MAC_Adresser": set(),
@@ -75,34 +190,29 @@ class AutonomousOrchestrator(BaseModule):
             "Kryptovaluta_Wallets": set(),
             "IP_Adresser": set(),
             "CPR_Fragments": set(),
-            "Tidslinje_Bopæl": [],
-            "Confidence_Score": 0,
+            "Tidslinje_Bopæl": set(),
+            "Netværk_Associates": set(),
             
-            # --- NYT V36: NATIVE BREACH & FOOTPRINT DATA ---
             "Breach_Data": {
                 "Total_Verified_Breaches": 0,
                 "Lækkede_Passwords_Fundet": False,
                 "Breach_Sources": set(),
                 "Eksponerede_Data_Typer": set(),
-                "Verified_Databases": {
-                    "HIBP": [], "XposedOrNot": [], "BreachDirectory": [], "LeakCheck": []
-                }
+                "Verified_Databases": {"HIBP": [], "XposedOrNot": [], "BreachDirectory": [], "LeakCheck": []}
             },
+            "Scored_Breaches": [],
+            
             "Underground_Syndicates": {
-                "Hacker_Forums": set(),
-                "Paste_Dumps": set(),
-                "GitHub_GitLab_Dev": set(),
-                "Telegram_Channels": set(),
-                "Cloud_Trello_Docs": set(),
-                "Reddit_Dox_Mentions": set(),
-                "Infostealer_Logs": set()
+                "Hacker_Forums": set(), "Paste_Dumps": set(), "GitHub_GitLab_Dev": set(),
+                "Telegram_Channels": set(), "Cloud_Trello_Docs": set(), "Reddit_Dox_Mentions": set(), "Infostealer_Logs": set()
             },
             "Footprint_Spor": set(),
             "Darkweb_Spor": set(),
             
+            "Intelligence_Matrix": {}, 
             "Metadata": {
                 "Timestamp": datetime.now().isoformat(),
-                "Software": "GOLIATH V36 APEX JUGGERNAUT ORCHESTRATOR"
+                "Software": "GOLIATH V39 APEX JUGGERNAUT ORCHESTRATOR"
             }
         }
 
@@ -115,62 +225,61 @@ class AutonomousOrchestrator(BaseModule):
             sys.stdout.write(f"\r{C.DIM}[{ts}]{C.RESET} {prefix}[{color}{level}{C.RESET}] {message}\n")
 
     def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
-        self.target_name = target.strip()
-        if not self.target_name:
+        raw_input = target.strip() if target else session.get("name", "")
+        if not raw_input:
             self._log("Ingen target angivet. Afbryder.", "ERROR")
             return self.data
-            
+
+        if "," in raw_input:
+            parts = raw_input.split(",")
+            self.target_name = parts[0].strip()
+            self.target_domain = parts[1].strip().replace("@", "")
+        else:
+            self.target_name = raw_input
+
         self.intel_pool["Mål"] = self.target_name
+        self.intel_pool["Domæne"] = self.target_domain
         self.seen_targets.add(self.target_name.lower())
         
-        print(f"\n{C.BG_RED}{C.WHITE} === THE APEX JUGGERNAUT ORCHESTRATOR ENGAGED === {C.RESET}\n")
-        self._log(f"Initiating Global Identity Resolution Sequence for: {self.target_name}", "INFO")
+        print(f"\n{C.BG_RED}{C.WHITE} === THE APEX JUGGERNAUT ORCHESTRATOR V39 ENGAGED === {C.RESET}\n")
+        self._log(f"Initiating Identity Sequence for: {self.target_name} (Domain: {self.target_domain or 'N/A'})", "INFO")
 
-        # FASE 0: Data Lake Correlation
         self._phase_0_historical_lake()
-
-        # FASE 1: Alias Permutations
-        self._phase_1_generate_permutations()
-
-        # FASE 2: Recursive Clearnet Dorking
+        self._phase_1_generate_and_smtp_validate()
         self._log("FASE 2: Executing Recursive Clearnet Intelligence Sweep...", "INFO")
         self._phase_2_recursive_dorking(driver, self.target_name, current_depth=0)
 
-        # FASE 3: CVR/Virk Bopæls-historik
+        # FASE 2.8: NATIVE ASYNC SOCIAL ENUMERATION
+        self._log("FASE 2.8: Executing Async Username Enumeration (Sherlock-Protocol)...", "INFO")
+        self._phase_2_8_async_social_enumeration()
+
         if self.intel_pool["Virk_Links"]:
-            self._log("FASE 3: Extracting historical residency data (CVR/Virk)...", "INFO")
+            self._log("FASE 3: Extracting historical residency & associate data (CVR/Virk)...", "INFO")
             for link in list(self.intel_pool["Virk_Links"])[:3]: 
                 self._phase_3_virk_pivot(driver, link)
 
-        # --- NATIVE FASE 4: INTEGRERET BREACH, FOOTPRINT & DARKWEB PIPELINE ---
         if self.intel_pool["Fundne_Emails"]:
             self._log("FASE 4: INITIATING NATIVE BREACH & FOOTPRINT AUDIT", "CRITICAL")
             self._phase_4_breach_and_footprint(driver)
         else:
-            self._log("Ingen emails fundet. Bypasser Breach & Footprint Audit.", "WARN")
+            self._log("Ingen emails fundet. Bypasser Breach Audit.", "WARN")
 
-        # FASE 5: Vurdering
-        self._phase_5_confidence_scoring()
+        self._phase_5_pydantic_scoring()
         self._print_intel_summary()
 
-        # FASE 6: THREADED OMNI-PIVOT (Eksterne moduler)
         self._log("FASE 6: INITIATING PARALLEL OMNI-PIVOT ENGINE", "SUCCESS")
         self._phase_6_threaded_omni_pivot(driver)
 
-        # FASE 7: AI & VISUALIZATION
         self._log("FASE 7: Finalizing Intelligence Models (AI, Graph & GEOINT)", "INFO")
         self._phase_7_finalize_models()
-
-        # FASE 8: Archiving
         self._phase_8_archive()
         
         self._log("MISSION COMPLETE. Apex Orchestrator Disengaging.", "SUCCESS")
         return self.intel_pool
 
     # =========================================================================
-    # DE DRIFTSFASER
+    # FASE 1: NATIVE EMAIL GENERATION & SMTP VALIDATION 
     # =========================================================================
-
     def _phase_0_historical_lake(self) -> None:
         self._log("FASE 0: Cross-referencing Target in OmniDataLake...", "INFO")
         try:
@@ -180,16 +289,53 @@ class AutonomousOrchestrator(BaseModule):
                     self._log(f"Found {len(records)} previous occurrences in Intelligence Database!", "SUCCESS", indent=1)
         except Exception: pass
 
-    def _phase_1_generate_permutations(self) -> None:
+    def _phase_1_generate_and_smtp_validate(self) -> None:
+        self._log("FASE 1: Generating Permutations & SMTP Verification...", "INFO")
+        
         parts = self.target_name.lower().split()
         if len(parts) >= 2:
             f, l = parts[0], parts[-1]
             yr = str(datetime.now().year)[-2:] 
-            aliases = [f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", f"{f}_{l}", f"{f}{l}123", f"{f}{l}{yr}"]
-            for a in aliases: 
-                self.intel_pool["Gættede_Aliaser"].add(a)
-        self._log(f"FASE 1: Genereret {len(self.intel_pool['Gættede_Aliaser'])} Alias-permutationer.", "SUCCESS", indent=1)
+            aliases = [f"{f}{l}", f"{f}.{l}", f"{f[0]}{l}", f"{f}{l[0]}", f"{f}_{l}", f"{f}{l}123", f"{f}{l}{yr}", f"{f}{l}88", f"{f}{l}99"]
+            for a in aliases: self.intel_pool["Genererede_Aliaser"].add(a)
 
+        if self.target_domain and len(parts) >= 2:
+            self._log(f"Resolving MX Records for {self.target_domain}...", "PIVOT", indent=1)
+            f, l = parts[0], parts[-1]
+            patterns = [
+                f"{f}@{self.target_domain}", f"{l}@{self.target_domain}", f"{f}.{l}@{self.target_domain}",
+                f"{f[0]}{l}@{self.target_domain}", f"{f}{l[0]}@{self.target_domain}", f"{f[0]}.{l}@{self.target_domain}",
+                f"kontakt@{self.target_domain}", f"info@{self.target_domain}"
+            ]
+            
+            try:
+                records = dns.resolver.resolve(self.target_domain, 'MX')
+                mx_record = str(records[0].exchange)
+                
+                def _verify_smtp(email: str):
+                    try:
+                        time.sleep(random.uniform(0.1, 0.5)) 
+                        server = smtplib.SMTP(timeout=4)
+                        server.connect(mx_record)
+                        server.helo(server.local_hostname)
+                        server.mail('admin@google.com')
+                        code, _ = server.rcpt(email)
+                        server.quit()
+                        if code == 250:
+                            with self.print_lock:
+                                self.intel_pool["Fundne_Emails"].add(email)
+                                self._log(f"SMTP HIT: {email} exists on server!", "SUCCESS", indent=2)
+                    except Exception: pass
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    futures = [executor.submit(_verify_smtp, mail) for mail in patterns]
+                    concurrent.futures.wait(futures)
+            except Exception as e:
+                self._log(f"MX Resolution failed for {self.target_domain}: {e}", "WARN", indent=1)
+
+    # =========================================================================
+    # FASE 2 & 2.8: RECURSIVE DORKING & ASYNC SOCIAL ENUMERATION
+    # =========================================================================
     def _phase_2_recursive_dorking(self, driver: Any, target: str, current_depth: int) -> None:
         if current_depth > self.max_recursion_depth: return
         self._log(f"[DEPTH {current_depth}] Sweeping vectors for: {target}", "PIVOT", indent=current_depth)
@@ -200,17 +346,19 @@ class AutonomousOrchestrator(BaseModule):
             f'"{target}" site:instagram.com OR site:tiktok.com OR site:linkedin.com',
             f'"{target}" site:github.com OR site:reddit.com OR site:pastebin.com',
             f'"{target}" site:virk.dk OR site:proff.dk OR site:ownr.dk',
+            f'"{target}" site:tinglysning.dk OR site:statstidende.dk', 
             f'"{target}" ext:pdf OR ext:docx OR ext:xls OR ext:txt'
         ]
+        
+        if self.target_domain: queries.append(f'"{target}" "{self.target_domain}"')
 
-        all_hits = []
-        collected_text = ""
+        all_hits, collected_text = [], ""
 
         def run_dork(q: str) -> List[Dict]:
             try: return omni_dork_search(driver, q, max_links=4)
             except Exception: return []
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(run_dork, q) for q in queries]
             for future in concurrent.futures.as_completed(futures):
                 hits = future.result()
@@ -239,6 +387,55 @@ class AutonomousOrchestrator(BaseModule):
             self._log(f"Auto-Pivot Triggered on new identifier: {nt}", "SUCCESS", indent=current_depth+1)
             self._phase_2_recursive_dorking(driver, nt, current_depth + 1)
 
+    def _phase_2_8_async_social_enumeration(self) -> None:
+        """Kører et 'Sherlock'-style asynkront tjek på alle aliaser/usernames på tværs af sociale medier."""
+        # Saml alle potentielle brugernavne og aliaser
+        potential_usernames = list(self.intel_pool["Genererede_Aliaser"].union(self.intel_pool["Fundne_Brugernavne"]))
+        if not potential_usernames: return
+        
+        # Max 10 brugernavne for at holde performance i top
+        potential_usernames = potential_usernames[:10]
+        
+        social_platforms = {
+            "GitHub": "https://github.com/{}",
+            "Reddit": "https://www.reddit.com/user/{}",
+            "Twitter": "https://nitter.net/{}", # Bruger Nitter proxy for at undgå X login-wall
+            "Instagram": "https://www.instagram.com/{}/",
+            "Pinterest": "https://www.pinterest.com/{}/",
+            "Vimeo": "https://open.spotify.com/user/{}", # Spotify wrapper
+            "Patreon": "https://www.patreon.com/{}"
+        }
+
+        async def check_profile(session: aiohttp.ClientSession, platform: str, url: str, username: str):
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            try:
+                async with session.get(url, headers=headers, timeout=5) as response:
+                    if response.status == 200:
+                        # Dobbelt-tjek mod false positives (nogle sider returnerer 200 for 404 sider)
+                        text = await response.text()
+                        if "not found" not in text.lower() and "doesn't exist" not in text.lower():
+                            with self.print_lock:
+                                profile = {"platform": platform, "url": url, "username": username}
+                                self.intel_pool["Verified_Social_Profiles"].append(profile)
+                                self._log(f"Active Profile Found: {platform} -> {username}", "SUCCESS", indent=2)
+            except Exception: pass
+
+        async def run_async_enum():
+            async with aiohttp.ClientSession() as session:
+                tasks = []
+                for username in potential_usernames:
+                    for platform, url_template in social_platforms.items():
+                        url = url_template.format(username)
+                        tasks.append(check_profile(session, platform, url, username))
+                await asyncio.gather(*tasks)
+
+        # Kør asynkron event loop
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_running(): loop.run_until_complete(run_async_enum())
+        except Exception as e:
+            self._log(f"Async Enumeration Error: {e}", "WARN", indent=1)
+
     def _ingest_iocs(self, iocs: Dict, phones: Set[str], hits: List[Dict], source_target: str) -> None:
         with self.print_lock:
             self.intel_pool["Fundne_Emails"].update(iocs.get("email", []))
@@ -255,8 +452,10 @@ class AutonomousOrchestrator(BaseModule):
                 url = hit['url']
                 h_match = re.search(r'(?:instagram\.com|tiktok\.com\/@|twitter\.com|github\.com)\/([a-zA-Z0-9._-]+)', url)
                 if h_match: self.intel_pool["Fundne_Brugernavne"].add(h_match.group(1))
-                if any(x in url for x in ["virk.dk", "ownr.dk", "proff.dk"]): self.intel_pool["Virk_Links"].add(url)
-                if url.lower().endswith(('.pdf', '.docx', '.xls', '.txt')): self.intel_pool["Eksponerede_Dokumenter"].add(url)
+                if any(x in url for x in ["virk.dk", "ownr.dk", "proff.dk", "statstidende.dk", "tinglysning.dk"]): 
+                    self.intel_pool["Virk_Links"].add(url)
+                if url.lower().endswith(('.pdf', '.docx', '.xls', '.txt')): 
+                    self.intel_pool["Eksponerede_Dokumenter"].add(url)
 
             if nexus:
                 for e in iocs.get("email", []):
@@ -271,34 +470,40 @@ class AutonomousOrchestrator(BaseModule):
         if "person" in url and "deltager" not in url: url = url.rstrip('/') + "/deltager"
         if safe_get_with_retry(driver, url, max_retries=1):
             try:
-                rows = driver.find_elements(By.CSS_SELECTOR, "tr, div.address")
+                rows = driver.find_elements(By.CSS_SELECTOR, "tr, div.address, a.name")
                 for r in rows:
-                    if any(x in r.text for x in ["Bopæl", "Vej", "Adresse", "Postnr"]):
-                        clean_addr = r.text.replace("\n", " | ")
-                        self.intel_pool["Tidslinje_Bopæl"].append(clean_addr)
+                    txt = r.text.strip()
+                    if any(x in txt for x in ["Bopæl", "Vej", "Adresse", "Postnr"]):
+                        clean_addr = txt.replace("\n", " | ")
+                        self.intel_pool["Tidslinje_Bopæl"].add(clean_addr)
                         self._log(f"Bopæl Udtrukket: {clean_addr}", "SUCCESS", indent=2)
+                    elif len(txt) > 5 and not any(char.isdigit() for char in txt) and self.target_name.lower() not in txt.lower():
+                        if "A/S" not in txt and "ApS" not in txt: 
+                            self.intel_pool["Netværk_Associates"].add(txt)
             except Exception: pass
 
     # =========================================================================
-    # NATIVE FASE 4: BREACH, FOOTPRINT & DARKWEB (Erstatter Modul 03, 06, 08, 09)
+    # NATIVE FASE 4: BREACH, FOOTPRINT & DARKWEB
     # =========================================================================
     def _phase_4_breach_and_footprint(self, driver: Any) -> None:
-        emails_to_check = list(self.intel_pool["Fundne_Emails"])[:3] # Max 3 for OPSEC / API Limits
-        
+        emails_to_check = list(self.intel_pool["Fundne_Emails"])[:3]
         for email in emails_to_check:
             self._log(f"Auditing Identity Vector: {email}", "PIVOT", indent=1)
-            
-            # 4A: Async Breach APIs
             self._execute_async_breach_apis(email)
             
-            # 4B: HIBP
             if self.hibp_key: self._query_hibp_api(email)
             elif driver: self._scrape_hibp_frontend(driver, email)
             
-            # 4C: Footprint & Underground Dorking
             if driver:
                 self._execute_footprint_dorks(driver, email)
                 self._darkweb_ahmia_scrape(driver, email)
+
+    def _register_breach(self, email: str, name: str, source_type: str = "clearnet", data_type: str = "PII"):
+        with self.print_lock:
+            self.intel_pool["Breach_Data"]["Breach_Sources"].add(name)
+            self.intel_pool["Scored_Breaches"].append({
+                "source": source_type, "data_type": data_type, "breach_name": name, "breach_count": 1 
+            })
 
     def _execute_async_breach_apis(self, email: str):
         def _xon():
@@ -308,11 +513,10 @@ class AutonomousOrchestrator(BaseModule):
                     breaches = res.json().get("Breaches", [])
                     if breaches:
                         self._log(f"XposedOrNot confirmed {len(breaches)} breaches for {email}", "CRITICAL", indent=2)
-                        with self.print_lock:
-                            for b in breaches:
-                                name = b[0] if isinstance(b, list) else b
-                                self.intel_pool["Breach_Data"]["Verified_Databases"]["XposedOrNot"].append(name)
-                                self.intel_pool["Breach_Data"]["Breach_Sources"].add(name)
+                        for b in breaches:
+                            name = b[0] if isinstance(b, list) else b
+                            self.intel_pool["Breach_Data"]["Verified_Databases"]["XposedOrNot"].append(name)
+                            self._register_breach(email, name, "clearnet", "credentials")
             except Exception: pass
 
         def _bd():
@@ -322,29 +526,15 @@ class AutonomousOrchestrator(BaseModule):
                     data = res.json()
                     if data.get("success") and data.get("found", 0) > 0:
                         self._log(f"BreachDirectory flagged {data.get('found')} exposed sources.", "CRITICAL", indent=2)
-                        with self.print_lock:
-                            for src in data.get("sources", []):
-                                name = src.get("name", "Unknown")
-                                self.intel_pool["Breach_Data"]["Verified_Databases"]["BreachDirectory"].append(name)
-                                self.intel_pool["Breach_Data"]["Breach_Sources"].add(name)
+                        for src in data.get("sources", []):
+                            name = src.get("name", "Unknown")
+                            self.intel_pool["Breach_Data"]["Verified_Databases"]["BreachDirectory"].append(name)
+                            self._register_breach(email, name, "underground", "credentials")
             except Exception: pass
 
-        def _lc():
-            try:
-                res = http.get(f"https://leakcheck.io/api/public?check={email}", timeout=10)
-                if res.status_code == 200:
-                    data = res.json()
-                    if data.get("success") and data.get("found", 0) > 0:
-                        self._log(f"LeakCheck.io confirmed {data.get('found')} compromise points.", "CRITICAL", indent=2)
-                        with self.print_lock:
-                            self.intel_pool["Breach_Data"]["Verified_Databases"]["LeakCheck"].append(f"LeakCheck ({data.get('found')} hits)")
-                            self.intel_pool["Breach_Data"]["Breach_Sources"].add("LeakCheck.io (Ukendte kilder)")
-            except Exception: pass
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             executor.submit(_xon)
             executor.submit(_bd)
-            executor.submit(_lc)
 
     def _query_hibp_api(self, email: str):
         headers = {"hibp-api-key": self.hibp_key, "user-agent": "PETFE-GOLIATH-OSINT"}
@@ -353,48 +543,49 @@ class AutonomousOrchestrator(BaseModule):
             if res.status_code == 200:
                 breaches = res.json()
                 self._log(f"HIBP API verified {len(breaches)} corporate breaches.", "CRITICAL", indent=2)
-                with self.print_lock:
-                    for b in breaches:
-                        b_name = b.get("Name", "Unknown")
-                        self.intel_pool["Breach_Data"]["Verified_Databases"]["HIBP"].append(b_name)
-                        self.intel_pool["Breach_Data"]["Breach_Sources"].add(b_name)
-                        for dc in b.get("DataClasses", []):
-                            self.intel_pool["Breach_Data"]["Eksponerede_Data_Typer"].add(dc)
-                            if "password" in dc.lower():
-                                self.intel_pool["Breach_Data"]["Lækkede_Passwords_Fundet"] = True
-            elif res.status_code == 404:
-                self._log("HIBP API reports no known corporate breaches.", "SUCCESS", indent=2)
+                for b in breaches:
+                    b_name = b.get("Name", "Unknown")
+                    self.intel_pool["Breach_Data"]["Verified_Databases"]["HIBP"].append(b_name)
+                    
+                    data_type = "PII"
+                    for dc in b.get("DataClasses", []):
+                        self.intel_pool["Breach_Data"]["Eksponerede_Data_Typer"].add(dc)
+                        if "password" in dc.lower():
+                            self.intel_pool["Breach_Data"]["Lækkede_Passwords_Fundet"] = True
+                            data_type = "credentials"
+                        elif any(x in dc.lower() for x in ["bank", "credit", "financial"]):
+                            data_type = "financial_data"
+                            
+                    self._register_breach(email, b_name, "clearnet", data_type)
         except Exception: pass
 
     def _scrape_hibp_frontend(self, driver: Any, email: str):
         try:
             driver.get("https://haveibeenpwned.com/")
             time.sleep(3)
-            try:
-                search_box = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "Account")))
-                search_box.clear()
-                search_box.send_keys(email)
-                search_box.send_keys(Keys.ENTER)
-            except TimeoutException: return
-
+            search_box = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "Account")))
+            search_box.clear()
+            search_box.send_keys(email)
+            search_box.send_keys(Keys.ENTER)
             time.sleep(4) 
+            
             source = driver.page_source
             if "pwnedCompanyTitle" in source or "Oh no — pwned!" in source:
                 breaches = driver.find_elements(By.CSS_SELECTOR, ".pwnedCompanyTitle")
                 self._log(f"HIBP Live-Scraper verified {len(breaches)} breaches.", "CRITICAL", indent=2)
-                with self.print_lock:
-                    for el in breaches:
-                        b_name = el.text.strip()
-                        if b_name:
-                            self.intel_pool["Breach_Data"]["Verified_Databases"]["HIBP"].append(b_name)
-                            self.intel_pool["Breach_Data"]["Breach_Sources"].add(b_name)
-                    data_points = driver.find_elements(By.CSS_SELECTOR, ".dataClasses")
-                    for dp in data_points:
-                        for tag in dp.text.split(','):
-                            clean_tag = tag.strip()
-                            self.intel_pool["Breach_Data"]["Eksponerede_Data_Typer"].add(clean_tag)
-                            if "password" in clean_tag.lower():
-                                self.intel_pool["Breach_Data"]["Lækkede_Passwords_Fundet"] = True
+                for el in breaches:
+                    b_name = el.text.strip()
+                    if b_name:
+                        self.intel_pool["Breach_Data"]["Verified_Databases"]["HIBP"].append(b_name)
+                        self._register_breach(email, b_name, "clearnet", "credentials")
+                        
+                data_points = driver.find_elements(By.CSS_SELECTOR, ".dataClasses")
+                for dp in data_points:
+                    for tag in dp.text.split(','):
+                        clean_tag = tag.strip()
+                        self.intel_pool["Breach_Data"]["Eksponerede_Data_Typer"].add(clean_tag)
+                        if "password" in clean_tag.lower():
+                            self.intel_pool["Breach_Data"]["Lækkede_Passwords_Fundet"] = True
         except Exception: pass
 
     def _execute_footprint_dorks(self, driver: Any, email: str):
@@ -409,8 +600,11 @@ class AutonomousOrchestrator(BaseModule):
         ]
 
         for cat_name, query, target_key in dork_matrix:
+            sys.stdout.write(f"\r{C.CYAN}    [*] Scannner Matrix: {cat_name}...      {C.RESET}")
+            sys.stdout.flush()
             hits = omni_dork_search(driver, query, max_links=3)
             if hits:
+                sys.stdout.write("\r" + " " * 80 + "\r")
                 self._log(f"Fandt {len(hits)} spor i: {cat_name}", "CRITICAL" if "Footprint" not in cat_name else "SUCCESS", indent=2)
                 with self.print_lock:
                     for h in hits:
@@ -418,7 +612,8 @@ class AutonomousOrchestrator(BaseModule):
                             self.intel_pool["Footprint_Spor"].add(h['url'])
                         else:
                             self.intel_pool["Underground_Syndicates"][target_key].add(h['url'])
-            time.sleep(1.5)
+                            self._register_breach(email, f"Underground Hit: {cat_name}", "underground", "credentials")
+            time.sleep(random.uniform(1.0, 2.0))
 
     def _darkweb_ahmia_scrape(self, driver: Any, email: str):
         self._log("Querying Tor Gateways (Ahmia) for Darknet references...", "WARN", indent=2)
@@ -431,38 +626,44 @@ class AutonomousOrchestrator(BaseModule):
                         onion_link = res.text
                         self.intel_pool["Darkweb_Spor"].add(onion_link)
                         self._log(f"DARKNET HIT: {onion_link}", "CRITICAL", indent=3)
+                        self._register_breach(email, "Darkweb Mention", "darkweb", "credentials")
                 except Exception: pass
 
     # =========================================================================
-    # VURDERING, OPSAMLING OG EKSTERNE MODULER
+    # FASE 5: PYDANTIC SCORING & SUMMARY
     # =========================================================================
-    def _phase_5_confidence_scoring(self) -> None:
-        score = 0
-        if self.intel_pool["Virk_Links"]: score += 15
-        if self.intel_pool["Fundne_Brugernavne"]: score += 15
-        if self.intel_pool["Fundne_Emails"]: score += 15
-        if self.intel_pool["Telefonnumre"]: score += 15
-        if self.intel_pool["CPR_Fragments"]: score += 10
-        if self.intel_pool["Tidslinje_Bopæl"]: score += 10
-        if self.intel_pool["MAC_Adresser"]: score += 10
+    def _phase_5_pydantic_scoring(self) -> None:
+        """Kører den nye Pydantic-baserede Intelligence Grade model."""
+        for breach in self.intel_pool["Scored_Breaches"]:
+            sev_obj = calculate_breach_severity(breach)
+            breach["severity"] = sev_obj.dict()
+
+        conf_obj = calculate_intelligence_matrix(self.intel_pool)
+        self.intel_pool["Intelligence_Matrix"] = conf_obj.dict()
         
-        # Ekstra point for Breach/Darkweb Hits
-        if len(self.intel_pool["Breach_Data"]["Breach_Sources"]) > 0: score += 10
-        if self.intel_pool["Breach_Data"]["Lækkede_Passwords_Fundet"]: score += 15
-        if self.intel_pool["Darkweb_Spor"]: score += 15
-        
-        self.intel_pool["Confidence_Score"] = min(score, 100)
+        self.intel_pool["Confidence_Score"] = int(conf_obj.overall_threat_index * 100)
         self.intel_pool["Breach_Data"]["Total_Verified_Breaches"] = len(self.intel_pool["Breach_Data"]["Breach_Sources"])
 
     def _print_intel_summary(self) -> None:
         with self.print_lock:
             print(f"\n{C.CYAN}--- TACTICAL INTELLIGENCE SUMMARY: {self.target_name.upper()} ---{C.RESET}")
-            print(f"Data Confidence: {C.GREEN if self.intel_pool['Confidence_Score'] > 50 else C.YELLOW}{self.intel_pool['Confidence_Score']}/100{C.RESET}")
+            
+            score_data = self.intel_pool['Intelligence_Matrix']
+            grade = score_data.get('intelligence_grade', 'F')
+            grade_col = C.GREEN if grade in ["A", "B"] else (C.YELLOW if grade == "C" else C.RED)
+            
+            print(f"GOLIATH Grade:     {grade_col}GRADE {grade}{C.RESET} (Threat Index: {score_data.get('overall_threat_index', 0)*100:.1f}%)")
+            print(f"Metrics (0-1):     ID:{score_data.get('identity_confidence',0):.2f} | EXP:{score_data.get('exposure_threat',0):.2f} | FTP:{score_data.get('digital_footprint',0):.2f} | PHY:{score_data.get('physical_trace',0):.2f}")
+            print(f"{C.DIM}" + "-"*60 + f"{C.RESET}")
+            
             print(f"Usernames:       {C.WHITE}{', '.join(self.intel_pool['Fundne_Brugernavne'])}{C.RESET}")
+            if self.intel_pool['Verified_Social_Profiles']:
+                print(f"Social Profiles: {C.GREEN}{len(self.intel_pool['Verified_Social_Profiles'])} Verified Active Profiles{C.RESET}")
             print(f"Emails:          {C.WHITE}{', '.join(self.intel_pool['Fundne_Emails'])}{C.RESET}")
             print(f"Phones:          {C.WHITE}{', '.join(self.intel_pool['Telefonnumre'])}{C.RESET}")
+            if self.intel_pool["Netværk_Associates"]:
+                print(f"Associates:      {C.WHITE}{', '.join(list(self.intel_pool['Netværk_Associates'])[:5])}{C.RESET}")
             
-            # Breach Summary
             b_total = self.intel_pool["Breach_Data"]["Total_Verified_Breaches"]
             if b_total > 0:
                 print(f"Verified Breaches: {C.RED}{b_total} (Critical){C.RESET}")
@@ -475,8 +676,10 @@ class AutonomousOrchestrator(BaseModule):
             
             print(f"{C.DIM}" + "-"*60 + f"{C.RESET}")
 
+    # =========================================================================
+    # FASE 6 - 8: OMNI PIVOT & ARCHIVING
+    # =========================================================================
     def _phase_6_threaded_omni_pivot(self, main_driver: Any) -> None:
-        # BEMÆRK: Vi har fjernet kaldet til mod_03 her, fordi det nu er en NATIVE del af Fase 4!
         def _safe_run(module_name: str, class_name: str, target: str, driver=None):
             try:
                 import importlib
@@ -498,8 +701,7 @@ class AutonomousOrchestrator(BaseModule):
 
         if api_tasks:
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                for mod, cls, tgt in api_tasks:
-                    executor.submit(_safe_run, mod, cls, tgt, None)
+                for mod, cls, tgt in api_tasks: executor.submit(_safe_run, mod, cls, tgt, None)
 
         _safe_run("mod_02_business", "BusinessIntelligenceAnalyst", self.target_name, main_driver)
         for phone in list(self.intel_pool["Telefonnumre"])[:2]: 
@@ -512,7 +714,6 @@ class AutonomousOrchestrator(BaseModule):
             ai_mod = TitanAIEnrichment(self.target_name)
             
             clean_pool = {k: list(v) if isinstance(v, set) else v for k, v in self.intel_pool.items()}
-            # Sikrer at Breach Data også konverteres korrekt
             for k, v in clean_pool["Breach_Data"].items():
                 if isinstance(v, set): clean_pool["Breach_Data"][k] = list(v)
             for k, v in clean_pool["Underground_Syndicates"].items():
@@ -520,8 +721,7 @@ class AutonomousOrchestrator(BaseModule):
 
             res = ai_mod.analyze_text(json.dumps(clean_pool, ensure_ascii=False))
             if res: self.intel_pool["AI_Assessment"] = res
-        except Exception as e: 
-            self._log(f"AI Enrichment Error: {e}", "WARN", indent=2)
+        except Exception: pass
 
         try:
             from modules.mod_28_graph import GoliathGraphExporter
@@ -532,26 +732,19 @@ class AutonomousOrchestrator(BaseModule):
         except Exception: pass
 
     def _phase_8_archive(self) -> None:
-        # Konverter Set til List for JSON serialisering
         for key in self.intel_pool:
             if isinstance(self.intel_pool[key], set): self.intel_pool[key] = list(self.intel_pool[key])
-        
         for key in self.intel_pool["Breach_Data"]:
-            if isinstance(self.intel_pool["Breach_Data"][key], set): 
-                self.intel_pool["Breach_Data"][key] = list(self.intel_pool["Breach_Data"][key])
-                
+            if isinstance(self.intel_pool["Breach_Data"][key], set): self.intel_pool["Breach_Data"][key] = list(self.intel_pool["Breach_Data"][key])
         for key in self.intel_pool["Underground_Syndicates"]:
-            if isinstance(self.intel_pool["Underground_Syndicates"][key], set): 
-                self.intel_pool["Underground_Syndicates"][key] = list(self.intel_pool["Underground_Syndicates"][key])
+            if isinstance(self.intel_pool["Underground_Syndicates"][key], set): self.intel_pool["Underground_Syndicates"][key] = list(self.intel_pool["Underground_Syndicates"][key])
 
         datalake.ingest(source_module=self.name, target=self.target_name, data=self.intel_pool)
         
         ws_folder = session.get("loot_folder", "loot_evidence")
         os.makedirs(ws_folder, exist_ok=True)
         path = Path(ws_folder) / f"30_ORCHESTRATOR_{sanitize_filename(self.target_name)}.json"
-        
         if os.path.exists(path):
             try: os.remove(path)
             except: pass
-            
         path.write_text(json.dumps(self.intel_pool, indent=4, ensure_ascii=False), encoding="utf-8")
