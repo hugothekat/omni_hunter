@@ -449,6 +449,20 @@ class OmniInfrastructureTracker(BaseModule):
                     geo = await res.json()
                     ip_data["GeoLocation"] = {"Country": geo.get("country_name"), "City": geo.get("city"), "ISP": geo.get("org")}
         except: pass
+
+        # GOLIATH EXPANSION: Asynkron Shodan API Integration
+        shodan_key = CONFIG.get("api_keys", {}).get("shodan_api_key", "")
+        if shodan_key:
+            try:
+                async with session_http.get(f"https://api.shodan.io/shodan/host/{ip}?key={shodan_key}", timeout=5) as res:
+                    if res.status == 200:
+                        s_data = await res.json()
+                        ip_data["Shodan"] = {
+                            "OS": s_data.get("os", "Unknown"),
+                            "Ports": s_data.get("ports", []),
+                            "Vulns": s_data.get("vulns", [])
+                        }
+            except: pass
         
         if nmap:
             try:

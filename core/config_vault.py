@@ -186,7 +186,8 @@ class GoliathVault:
         """Trådsikker hentning af konfigurationer."""
         with self.lock:
             if key:
-                return self.state.get(section, {}).get(key)
+                section_data = self.state.get(section)
+                return section_data.get(key) if isinstance(section_data, dict) else None
             return self.state.get(section)
 
     def update_key_live(self, service: str, new_key: str):

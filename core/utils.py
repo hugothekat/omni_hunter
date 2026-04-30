@@ -428,22 +428,6 @@ class OmniDataLake:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
                          (datetime.now().isoformat(), source_module, target, json.dumps(data, ensure_ascii=False)))
-                         
-    def export_csv(self, filename: str, headers: List[str], rows: List[List[Any]]) -> str:
-        """Eksporterer struktureret data til CSV format."""
-        filepath = self.base_dir / f"{sanitize_filename(filename)}.csv"
-        with open(filepath, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
-            writer.writerows(rows)
-        return str(filepath)
-
-    def export_txt(self, filename: str, content: str) -> str:
-        """Eksporterer rå tekst eller formaterede rapporter til TXT."""
-        filepath = self.base_dir / f"{sanitize_filename(filename)}.txt"
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
-        return str(filepath)
 
     def save_to_json(self, data: Dict[str, Any], filename: str, encrypt: bool = False, sanitize_pii: bool = False) -> str:
         filepath = self.base_dir / f"{sanitize_filename(filename)}.json"

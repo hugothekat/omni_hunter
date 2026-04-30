@@ -52,6 +52,7 @@ from rich import print as rprint
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.styles import Style
+from prompt_toolkit.patch_stdout import patch_stdout
 import psutil
 
 # Instansier global Rich Console
@@ -177,11 +178,11 @@ class BackgroundJobManager:
                 finally: browser.close()
                 
                 with self.lock: self.jobs[job_id]["status"] = "[green]Fuldført[/green]"
-                if is_background: console.print(f"\n[bold green]\[+] Opgave \\[{job_id}] fuldført![/bold green]")
+                if is_background: console.print(f"\n[bold green]\\[+] Opgave \\[{job_id}] fuldført![/bold green]")
             except Exception as e:
                 with self.lock: self.jobs[job_id]["status"] = f"[red]Fejl[/red]"
                 logger.error(f"Job {job_id} fejlede: {e}\n{traceback.format_exc()}")
-                if is_background: console.print(f"\n[bold red]\[!] Opgave \\[{job_id}] afbrudt: {str(e)}[/bold red]")
+                if is_background: console.print(f"\n[bold red]\\[!] Opgave \\[{job_id}] afbrudt: {str(e)}[/bold red]")
 
         thread = threading.Thread(target=job_runner, daemon=True)
         thread.start()
@@ -225,7 +226,7 @@ class WorkspaceManager:
         session["loot_folder"] = str(ws_dir)
         session["workspace"] = safe_name
         if not quiet:
-            console.print(f"[bold green]\[+] Operativ sag sat til:[/bold green] [bold white]{safe_name.upper()}[/bold white]")
+            console.print(f"[bold green]\\[+] Operativ sag sat til:[/bold green] [bold white]{safe_name.upper()}[/bold white]")
 
     def list_workspaces(self):
         table = Table(title="Sagsmapper (Workspaces)", style="blue")
@@ -257,7 +258,7 @@ class GoliathShell:
         self.current_target = None
         
         # Opretter en intelligent WordCompleter til TUI'en
-        commands = ['target', 'scan', 'modules', 'run', 'case', 'workspace', 'jobs', 'report', 'clear', 'exit', 'help']
+        commands = ['target', 'scan', 'modules', 'run', 'case', 'workspace', 'jobs', 'report', 'darknet', 'clear', 'exit', 'help']
         self.completer = WordCompleter(commands, ignore_case=True)
         
         # Prompt Style
@@ -282,16 +283,25 @@ class GoliathShell:
         target_display = self.current_target if self.current_target else "INTET MÅL LÅST"
         target_color = "bold yellow" if self.current_target else "dim"
 
-        header_text = f"""[bold red]████████████████████████████████████████████████████████████████████████[/bold red]
-[bold white]POLITIETS EFTERRETNINGSTJENESTE[/bold white] [dim]- FREMSKUDT EFTERFORSKNING (PET FE)[/dim]
-[bold red]████████████████████████████████████████████████████████████████████████[/bold red]
-
-[cyan]SYSTEM:[/cyan] GOLIATH OMNI_HUNTER V6.0
+        # TUI OVERHAUL: Expansion Mode - Rich Table HUD
+        hud_table = Table(show_header=False, expand=True, box=None, padding=(0, 1))
+        hud_table.add_column("Left", justify="left", ratio=1)
+        hud_table.add_column("Right", justify="right", ratio=1)
+        
+        title_text = "[bold white]Politiets Efterretningstjeneste[/bold white] [dim]- Forsvarets Efterretningstjeneste[/dim]"
+        
+        left_panel = f"""[cyan]SYSTEM:[/cyan] GOLIATH OMNI_HUNTER V6.1
 [cyan]SAGSMAPPE:[/cyan] [bold white]{self.workspace_manager.current_workspace.upper()}[/bold white]
-[cyan]FASTLÅST MÅL:[/cyan] [{target_color}]{target_display}[/{target_color}]
-[cyan]TELEMETRI:[/cyan] CPU: [{cpu_color}]{cpu_usage}%[/{cpu_color}] | RAM: [{ram_color}]{ram_usage}%[/{ram_color}] | VÆRKTØJER: [green]{len(self.module_manager.modules)} Aktive[/green]"""
+[cyan]FASTLÅST MÅL:[/cyan] [{target_color}]{target_display}[/{target_color}]"""
+        
+        right_panel = f"""[cyan]TELEMETRI:[/cyan] CPU: [{cpu_color}]{cpu_usage}%[/{cpu_color}] | RAM: [{ram_color}]{ram_usage}%[/{ram_color}]
+[cyan]VÆRKTØJER:[/cyan] [green]{len(self.module_manager.modules)} Aktive[/green]
+[cyan]NETVÆRK:[/cyan] [bold green]SOCKS5 TOR KLAR[/bold green]"""
 
-        console.print(Panel(header_text, border_style="red", padding=(0, 2)))
+        hud_table.add_row(left_panel, right_panel)
+        main_panel = Panel(hud_table, title=title_text, title_align="center", border_style="red", padding=(1, 2))
+        
+        console.print(main_panel)
 
     def get_prompt_text(self):
         # Bygger en farvekodet prompt line
@@ -311,8 +321,9 @@ class GoliathShell:
         
         while True:
             try:
-                # Anvender PromptSession til autocompletion og command history
-                cmd_raw = self.prompt_session.prompt(self.get_prompt_text())
+                # patch_stdout beskytter dit input mod at blive slettet af asynkrone prints
+                with patch_stdout():
+                    cmd_raw = self.prompt_session.prompt(self.get_prompt_text())
                 if not cmd_raw.strip(): continue
                 
                 audit_logger.log_command(cmd_raw)
@@ -337,7 +348,7 @@ class GoliathShell:
                         continue
                     self.current_target = military_sanitize_input(" ".join(args))
                     session["name"] = self.current_target
-                    console.print(f"[bold green]\[+] Mål fastlåst:[/bold green] [bold white]{self.current_target}[/bold white]")
+                    console.print(f"[bold green]\\[+] Mål fastlåst:[/bold green] [bold white]{self.current_target}[/bold white]")
                     self.render_system_header() # Opdaterer visuelt
                 elif cmd in ["case", "workspace"]:
                     if args: 
@@ -355,6 +366,9 @@ class GoliathShell:
                 elif cmd == "report":
                     console.print(f"[bold cyan][*] Genererer analyserapport for sag: {self.workspace_manager.current_workspace}...[/bold cyan]")
                     AutomatedCaseReporter().generate()
+                elif cmd == "darknet":
+                    args.insert(0, "22")
+                    self.execute_cmd(args)
                 else:
                     console.print(f"[bold yellow][!] Ukendt kommando '{cmd}'. Skriv 'help' for oversigt.[/bold yellow]")
 
@@ -403,6 +417,7 @@ class GoliathShell:
         table.add_row("jobs", "Se status på asynkrone baggrundsopgaver")
         table.add_row("report", "Generér interaktiv HTML efterretningsrapport")
         table.add_row("clear", "Rens skærmen og genindlæs dashboard")
+        table.add_row("darknet <url>,<word>", "Kør direkte darknet scraping på onion-URL")
         table.add_row("exit", "Sikr databaser og afslut")
         
         console.print(table)

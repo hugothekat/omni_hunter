@@ -35,6 +35,27 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+
+# --- AUTO-HEAL: Python 3.12+ distutils patch for undetected_chromedriver ---
+import sys
+if sys.version_info >= (3, 12) and 'distutils' not in sys.modules:
+    import types
+    sys.modules['distutils'] = types.ModuleType('distutils')
+    sys.modules['distutils.version'] = types.ModuleType('distutils.version')
+    class LooseVersion:
+        def __init__(self, vstring):
+            self.vstring = str(vstring)
+        def _cmp_key(self):
+            return [int(x) if x.isdigit() else x for x in re.split(r'(\d+)', self.vstring) if x and x != '.']
+        def __lt__(self, other):
+            if not isinstance(other, LooseVersion): other = LooseVersion(other)
+            return self._cmp_key() < other._cmp_key()
+        def __eq__(self, other):
+            if not isinstance(other, LooseVersion): other = LooseVersion(other)
+            return self._cmp_key() == other._cmp_key()
+        def __str__(self): return self.vstring
+    sys.modules['distutils.version'].LooseVersion = LooseVersion
+
 import undetected_chromedriver as uc
 from stem import Signal
 from stem.control import Controller
@@ -75,8 +96,11 @@ class ProxyError(BrowserError): pass
 class TORError(BrowserError): pass
 
 # ====================== UTILITY & OSINT FUNCTIONS ======================
+logging.getLogger("fake_useragent").setLevel(logging.ERROR)
+
 def get_random_user_agent() -> str:
-    return UserAgent(platforms=['pc']).random
+    try: return UserAgent(platforms=['pc']).random
+    except Exception: return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 def create_dirs(*dirs: str) -> None:
     for d in dirs: Path(d).mkdir(parents=True, exist_ok=True)
@@ -180,7 +204,10 @@ class ProxyManager:
 
     def report_failure(self) -> None:
         self.failed_attempts += 1
-        logging.warning(f"⚠️ Proxy fejl #{self.failed_attempts}/{self.config.proxy_fail_threshold}")
+        if self.active_proxies or self.current_proxy:
+            logging.warning(f"⚠️ Proxy fejl #{self.failed_attempts}/{self.config.proxy_fail_threshold}")
+        else:
+            logging.warning(f"⚠️ Forbindelsesfejl #{self.failed_attempts}/{self.config.max_retries}")
 
 # ====================== REAL CAPTCHA SOLVER (NYT V36) ======================
 class CaptchaSolver:
@@ -375,6 +402,28 @@ class PlaywrightBrowser:
         proxy_config = {"server": proxy} if proxy else None
             
         browser = await playwright[self.config.browser_type].launch(headless=self.config.headless, proxy=proxy_config)
+        # =====================================================================
+        # NYT V36: PLAYWRIGHT CASCADE FALLBACK & AUTO-HEAL ENGINE
+        # =====================================================================
+        try:
+            browser = await playwright[self.config.browser_type].launch(headless=self.config.headless, proxy=proxy_config)
+        except Exception as launch_err:
+            if "Executable doesn't exist" in str(launch_err) or "playwright install" in str(launch_err):
+                self.logger.warning(f"⚠️ Playwright mangler binærfil for '{self.config.browser_type}'. Initierer Cascade Fallback...")
+                
+                # 1. Start baggrundsreparation (Auto-install chromium stealthy)
+                import threading, subprocess, sys
+                threading.Thread(target=lambda: subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL), daemon=True).start()
+                self.logger.info("🔧 Auto-Heal: Installerer chromium-binaries i baggrunden til næste kørsel.")
+                
+                # 2. Red aktionen med RequestsBrowser for at forhindre nedbrud
+                self.logger.error("❌ Skifter proaktivt til RequestsBrowser for at redde anmodningen.")
+                await playwright.stop()
+                fallback = RequestsBrowser(self.config)
+                return fallback.get(url)
+            else:
+                raise
+
         context = await browser.new_context(
             user_agent=self.config.user_agent or get_random_user_agent(),
             viewport={"width": 1920, "height": 1080}

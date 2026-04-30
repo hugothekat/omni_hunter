@@ -26,6 +26,7 @@ import asyncio
 import aiohttp
 import pyfiglet
 import random
+import struct
 from urllib.parse import urlparse
 from typing import List, Dict, Optional, Tuple, Union, Any
 from dataclasses import dataclass, asdict, field
@@ -74,14 +75,103 @@ class C:
 logger = logging.getLogger("GOLIATH_NET")
 
 # ====================== GLOBAL OSINT UTILITIES ======================
+class OmniStealthSession(requests.Session):
+    """GOLIATH V36: Active Rate-Limit Bypass & Evasion Engine (Expansion Mode)."""
+    def request(self, method, url, **kwargs):
+        headers = kwargs.get('headers', {})
+        
+        # 1. Dynamisk User-Agent rotation for hver ENESTE anmodning (Ikke kun pr. session)
+        try: headers['User-Agent'] = UserAgent().random
+        except Exception: pass
+        
+        # 2. X-Forwarded-For & Client-IP Spoofing for at snyde simple WAFs og IP-bans
+        spoofed_ip = socket.inet_ntoa(struct.pack('>I', random.randint(0x01000000, 0xEFFFFFFF)))
+        headers['X-Forwarded-For'] = spoofed_ip
+        headers['X-Real-IP'] = spoofed_ip
+        headers['Client-IP'] = spoofed_ip
+        
+        # 3. Cache-busting for at undgå at WAF serverer en cached blokeringsside
+        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        
+        kwargs['headers'] = headers
+        res = super().request(method, url, **kwargs)
+        
+        # 4. Aktiv 429 Evasion med Gaussian Jitter
+        if res.status_code == 429:
+            logger.warning(f"⚠️ [RATE-LIMIT] 429 Too Many Requests mod {url}. Udfører Evasion...")
+            for attempt in range(1, 4):
+                time.sleep(random.uniform(1.5, 3.5) * attempt)
+                headers['X-Forwarded-For'] = socket.inet_ntoa(struct.pack('>I', random.randint(0x01000000, 0xEFFFFFFF)))
+                res = super().request(method, url, **kwargs)
+                if res.status_code != 429: break
+        return res
+
 def get_stealth_session() -> requests.Session:
-    sess = requests.Session()
-    retry = Retry(total=RETRY_ATTEMPTS, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504])
+    sess = OmniStealthSession()
+    retry = Retry(total=RETRY_ATTEMPTS, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     sess.mount("http://", adapter)
     sess.mount("https://", adapter)
     sess.headers.update(HEADERS)
     return sess
+
+class AsyncProxyManager:
+    """GOLIATH V36: Asynkron Round-Robin Proxy Rotator til Mass-Scanning."""
+    def __init__(self, proxies: List[str] = None):
+        # Henter automatisk proxies fra den krypterede vault hvis ingen angives
+        self.proxies = proxies or CONFIG.get("network", {}).get("proxy_list", [])
+        self.index = 0
+        self.lock = asyncio.Lock()
+
+    async def get_proxy(self) -> Optional[str]:
+        if not self.proxies:
+            return None
+        async with self.lock:
+            proxy = self.proxies[self.index]
+            self.index = (self.index + 1) % len(self.proxies)
+            return proxy
+
+async def get_async_stealth_session(proxy_manager: Optional[AsyncProxyManager] = None) -> aiohttp.ClientSession:
+    """Returnerer en aiohttp session klargjort med stealth headers og proxy-understøttelse."""
+    headers = {
+        "User-Agent": UserAgent().random,
+        "Accept": "text/html,application/json,application/xhtml+xml",
+        "Accept-Language": "da-DK,da;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Connection": "keep-alive"
+    }
+    timeout = aiohttp.ClientTimeout(total=20)
+    # Sikrer SOCKS5 og HTTP(S) proxy resolution asynkront
+    connector = aiohttp.TCPConnector(ssl=False)
+    return aiohttp.ClientSession(headers=headers, timeout=timeout, connector=connector)
+
+class AsyncTurnstileSolver:
+    """GOLIATH V41: Asynkron Cloudflare Turnstile Bypass via 2Captcha (Expansion Mode)."""
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.logger = logging.getLogger("TurnstileSolver")
+
+    async def solve(self, url: str, sitekey: str) -> Optional[str]:
+        if not self.api_key: 
+            self.logger.warning("[!] Mangler 2Captcha API-nøgle i vault.")
+            return None
+            
+        req_url = f"http://2captcha.com/in.php?key={self.api_key}&method=turnstile&sitekey={sitekey}&pageurl={url}&json=1"
+        self.logger.info(f"[*] Submitter Turnstile Sitekey ({sitekey[:10]}...) til bypass-klynge.")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(req_url) as res:
+                data = await res.json()
+                if data.get("status") != 1: return None
+                req_id = data.get("request")
+            
+            for _ in range(25):
+                await asyncio.sleep(5)
+                ans_url = f"http://2captcha.com/res.php?key={self.api_key}&action=get&id={req_id}&json=1"
+                async with session.get(ans_url) as ans_res:
+                    ans_data = await ans_res.json()
+                    if ans_data.get("status") == 1: return ans_data.get("request")
+                    if ans_data.get("request") != "CAPCHA_NOT_READY": break
+        return None
 
 http = get_stealth_session()
 

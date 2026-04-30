@@ -5,6 +5,10 @@
 """
 import aiohttp
 import asyncio
+import random
+import socket
+import struct
+from fake_useragent import UserAgent
 from typing import Dict, Any
 from core.utils import logger
 from core.config_vault import vault
@@ -18,20 +22,39 @@ class ThreatIntelSyndicate:
         self.gn_key = self.keys.get("greynoise_api_key", "")
 
     async def _async_get(self, url: str, headers: Dict[str, str]) -> Dict[str, Any]:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, timeout=10) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    elif response.status in [401, 403]:
-                        return {"error": "Unauthorized / Invalid API Key"}
-                    elif response.status == 404:
-                        return {"error": "Not Found"}
-                    else:
-                        return {"error": f"HTTP {response.status}"}
-        except Exception as e:
-            logger.error(f"API Syndicate Fetch Error: {e}")
-            return {"error": str(e)}
+        max_attempts = 4
+        attempt = 0
+        
+        while attempt < max_attempts:
+            try:
+                # Aktiv Evasion: IP Spoofing og User-Agent rotation asynkront
+                spoofed_ip = socket.inet_ntoa(struct.pack('>I', random.randint(0x01000000, 0xEFFFFFFF)))
+                headers['X-Forwarded-For'] = spoofed_ip
+                headers['X-Real-IP'] = spoofed_ip
+                headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                try: headers['User-Agent'] = UserAgent().random
+                except: headers['User-Agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers, timeout=15) as response:
+                        if response.status in [429, 403]:
+                            attempt += 1
+                            logger.warning(f"⚠️ [ASYNC WAF/RATE-LIMIT] Blokeret af {url}. Evasion attempt {attempt}/{max_attempts}...")
+                            await asyncio.sleep(random.uniform(1.5, 4.0) * attempt)
+                            continue
+                            
+                        if response.status == 200:
+                            return await response.json()
+                        elif response.status == 401:
+                            return {"error": "Unauthorized / Invalid API Key"}
+                        elif response.status == 404:
+                            return {"error": "Not Found"}
+                        else:
+                            return {"error": f"HTTP {response.status}"}
+            except Exception as e:
+                logger.error(f"API Syndicate Fetch Error mod {url}: {e}")
+                return {"error": str(e)}
+        return {"error": "Max retries exceeded during WAF Evasion."}
 
     async def check_securitytrails(self, domain_or_ip: str) -> Dict[str, Any]:
         """Henter historisk DNS og subdomæner fra SecurityTrails."""
