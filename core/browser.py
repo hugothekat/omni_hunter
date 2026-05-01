@@ -44,9 +44,10 @@ if sys.version_info >= (3, 12) and 'distutils' not in sys.modules:
     sys.modules['distutils.version'] = types.ModuleType('distutils.version')
     class LooseVersion:
         def __init__(self, vstring):
-            self.vstring = str(vstring)
+            self.vstring = str(vstring)    
+            self.version = [int(x) if x.isdigit() else x for x in re.split(r'(\d+)', self.vstring) if x and x != '.']
         def _cmp_key(self):
-            return [int(x) if x.isdigit() else x for x in re.split(r'(\d+)', self.vstring) if x and x != '.']
+            return self.version
         def __lt__(self, other):
             if not isinstance(other, LooseVersion): other = LooseVersion(other)
             return self._cmp_key() < other._cmp_key()
@@ -91,6 +92,18 @@ class BrowserConfig:
     warmup_session: bool = True     # NYT: Opbygger trust før scanning
     auto_extract_osint: bool = True # NYT: Parser DOM for OSINT data auto
 
+    def __post_init__(self):
+        """GOLIATH AUTO-PROXY BINDING: Læser automatisk proxies.txt hvis rotation er aktiveret."""
+        if self.proxy_rotation_enabled and not self.proxy_list:
+            proxy_path = Path("proxies.txt")
+            if proxy_path.exists():
+                try:
+                    with open(proxy_path, 'r', encoding='utf-8') as f:
+                        self.proxy_list = [line.strip() for line in f if line.strip()]
+                    logging.getLogger("BrowserConfig").info(f"🛡️ Auto-indlæste {len(self.proxy_list)} SOCKS5/HTTP proxies til rotation.")
+                except Exception as e:
+                    logging.getLogger("BrowserConfig").error(f"Fejl ved indlæsning af proxies.txt: {e}")
+
 # ====================== ERROR HANDLING ======================
 class BrowserError(Exception): pass
 class CAPTCHAError(BrowserError): pass
@@ -129,7 +142,8 @@ class PageAssetAnalyzer:
 class OSINTExtractor:
     """NYT V36: Automatisk pre-processor der finder data i enhver HTML response."""
     @staticmethod
-    def extract_from_html(html_content: str, url: str) -> Dict[str, Any]:
+    def extract_from_html(html_content: str, url: str, storage_dump: str = "") -> Dict[str, Any]:
+        from core.utils import JWTExtractor
         data = {
             "emails": set(),
             "phones": set(),
@@ -137,7 +151,8 @@ class OSINTExtractor:
             "social_links": set(),
             "hidden_apis": set(),
             "hidden_css_traps": set(),
-            "asset_hashes": {}
+            "asset_hashes": {},
+            "intercepted_jwts": []
         }
         if not html_content: return data
         
@@ -168,8 +183,13 @@ class OSINTExtractor:
                 
         # Favicon Hashing
         data["asset_hashes"] = PageAssetAnalyzer.analyze(soup, url)
+        
+        # GOLIATH EXPANSION: JWT Token Decryption fra raw HTML og Local/Session Storage
+        combined_corpus = html_content + " " + storage_dump
+        data["intercepted_jwts"] = JWTExtractor.extract_and_decode(combined_corpus)
                 
-        return data
+        # OPSEC FIX: Konverter alle Python 'sets' til 'lister', så de kan JSON-serialiseres i Data Laket
+        return {k: list(v) if isinstance(v, set) else v for k, v in data.items()}
 
 # ====================== TOR & PROXY MANAGER ======================
 class TORManager:
@@ -273,6 +293,7 @@ class SeleniumBrowser:
         options.add_argument(f"user-agent={self.config.user_agent or get_random_user_agent()}")
         options.add_argument("--disable-popup-blocking")
         options.add_argument("--disable-notifications")
+        options.add_argument("--ignore-certificate-errors") # GOLIATH EXPANSION: Tillader proxies med self-signed certs
         
         # Hvis chrome, brug UC
         if "chrome" in self.config.browser_type.lower():
@@ -336,8 +357,15 @@ class SeleniumBrowser:
                 time.sleep(random.uniform(2, 4))
                 self._human_scroll()
             
+            # GOLIATH EXPANSION: Deep Storage Infiltration
+            try:
+                ls = self.driver.execute_script("return JSON.stringify(window.localStorage) || '';")
+                ss = self.driver.execute_script("return JSON.stringify(window.sessionStorage) || '';")
+                storage_dump = f"{ls} {ss}"
+            except Exception: storage_dump = ""
+            
             html = self.driver.page_source
-            osint_data = OSINTExtractor.extract_from_html(html, url) if self.config.auto_extract_osint else {}
+            osint_data = OSINTExtractor.extract_from_html(html, url, storage_dump) if self.config.auto_extract_osint else {}
             
             return {"html": html, "osint": osint_data, "url": self.driver.current_url}
             
@@ -402,6 +430,31 @@ class PlaywrightBrowser:
             if await page.query_selector("input[name='cf-turnstile-response']"):
                 await page.evaluate(f'document.getElementsByName("cf-turnstile-response")[0].value="{res["token"]}";')
 
+    async def _bypass_cookie_banners_async(self, page):
+        """GOLIATH EXPANSION: Universal Cookie Consent Auto-Clicker."""
+        selectors = [
+            "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll", # Cookiebot
+            "#onetrust-accept-btn-handler",                           # OneTrust
+            "button.coi-banner__accept",                              # CookieInformation
+            ".cmplz-accept",                                          # Complianz
+            "button:has-text('Accepter alle')",                       # Generisk Dansk
+            "button:has-text('Godkend alle')",                        # Generisk Dansk
+            "button:has-text('Accept All')",                          # Generisk Engelsk
+            "button:has-text('Tillad alle')",                         # Generisk Dansk
+            "button:has-text('Accepter cookies')"                     # Generisk Dansk
+        ]
+        self.logger.info("🍪 Skanner efter Cookie-bannere for Auto-Accept...")
+        for selector in selectors:
+            try:
+                element = await page.wait_for_selector(selector, timeout=1500, state="visible")
+                if element:
+                    await element.click()
+                    self.logger.info(f"✅ Knuste Cookie-banner: {selector}")
+                    await asyncio.sleep(1) # Giv DOM'en tid til at renses
+                    break
+            except Exception:
+                continue
+
     async def get_async(self, url: str, retries: int = 0) -> Dict[str, Any]:
         playwright = await async_playwright().start()
         proxy = self.proxy_manager.get_next_proxy()
@@ -432,7 +485,8 @@ class PlaywrightBrowser:
 
         context = await browser.new_context(
             user_agent=self.config.user_agent or get_random_user_agent(),
-            viewport={"width": 1920, "height": 1080}
+            viewport={"width": 1920, "height": 1080},
+            ignore_https_errors=True # GOLIATH EXPANSION: Blokerer net::ERR_CERT_AUTHORITY_INVALID
         )
         
         # =====================================================================
@@ -483,8 +537,25 @@ class PlaywrightBrowser:
             page.on("response", handle_response)
        
         try:
-            await page.goto(url, timeout=self.config.timeout * 1000)
+            # GOLIATH EXPANSION: Venter kun på DOM'en (ikke tunge billeder) for at forhindre Proxy Timeouts
+            response = await page.goto(url, timeout=self.config.timeout * 1000, wait_until="domcontentloaded")
             self.proxy_manager.report_success()
+            
+            # GOLIATH EXPANSION: Passive Infrastructure Intel (IP & SSL)
+            server_info = {}
+            if response:
+                try:
+                    addr = await response.server_addr()
+                    if addr: server_info["ip"] = addr.get("ipAddress")
+                    sec = await response.security_details()
+                    if sec:
+                        server_info["ssl_issuer"] = sec.get("issuer")
+                        server_info["ssl_subject"] = sec.get("subjectName")
+                        server_info["ssl_protocol"] = sec.get("protocol")
+                        server_info["ssl_valid_to"] = sec.get("validTo")
+                except Exception as e:
+                    self.logger.debug(f"Infrastruktur-udtræk fejlede let: {e}")
+                    
             if self.config.js_rendering:
                 await page.wait_for_load_state("networkidle")
                 await BehaviorEngine.async_random_idle(page, level=self.config.behavior_level)
@@ -494,8 +565,19 @@ class PlaywrightBrowser:
                 await self._solve_captcha_async(page, url)
                 await asyncio.sleep(2)
                 
+            # GOLIATH EXPANSION: Deep Storage Infiltration (Playwright)
+            try:
+                ls = await page.evaluate("JSON.stringify(window.localStorage) || ''")
+                ss = await page.evaluate("JSON.stringify(window.sessionStorage) || ''")
+                storage_dump = f"{ls} {ss}"
+            except Exception: storage_dump = ""
+                
             html = await page.content()
-            osint_data = OSINTExtractor.extract_from_html(html, url) if self.config.auto_extract_osint else {}
+            osint_data = OSINTExtractor.extract_from_html(html, url, storage_dump) if self.config.auto_extract_osint else {}
+            
+            # GOLIATH EXPANSION: Flet SSL/IP intel direkte ind i OSINT databasen
+            if server_info:
+                osint_data["infrastructure"] = server_info
             
             if self.config.ephemeral:
                 await context.close() # Zerotrace oprydning!

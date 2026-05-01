@@ -377,6 +377,10 @@ class GoliathShell:
                         self.workspace_manager.list_workspaces()
                 elif cmd == "jobs":
                     self.job_manager.display_jobs()
+                elif cmd == "reindex":
+                    console.print("[bold cyan][*] Synkroniserer loot_evidence med Datalaken...[/bold cyan]")
+                    from goliath_reindexer import GoliathReindexer
+                    GoliathReindexer().reindex_all()
                 elif cmd in ["web", "server"]:
                     if GoliathWebServer:
                         console.print("[bold cyan][*] Klargør Django Web Server i baggrunden...[/bold cyan]")
@@ -444,6 +448,7 @@ class GoliathShell:
         table.add_row("case <navn>", "Opret eller skift operativ sagsmappe (workspace)")
         table.add_row("jobs", "Se status på asynkrone baggrundsopgaver")
         table.add_row("report", "Generér interaktiv HTML efterretningsrapport")
+        table.add_row("reindex", "Synkroniser sagsmappens filer med Data Lake databasen")
         table.add_row("web", "Start Django Command Center i baggrunden")
         table.add_row("clear", "Rens skærmen og genindlæs dashboard")
         table.add_row("darknet <url>,<word>", "Kør direkte darknet scraping på onion-URL")

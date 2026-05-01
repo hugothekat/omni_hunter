@@ -9,7 +9,7 @@ from playwright.async_api import async_playwright
 from datetime import datetime
 from pathlib import Path
 from core.base_module import BaseModule, ModuleCategory
-from core.utils import C, session
+from core.utils import C, session, datalake
 
 # NY V8 FIX: Klassen er omdøbt til MatrixAnalyzer for at matche Modul 02's Pivot Engine!
 class MatrixAnalyzer(BaseModule):
@@ -98,6 +98,7 @@ class MatrixAnalyzer(BaseModule):
         if self.data["Platforme"] or self.data.get("High_Value_Hits"):
             self._check_wayback_archives()
 
+        datalake.ingest(self.name, self.username, self.data)
         self.save_loot(self.username)
 
     async def _check_url_async(self, name, url, session_http):
