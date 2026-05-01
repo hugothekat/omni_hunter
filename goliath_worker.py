@@ -55,10 +55,18 @@ def check_redis():
         sys.exit(1)
 
 def start_celery():
-    """Spinder Celery worker op bundet til core.web_server."""
-    print("\n\033[96m[*] Initierer Celery Worker (GOLIATH APEX)...\033[0m")
+    """Spinder Celery worker og Celery Beat op bundet til core.web_server (Reprohack Architecture)."""
+    print("\n\033[96m[*] Initierer Celery Worker & Beat Scheduler (GOLIATH APEX)...\033[0m")
     try:
         os.makedirs("logs", exist_ok=True)
+        # GOLIATH AUTO-HEAL: Flusher døde tasks fra ældre batches ud af Redis
+        print("\033[95m[*] Tømmer Redis-køen for forældede ghost-tasks...\033[0m")
+        subprocess.run([sys.executable, "-m", "celery", "-A", "core.web_server", "purge", "-f"])
+        
+        # Starter Celery Beat asynkront i baggrunden for cronjobs
+        subprocess.Popen([sys.executable, "-m", "celery", "-A", "core.web_server", "beat", "--loglevel=info", "--logfile=logs/celery_beat.log"])
+        
+        # Starter hovedworkeren i forgrunden
         subprocess.run([sys.executable, "-m", "celery", "-A", "core.web_server", "worker", "--loglevel=info", "--pool=solo", "--logfile=logs/celery_worker.log"])
     except KeyboardInterrupt:
         print("\n\033[91m[*] Celery Worker afbrudt manuelt.\033[0m")

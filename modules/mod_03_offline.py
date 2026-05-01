@@ -33,7 +33,8 @@ class OfflineDatabaseAnalyzer:
         self.token_patterns = [
             r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*', # JWT Token
             r'ghp_[a-zA-Z0-9]{36}',                                       # GitHub Token
-            r'xox[baprs]-[0-9]{12}-[0-9]{12}-[a-zA-Z0-9]{24}'             # Slack Token
+            r'xox[baprs]-[0-9]{12}-[0-9]{12}-[a-zA-Z0-9]{24}',            # Slack Token
+            r'-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----'                    # SSH / RSA / EC Private Keys
         ]
 
     def run(self, driver=None, target=""):

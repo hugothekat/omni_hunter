@@ -426,11 +426,67 @@ class OmniDataLake:
                              target TEXT,
                              data_json TEXT)''')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_target ON osint_records(target)')
+            
+            # GOLIATH EXPANSION: Entity Extraction Tables (V48)
+            conn.execute('''CREATE TABLE IF NOT EXISTS extracted_emails
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, email TEXT)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS extracted_credentials
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, username TEXT, password TEXT)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS extracted_apis
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_email ON extracted_emails(email)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_cred_user ON extracted_credentials(username)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_api ON extracted_apis(endpoint)')
 
     def ingest(self, source_module: str, target: str, data: Dict[str, Any]) -> None:
+        timestamp = datetime.now().isoformat()
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
-                         (datetime.now().isoformat(), source_module, target, json.dumps(data, ensure_ascii=False)))
+                         (timestamp, source_module, target, json.dumps(data, ensure_ascii=False)))
+                         
+            # --- GOLIATH ADVANCED ENTITY EXTRACTION ---
+            try:
+                emails = set()
+                for key in ["Fundne_Emails", "Deep_Scrape_Emails", "Emails_Identificeret"]:
+                    if key in data and isinstance(data[key], list):
+                        for e in data[key]:
+                            if isinstance(e, str): emails.add(e)
+                            elif isinstance(e, dict) and "Email" in e: emails.add(e["Email"])
+                
+                for e in emails:
+                    conn.execute("INSERT INTO extracted_emails (timestamp, source_module, target, email) VALUES (?, ?, ?, ?)",
+                                 (timestamp, source_module, target, e))
+
+                creds = []
+                if "Credentials" in data and isinstance(data["Credentials"], list):
+                    for c in data["Credentials"]:
+                        if isinstance(c, dict): creds.append((c.get("Konto", "Unknown"), c.get("Secret", "")))
+                        
+                for key in ["Rå_Kredentialer", "Lækkede_Kredentialer"]:
+                    if key in data and isinstance(data[key], list):
+                        for c in data[key]:
+                            if isinstance(c, str) and ":" in c:
+                                u, p = c.split(":", 1)
+                                creds.append((u, p))
+                                
+                if "Knækkede_Passwords_Klartekst" in data and isinstance(data["Knækkede_Passwords_Klartekst"], list):
+                    for c in data["Knækkede_Passwords_Klartekst"]:
+                        if isinstance(c, dict):
+                            creds.append((c.get("Hash", "Unknown")[:16], c.get("Cleartext", c.get("Plaintext", ""))))
+
+                for u, p in creds:
+                    if u and p:
+                        conn.execute("INSERT INTO extracted_credentials (timestamp, source_module, target, username, password) VALUES (?, ?, ?, ?, ?)",
+                                     (timestamp, source_module, target, str(u), str(p)))
+                                     
+                # API Endpoint Extraction for SPA Recon
+                if "Intercepted_APIs" in data and isinstance(data["Intercepted_APIs"], list):
+                    for api in data["Intercepted_APIs"]:
+                        if isinstance(api, dict) and api.get("endpoint"):
+                            conn.execute("INSERT INTO extracted_apis (timestamp, source_module, target, endpoint, method) VALUES (?, ?, ?, ?, ?)",
+                                         (timestamp, source_module, target, api.get("endpoint"), api.get("method", "GET")))
+            except Exception as e:
+                logger.error(f"Fejl ved Entity Extraction til Datalake: {e}")
 
     def save_to_json(self, data: Dict[str, Any], filename: str, encrypt: bool = False, sanitize_pii: bool = False) -> str:
         filepath = self.base_dir / f"{sanitize_filename(filename)}.json"

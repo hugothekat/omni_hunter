@@ -2,10 +2,25 @@
 import os
 import glob
 import re
+import shutil
 from pathlib import Path
 
+def run_sanitizer():
+    print("\033[96m[=] INITIATING GOLIATH ADVANCED SANITIZATION PROTOCOL [=]\033[0m")
+    
+    # Mapper der skal scannes for crap
+    target_dirs = ["core", "modules", "."]
+    illegal_chars = re.compile(r'[ #\-]')
+    
+    # Slet uønskede cache-mapper (OPSEC cleaning)
+    cache_dirs = glob.glob("**/__pycache__", recursive=True) + glob.glob("**/.mypy_cache", recursive=True)
+    for cache in cache_dirs:
+        if "venv" not in cache:
+            shutil.rmtree(cache, ignore_errors=True)
+            print(f"\033[95m    -> Nuket cache: {cache}\033[0m")
+
 def run_reindexer():
-    print("\033[96m[=] INITIATING GOLIATH MASS RE-INDEXER PROTOCOL [=]\033[0m")
+    print("\n\033[96m[=] INITIATING GOLIATH MASS RE-INDEXER PROTOCOL [=]\033[0m")
     
     mod_dir = Path("modules")
     if not mod_dir.exists():
@@ -20,7 +35,7 @@ def run_reindexer():
     
     # 2. Generer mapping for nye navne
     for file in mod_files:
-        old_name = file.stem # f.eks. mod_02_business
+        old_name = file.stem
         parts = old_name.split('_')
         
         if len(parts) >= 3 and parts[0] == "mod" and parts[1].isdigit():
@@ -32,22 +47,25 @@ def run_reindexer():
             
     if not rename_map:
         print("\033[92m[✓] Alle moduler er allerede perfekt indekseret.\033[0m")
-        return
-        
-    print(f"\033[93m[*] Omstrukturerer {len(rename_map)} moduler...\033[0m")
-    
-    # 3. Omdøb filerne fysisk på disken
-    for old_base, new_base in rename_map.items():
-        old_path = mod_dir / f"{old_base}.py"
-        new_path = mod_dir / f"{new_base}.py"
-        os.rename(old_path, new_path)
-        print(f"\033[95m    -> Omdøbt: {old_base}.py til {new_base}.py\033[0m")
+    else:
+        print(f"\033[93m[*] Omstrukturerer {len(rename_map)} moduler...\033[0m")
+        # 3. Omdøb filerne fysisk på disken
+        for old_base, new_base in rename_map.items():
+            old_path = mod_dir / f"{old_base}.py"
+            new_path = mod_dir / f"{new_base}.py"
+            os.rename(old_path, new_path)
+            print(f"\033[95m    -> Omdøbt: {old_base}.py til {new_base}.py\033[0m")
         
     # 4. Opdater alle Python filer i projektet med de nye import navne
     print(f"\n\033[93m[*] Opdaterer interne krydsreferencer (Cross-Module Injections)...\033[0m")
     all_python_files = glob.glob("**/*.py", recursive=True)
     
+    ignore_dirs = ["venv", ".git", ".mypy_cache"]
+    
     for py_file in all_python_files:
+        if any(ignored in py_file for ignored in ignore_dirs):
+            continue
+            
         # Rør ikke reindexeren selv
         if os.path.basename(py_file) == "goliath_reindexer.py": continue
         
@@ -67,7 +85,8 @@ def run_reindexer():
         except Exception as e:
             print(f"\033[91m    [!] Fejl ved læsning af {py_file}: {e}\033[0m")
             
-    print("\n\033[92m[✓] RE-INDEXING COMPLETE! Hele biblioteket og alle pivot-referencer er synkroniseret.\033[0m")
+    print("\n\033[92m[✓] RE-INDEXING & SANITIZATION COMPLETE! Hele biblioteket er stealth og synkroniseret.\033[0m")
 
 if __name__ == "__main__":
+    run_sanitizer()
     run_reindexer()

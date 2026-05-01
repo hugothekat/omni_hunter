@@ -22,6 +22,7 @@ import uuid
 import importlib.util
 import inspect
 import traceback
+import webbrowser
 from pathlib import Path
 from datetime import datetime
 
@@ -377,7 +378,9 @@ class GoliathShell:
                     self.execute_cmd(args)
                 elif cmd == "report":
                     console.print(f"[bold cyan][*] Genererer analyserapport for sag: {self.workspace_manager.current_workspace}...[/bold cyan]")
-                    AutomatedCaseReporter().generate()
+                    reporter = AutomatedCaseReporter()
+                    reporter.generate()
+                    webbrowser.open(f"file://{reporter.report_file.absolute()}")
                 elif cmd == "darknet":
                     args.insert(0, "22")
                     self.execute_cmd(args)
@@ -479,7 +482,9 @@ def run_pipeline(args):
         if module and module.check_requirements():
             jm.start_job(m_id, target, module, is_background=False)
             
-    AutomatedCaseReporter().generate()
+    reporter = AutomatedCaseReporter()
+    reporter.generate()
+    webbrowser.open(f"file://{reporter.report_file.absolute()}")
 
 def main():
     parser = argparse.ArgumentParser(description="PET FE - OSINT Framework")

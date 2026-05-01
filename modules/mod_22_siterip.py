@@ -43,8 +43,11 @@ class SiteripModule(BaseModule):
             logger.error("Intet mål (URL) angivet til Siterip.")
             return {}
 
-        # Auto-Heal: Sikrer at URL'en har et skema, så urlparse fungerer korrekt.
-        if not url.startswith(("http://", "https://")) and not url.endswith(".git"):
+        # Auto-Heal: Retter kritiske slåfejl (f.eks. 'httpswww.' eller 'http//')
+        url = re.sub(r'^(https?://)?https?www\.', 'https://www.', url)
+        url = re.sub(r'^(https?://)+', 'https://', url) # Fjerner dobbelte skemaer
+        
+        if not url.startswith("http") and not url.endswith(".git"):
             url = f"https://{url}"
 
         print(f"\n{C.CYAN}{'='*60}\n[22] GOLIATH SITERIP (Git & Web Clone V8)\n{'='*60}{C.RESET}")

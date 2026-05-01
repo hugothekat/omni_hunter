@@ -7,12 +7,15 @@ from core.utils import C
 
 class OpsecSanitizer:
     """Fjerner al EXIF, metadata og OS-timestamps fra filer, inden de deles eller uploades (GOLIATH V8)"""
-    def __init__(self, file_path):
-        self.file_path = file_path.strip()
+    def __init__(self, file_path=""):
+        self.file_path = file_path.strip() if file_path else ""
         
-    def run(self, driver=None):
+    def run(self, driver=None, target=""):
         print(f"\n{C.CYAN}{'='*60}\n[24] OPSEC Sanitizer (Metadata & Timestomping V8)\n{'='*60}{C.RESET}")
         
+        if target:
+            self.file_path = target.strip()
+
         if not os.path.exists(self.file_path):
             print(f"{C.RED}[!] Filen findes ikke: {self.file_path}{C.RESET}")
             return

@@ -15,7 +15,7 @@ class GoliathGraphExporter:
         self.edges = []
         self.target_name = session.get('name', 'Hovedmål')
 
-    def generate(self):
+    def generate(self, driver=None, target=""):
         print(f"\n{C.CYAN}{'='*60}\n[28] Visual Link Analysis Exporter (GOLIATH V8)\n{'='*60}{C.RESET}")
         files = list(Path(self.loot_dir).glob("*.json"))
         

@@ -10,6 +10,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
+from pathlib import Path
+def ensure_venv():
+    """GOLIATH AUTO-HEAL: Tvinger webserveren ind i Venv for at forhindre ModuleNotFound."""
+    if sys.prefix == sys.base_prefix:
+        venv_python = Path(BASE_DIR) / "venv" / "bin" / "python"
+        if venv_python.exists():
+            os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+        else:
+            print("\033[91m[!] Intet 'venv' fundet. Kør './goliath.sh' først.\033[0m")
+            sys.exit(1)
+ensure_venv()
+
 import json
 import subprocess
 import threading
@@ -17,6 +29,12 @@ import glob
 import socket
 import django
 from django.conf import settings
+from django.core.management import call_command
+try:
+    import websockets
+    import asyncio
+except ImportError:
+    websockets = None
 from core.utils import C, session
 
 # =====================================================================
@@ -39,13 +57,27 @@ if not settings.configured:
                 'NAME': db_path,
             }
         },
-        INSTALLED_APPS=['core'], # Gør det muligt for Django at mappe modeller i denne fil
-        MIDDLEWARE=['django.middleware.common.CommonMiddleware'],
+        INSTALLED_APPS=[
+            'django.contrib.admin',
+            'django.contrib.auth',
+            'django.contrib.contenttypes',
+            'django.contrib.sessions',
+            'django.contrib.messages',
+            'core'
+        ],
+        MIDDLEWARE=[
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.middleware.common.CommonMiddleware',
+            'django.middleware.csrf.CsrfViewMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+        ],
         TEMPLATES=[{
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': [],
-            'APP_DIRS': False,
+            'APP_DIRS': True,
         }],
+        LOGIN_URL='/login/',
     )
     django.setup()
 
@@ -72,6 +104,93 @@ class OsintRecord(models.Model):
         db_table = 'osint_records'
         managed = False  # Vi lader modulerne oprette tabellen, Django læser den bare
         app_label = 'core'
+        
+class ScheduledHunt(models.Model):
+    """GOLIATH V46: Relationel model inspireret af Reprohack til at håndtere Cronjobs."""
+    id = models.AutoField(primary_key=True)
+    target = models.CharField(max_length=255)
+    module_id = models.CharField(max_length=50)
+    interval_minutes = models.IntegerField(default=60)
+    is_active = models.BooleanField(default=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'scheduled_hunts'
+        app_label = 'core'
+
+class ActiveOperation(models.Model):
+    """GOLIATH V47: Live tracking af Celery / Background tasks."""
+    task_id = models.CharField(max_length=255, primary_key=True)
+    module_id = models.CharField(max_length=50)
+    target = models.CharField(max_length=255)
+    status = models.CharField(max_length=50, default="Processing")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'active_operations'
+        app_label = 'core'
+
+class ExtractedEmail(models.Model):
+    """GOLIATH V48: Entity Extraction Model for hurtig søgning."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'extracted_emails'
+        managed = False
+        app_label = 'core'
+
+class ExtractedCredential(models.Model):
+    """GOLIATH V48: Entity Extraction Model for hurtig søgning af lækager."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'extracted_credentials'
+        managed = False
+        app_label = 'core'
+
+class ExtractedApi(models.Model):
+    """GOLIATH V49: Entity Model for fundne SPA Backend-Endpoints."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    endpoint = models.CharField(max_length=1000)
+    method = models.CharField(max_length=50)
+
+    class Meta:
+        db_table = 'extracted_apis'
+        managed = False
+        app_label = 'core'
+
+# Sikrer at tabellerne eksisterer uden at køre 'makemigrations' for OPSEC reasons
+from django.db import connection
+with connection.cursor() as cursor:
+    cursor.execute('''CREATE TABLE IF NOT EXISTS osint_records (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, data_json TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS scheduled_hunts (id INTEGER PRIMARY KEY AUTOINCREMENT, target TEXT, module_id TEXT, interval_minutes INTEGER, is_active BOOLEAN, last_run DATETIME, created_at DATETIME)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS active_operations (task_id TEXT PRIMARY KEY, module_id TEXT, target TEXT, status TEXT, created_at DATETIME)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_emails (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, email TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_credentials (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, username TEXT, password TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_apis (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
+
+# Auto-initialiserer RBAC Auth tabeller og opretter Master Admin
+try:
+    call_command('migrate', interactive=False, verbosity=0)
+    from django.contrib.auth.models import User
+    if not User.objects.filter(username='goliath_admin').exists():
+        User.objects.create_superuser('goliath_admin', 'admin@goliath.local', 'GoliathApex2026!')
+        print(f"\033[92m[+] Master Admin Oprettet: goliath_admin / GoliathApex2026!\033[0m")
+except Exception as e:
+    print(f"Migration / Auth Error: {e}")
 
 # =====================================================================
 # 2.5 CELERY ASYNC TASK QUEUE (REPROHACK INTEGRATION)
@@ -84,19 +203,100 @@ try:
     
     @celery_app.task(name="execute_goliath_module")
     def execute_goliath_module(module_id, target):
+        from django.utils import timezone
+        from celery import current_task
+        task_id = current_task.request.id if current_task else "unknown"
+        
+        if task_id != "unknown":
+            try:
+                ActiveOperation.objects.update_or_create(
+                    task_id=task_id,
+                    defaults={'module_id': str(module_id), 'target': target, 'status': 'Processing', 'created_at': timezone.now()}
+                )
+            except Exception: pass
+            
         subprocess.run([sys.executable, "main.py", "-t", target, "-m", str(module_id)])
+        
+        if task_id != "unknown":
+            try:
+                op = ActiveOperation.objects.get(task_id=task_id)
+                op.status = "Success"
+                op.save()
+            except Exception: pass
+            
         return f"Modul {module_id} mod {target} fuldført."
+        
+    @celery_app.task(name="goliath_worker.execute_goliath_module")
+    def execute_goliath_module_legacy(module_id, target):
+        """Ghost-Task Catcher: Opfanger beskeder fra ældre batches og kører dem fejlfrit."""
+        return execute_goliath_module(module_id, target)
+        
+    @celery_app.task(name="goliath_cron_scheduler")
+    def goliath_cron_scheduler():
+        """Kører hvert minut og tjekker om en ScheduledHunt skal affyres (Continuous Monitoring)."""
+        from django.utils import timezone
+        from datetime import timedelta
+        hunts = ScheduledHunt.objects.filter(is_active=True)
+        now = timezone.now()
+        for hunt in hunts:
+            if not hunt.last_run or now >= (hunt.last_run + timedelta(minutes=hunt.interval_minutes)):
+                print(f"[CRON] Affyrer automatisk {hunt.module_id} mod {hunt.target}")
+                celery_app.send_task("execute_goliath_module", args=[hunt.module_id, hunt.target])
+                hunt.last_run = now
+                hunt.save()
+                
+    # Reprohack-style Celery Beat konfiguration
+    celery_app.conf.beat_schedule = {'run-scheduler-every-minute': {'task': 'goliath_cron_scheduler', 'schedule': 60.0}}
+    celery_app.conf.timezone = 'UTC'
 except ImportError:
     celery_app = None
 
 # =====================================================================
 # 3. VIEWS & TEMPLATES (HTML DASHBOARD)
 # =====================================================================
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import redirect
+
+@csrf_exempt
+def login_view(request):
+    """GOLIATH V46: Secure Login Portal (RBAC)"""
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        if user is not None:
+            login(request, user)
+            return redirect('/')
+        return HttpResponse("<script>alert('Afgang Nægtet. Uautoriseret.'); window.location='/login/';</script>", status=401)
+    
+    html = """
+    <!DOCTYPE html><html data-bs-theme="dark"><head><title>GOLIATH // AUTH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+    <body class="bg-dark text-light d-flex align-items-center justify-content-center vh-100" style="background-color:#0b0b10 !important;">
+    <div class="card p-5 border-danger" style="width: 400px; background-color:#1e1e2f; box-shadow: 0 0 20px rgba(255,0,127,0.2);">
+        <h3 class="text-danger fw-bold mb-4 text-center">🦅 GOLIATH ACCESS</h3>
+        <form method="POST">
+            <input class="form-control mb-3 bg-dark text-light border-secondary" name="username" placeholder="Brugernavn" required>
+            <input type="password" class="form-control mb-4 bg-dark text-light border-secondary" name="password" placeholder="Adgangskode" required>
+            <button class="btn btn-outline-danger w-100 fw-bold" type="submit">INITIER SESSION</button>
+        </form>
+    </div></body></html>
+    """
+    return HttpResponse(html)
+
+def logout_view(request):
+    logout(request)
+    return redirect('/login/')
+
+@login_required
 def dashboard(request):
     """Interaktivt HTML Dashboard med Chart.js og Bootstrap (Dark Mode)."""
     error_msg = None
     records = []
     stats = {}
+    scheduled_hunts = []
+    active_operations = []
     query = request.GET.get('q', '').strip()
     
     try:
@@ -112,8 +312,31 @@ def dashboard(request):
             
         for r in records:
             stats[r.source_module] = stats.get(r.source_module, 0) + 1
+            
+        # Hent aktive overvågninger
+        scheduled_hunts = ScheduledHunt.objects.filter(is_active=True).order_by('-created_at')
+        active_operations = ActiveOperation.objects.all().order_by('-created_at')[:10]
+        
+        # Hent Entities
+        if query:
+            emails_qs = ExtractedEmail.objects.filter(email__icontains=query).order_by('-id')[:50]
+            creds_qs = ExtractedCredential.objects.filter(models.Q(username__icontains=query) | models.Q(password__icontains=query)).order_by('-id')[:50]
+        else:
+            emails_qs = ExtractedEmail.objects.all().order_by('-id')[:25]
+            creds_qs = ExtractedCredential.objects.all().order_by('-id')[:25]
+            
+        # GOLIATH V49: Entity Aggregation for Charts
+        cred_stats_qs = ExtractedCredential.objects.values('source_module').annotate(count=models.Count('id')).order_by('-count')[:10]
+        cred_stats = {x['source_module']: x['count'] for x in cred_stats_qs}
+        
+        email_stats_qs = ExtractedEmail.objects.values('source_module').annotate(count=models.Count('id')).order_by('-count')[:10]
+        email_stats = {x['source_module']: x['count'] for x in email_stats_qs}
     except Exception as e:
         error_msg = f"Data Lake er tom eller ikke initialiseret. Kør et modul i terminalen først! (Detaljer: {e})"
+        emails_qs = []
+        creds_qs = []
+        cred_stats = {}
+        email_stats = {}
 
     html_template = """
     <!DOCTYPE html>
@@ -145,6 +368,8 @@ def dashboard(request):
                 <a class="navbar-brand text-danger-custom fw-bold" href="#">🦅 GOLIATH WEB COMMAND CENTER</a>
                 <span class="navbar-text text-accent">Batch 7: Live Terminal & Master Report Download</span>
                 <span class="navbar-text text-accent">Batch 9: Forensic Dropzone & Asynchronous Extraction</span>
+                <span class="navbar-text ms-4 text-warning fw-bold">👤 {{ request.user.username|upper }}</span>
+                <a href="/logout/" class="btn btn-outline-danger btn-sm ms-3">Afslut Session</a>
                 <a href="/graph/" class="btn btn-outline-info btn-sm ms-auto">🌐 Visualisér Intelligence Netværk</a>
             </div>
         </nav>
@@ -164,6 +389,17 @@ def dashboard(request):
                             <button type="submit" class="btn btn-outline-danger w-100">Affyr Asynkront</button>
                         </form>
                         <div id="triggerResult" class="mt-2 text-warning small"></div>
+                    </div>
+                    
+                    <div class="card p-3 mb-4" style="border-color: #9b59b6;">
+                        <h5 class="text-accent" style="color: #9b59b6 !important;">⏳ Continuous Monitoring</h5>
+                        <form id="scheduleForm">
+                            <input type="text" id="sTarget" class="form-control bg-dark text-light border-secondary mb-2" placeholder="Target" required>
+                            <input type="text" id="sModule" class="form-control bg-dark text-light border-secondary mb-2" placeholder="Modul ID (ex: 36)" required>
+                            <input type="number" id="sInterval" class="form-control bg-dark text-light border-secondary mb-2" placeholder="Interval (minutter)" value="60" required>
+                            <button type="submit" class="btn btn-outline-primary w-100" style="color: #9b59b6; border-color: #9b59b6;">Start Overvågning</button>
+                        </form>
+                        <div id="scheduleResult" class="mt-2 text-info small"></div>
                     </div>
                     
                     <div class="card p-3 mb-4" style="border-color: #f1c40f;">
@@ -187,6 +423,115 @@ def dashboard(request):
                     </div>
                 </div>
                 <div class="col-md-9">
+                    <div class="card p-3 mb-4" style="border-color: #00e5ff;">
+                        <h5 class="text-accent mb-3">📡 Live Operationer (Celery/Threads)</h5>
+                        <table class="table table-dark table-sm align-middle">
+                            <thead><tr><th>Task ID</th><th>Mål</th><th>Modul</th><th>Status</th></tr></thead>
+                            <tbody>
+                                {% for op in active_operations %}
+                                <tr>
+                                    <td><span class="text-muted" style="font-size: 0.8rem;">{{ op.task_id|slice:":8" }}</span></td>
+                                    <td class="text-warning fw-bold">{{ op.target }}</td>
+                                    <td>{{ op.module_id }}</td>
+                                    <td>
+                                        {% if op.status == 'Processing' %}
+                                            <span class="badge bg-warning text-dark"><span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;"></span> Processing</span>
+                                        {% elif op.status == 'Success' %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if not active_operations %}
+                                <tr><td colspan="4" class="text-center text-muted">Ingen aktive operationer pt.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                        <div class="card p-3 mb-4">
+                            <h5 class="text-accent mb-3" style="color: #9b59b6 !important;">Aktive Cronjobs (Automatiserede Scans)</h5>
+                            <table class="table table-dark table-sm align-middle">
+                                <thead><tr><th>ID</th><th>Mål</th><th>Modul</th><th>Interval</th><th>Sidst Kørt</th><th>Aktion</th></tr></thead>
+                                <tbody>
+                                    {% for h in scheduled_hunts %}
+                                    <tr>
+                                        <td>#{{ h.id }}</td>
+                                        <td class="text-warning fw-bold">{{ h.target }}</td>
+                                        <td>{{ h.module_id }}</td>
+                                        <td>{{ h.interval_minutes }} min</td>
+                                        <td class="text-muted">{{ h.last_run|default:"Aldrig" }}</td>
+                                        <td><button onclick="stopHunt({{ h.id }})" class="btn btn-sm btn-outline-danger py-0 px-2">Stop</button></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- GOLIATH V49: Entity Analytics Graphs -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card p-3 h-100" style="border-color: #ff007f;">
+                                    <h6 class="text-accent mb-2" style="color: #ff007f !important;">🔥 Top Kilder: Passwords</h6>
+                                    <canvas id="credChart" height="150"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card p-3 h-100" style="border-color: #00e5ff;">
+                                    <h6 class="text-accent mb-2" style="color: #00e5ff !important;">📧 Top Kilder: Emails</h6>
+                                    <canvas id="emailChart" height="150"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GOLIATH V48: Entity Extraction UI -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card p-3 h-100" style="border-color: #ff007f;">
+                                    <h5 class="text-accent mb-3" style="color: #ff007f !important;">🚨 Eksponerede Credentials</h5>
+                                    <div class="table-responsive" style="max-height: 250px;">
+                                        <table class="table table-dark table-sm align-middle">
+                                            <thead style="position: sticky; top: 0; z-index: 1; background: #12121c;"><tr><th>Mål/Bruger</th><th>Password</th><th>Kilde</th></tr></thead>
+                                            <tbody>
+                                                {% for c in credentials %}
+                                                <tr>
+                                                    <td class="text-warning">{{ c.username }}</td>
+                                                    <td class="text-danger fw-bold" style="font-family: monospace;">{{ c.password }}</td>
+                                                    <td><span class="badge bg-secondary">{{ c.source_module }}</span></td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr><td colspan="3" class="text-muted text-center">Ingen credentials fundet.</td></tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card p-3 h-100" style="border-color: #00e5ff;">
+                                    <h5 class="text-accent mb-3">📧 Udtrukne Emails</h5>
+                                    <div class="table-responsive" style="max-height: 250px;">
+                                        <table class="table table-dark table-sm align-middle">
+                                            <thead style="position: sticky; top: 0; z-index: 1; background: #12121c;"><tr><th>Email</th><th>Target</th><th>Kilde</th></tr></thead>
+                                            <tbody>
+                                                {% for e in emails %}
+                                                <tr>
+                                                    <td class="text-info fw-bold">{{ e.email }}</td>
+                                                    <td class="text-muted">{{ e.target }}</td>
+                                                    <td><span class="badge bg-secondary">{{ e.source_module }}</span></td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr><td colspan="3" class="text-muted text-center">Ingen emails fundet.</td></tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="card p-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="text-accent mb-0">Seneste Efterretninger</h5>
@@ -239,6 +584,33 @@ def dashboard(request):
                         options: { plugins: { legend: { position: 'bottom', labels: { color: '#cfd2d9' } } } }
                     });
 
+                    // Batch V49: Credential Analytics
+                    new Chart(document.getElementById('credChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: [{% for k in cred_stats.keys %}'{{ k|truncatechars:15 }}',{% endfor %}],
+                            datasets: [{
+                                label: 'Lækkede Passwords',
+                                data: [{% for v in cred_stats.values %}{{ v }},{% endfor %}],
+                                backgroundColor: '#ff007f', borderColor: '#1e1e2f', borderWidth: 1
+                            }]
+                        },
+                        options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#cfd2d9' } }, x: { ticks: { color: '#cfd2d9' } } } }
+                    });
+
+                    new Chart(document.getElementById('emailChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: [{% for k in email_stats.keys %}'{{ k|truncatechars:15 }}',{% endfor %}],
+                            datasets: [{
+                                label: 'Eksponerede Emails',
+                                data: [{% for v in email_stats.values %}{{ v }},{% endfor %}],
+                                backgroundColor: '#00e5ff', borderColor: '#1e1e2f', borderWidth: 1
+                            }]
+                        },
+                        options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#cfd2d9' } }, x: { ticks: { color: '#cfd2d9' } } } }
+                    });
+
                 document.getElementById('triggerForm')?.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const resDiv = document.getElementById('triggerResult');
@@ -255,6 +627,26 @@ def dashboard(request):
                     .then(d => { resDiv.innerHTML = "<b>" + (d.message || d.error) + "</b>"; })
                     .catch(err => { resDiv.innerHTML = "<span class='text-danger'>Fejl: " + err + "</span>"; });
                 });
+
+                document.getElementById('scheduleForm')?.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    fetch('/api/v1/schedule/', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            target: document.getElementById('sTarget').value,
+                            module_id: document.getElementById('sModule').value,
+                            interval_minutes: document.getElementById('sInterval').value
+                        })
+                    }).then(r => r.json()).then(d => { location.reload(); });
+                });
+                
+                function stopHunt(id) {
+                    if(confirm('Stop automatisk overvågning?')) {
+                        fetch('/api/v1/schedule/' + id + '/', { method: 'DELETE' })
+                        .then(r => r.json()).then(d => location.reload());
+                    }
+                }
 
                 function deleteRecord(id) {
                     if(confirm('Er du sikker på, at du vil slette Record #' + id + ' for evigt?')) {
@@ -289,17 +681,16 @@ def dashboard(request):
                     }
                 });
 
-                // Batch 7: Live Terminal Auto-Scroller
-                setInterval(function() {
-                    fetch('/api/v1/logs/')
-                    .then(r => r.text())
-                    .then(text => {
-                        const term = document.getElementById('logTerminal');
-                        const isScrolledToBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 50;
-                        term.textContent = text;
-                        if(isScrolledToBottom) term.scrollTop = term.scrollHeight;
-                    });
-                }, 2000);
+                // Batch 09: ÆGTE ASYNKRONE WEBSOCKETS (Live Terminal)
+                const term = document.getElementById('logTerminal');
+                const ws = new WebSocket('ws://' + window.location.hostname + ':8001');
+                ws.onopen = function() { term.textContent = "[*] WEBSOCKET FORBUNDET. Venter på The Worker...\\n"; };
+                ws.onmessage = function(event) {
+                    const isScrolledToBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 50;
+                    term.textContent += event.data;
+                    if(isScrolledToBottom) term.scrollTop = term.scrollHeight;
+                };
+                ws.onerror = function() { term.textContent += "\\n[!] WebSocket Fejl. Kører WebSockets-dæmonen?"; };
                 </script>
             {% endif %}
         </div>
@@ -308,9 +699,10 @@ def dashboard(request):
     """
     engine = Engine(app_dirs=False)
     template = engine.from_string(html_template)
-    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query})
+    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "request": request})
     return HttpResponse(template.render(context))
 
+@login_required
 def record_detail(request, record_id):
     """Dedikeret visning for rå JSON data."""
     try:
@@ -356,6 +748,7 @@ def record_detail(request, record_id):
     except Exception as e:
         return HttpResponse(f"Record not found or error: {e}", status=404)
 
+@login_required
 def network_graph(request):
     """GOLIATH V46: Live Vis.js Relational Graph Engine."""
     nodes_dict = {}
@@ -448,13 +841,49 @@ def trigger_scan(request):
             
             if celery_app:
                 try:
+                    from django.utils import timezone
                     celery_app.send_task("execute_goliath_module", args=[module_id, target])
                     return JsonResponse({"status": "success", "message": f"Celery Task i kø for {target}!"})
                 except Exception: pass
             
             # Fallback til baggrundstråd (Zero-Crash OPSEC)
-            threading.Thread(target=lambda: subprocess.run([sys.executable, "main.py", "-t", target, "-m", str(module_id)]), daemon=True).start()
+            import uuid
+            from django.utils import timezone
+            tid = str(uuid.uuid4())
+            ActiveOperation.objects.create(task_id=tid, module_id=str(module_id), target=target, status="Processing", created_at=timezone.now())
+            
+            def run_fallback():
+                res = subprocess.run([sys.executable, "main.py", "-t", target, "-m", str(module_id)])
+                try:
+                    op = ActiveOperation.objects.get(task_id=tid)
+                    op.status = "Success" if res.returncode == 0 else "Failed"
+                    op.save()
+                except: pass
+                
+            threading.Thread(target=run_fallback, daemon=True).start()
             return JsonResponse({"status": "success", "message": f"Fallback: Tråd startet direkte for {target}!"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse({"error": "Method Not Allowed"}, status=405)
+
+@csrf_exempt
+def handle_schedule(request, hunt_id=None):
+    """API Endpoint: Opretter eller sletter cronjobs for Reprohack-style automatisering."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            ScheduledHunt.objects.create(
+                target=data.get('target'),
+                module_id=data.get('module_id'),
+                interval_minutes=int(data.get('interval_minutes', 60))
+            )
+            return JsonResponse({"status": "success", "message": "Overvågning aktiveret!"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    elif request.method == 'DELETE' and hunt_id:
+        try:
+            ScheduledHunt.objects.filter(id=hunt_id).delete()
+            return JsonResponse({"status": "success"})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
     return JsonResponse({"error": "Method Not Allowed"}, status=405)
@@ -515,16 +944,7 @@ def handle_upload(request):
             return JsonResponse({"error": str(e)}, status=400)
     return JsonResponse({"error": "Ingen fil modtaget"}, status=400)
 
-def get_logs(request):
-    """Henter de seneste 50 linjer fra Celery worker-loggen (Batch 7)."""
-    log_path = "logs/celery_worker.log"
-    try:
-        with open(log_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()[-50:]
-            return HttpResponse("".join(lines), content_type='text/plain')
-    except Exception:
-        return HttpResponse("Initialiserer log-fil. Sørg for at køre goliath_worker.py i baggrunden...", content_type='text/plain')
-
+@login_required
 def download_report(request):
     """Downloader den nyeste GOLIATH MASTER REPORT (Batch 7)."""
     loot_dir = session.get("loot_folder", "workspaces/standard_sag")
@@ -551,15 +971,44 @@ def api_datalake(request):
 # =====================================================================
 urlpatterns = [
     path('', dashboard),
+    path('login/', login_view),
+    path('logout/', logout_view),
     path('record/<int:record_id>/', record_detail),
     path('graph/', network_graph),
     path('api/v1/trigger/', trigger_scan),
+    path('api/v1/schedule/', handle_schedule),
+    path('api/v1/schedule/<int:hunt_id>/', handle_schedule),
     path('api/v1/record/<int:record_id>/', delete_record),
     path('api/v1/upload/', handle_upload),
     path('api/v1/loot/', api_datalake),
-    path('api/v1/logs/', get_logs),
     path('api/v1/download_report/', download_report),
 ]
+
+# =====================================================================
+# 5. ASYNKRON WEBSOCKET DAEMON (PORT 8001)
+# =====================================================================
+async def log_tailer(websocket, path):
+    """Tailer worker loggen asynkront og pusher via WebSockets."""
+    log_file = "logs/celery_worker.log"
+    try:
+        with open(log_file, "r", encoding='utf-8') as f:
+            f.seek(0, 2) # Spring til slutningen
+            while True:
+                line = f.readline()
+                if not line:
+                    await asyncio.sleep(0.1)
+                    continue
+                await websocket.send(line)
+    except Exception as e:
+        await websocket.send(f"[WS ERROR] Kunne ikke læse loggen: {e}")
+
+def start_ws_server():
+    if not websockets: return
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    start_server = websockets.serve(log_tailer, "0.0.0.0", 8001)
+    loop.run_until_complete(start_server)
+    loop.run_forever()
 
 def run_server(port="8000"):
     try:
@@ -567,6 +1016,10 @@ def run_server(port="8000"):
             if s.connect_ex(('127.0.0.1', int(port))) == 0:
                 print(f"\n{C.YELLOW}[!] Port {port} er allerede i brug. Web serveren kører muligvis allerede!{C.RESET}")
                 return
+                
+        # Spinder WebSocket serveren op i baggrunden
+        threading.Thread(target=start_ws_server, daemon=True).start()
+        
         execute_from_command_line(['manage.py', 'runserver', f'0.0.0.0:{port}', '--noreload'])
     except Exception as e:
         print(f"\n{C.RED}[!] KRITISK NEDBRUD I WEB CORE: {e}{C.RESET}")

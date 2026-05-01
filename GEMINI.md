@@ -25,7 +25,7 @@ Hver gang jeg beder om hjælp, SKAL dit svar struktureres præcis efter disse tr
 
 * Trin 1: Forståelse & Avancerede Antagelser: Bekræft opgaven kort. Fremfor at stille spørgsmål, skal du liste de avancerede antagelser og OPSEC-valg, du har truffet på mine vegne (f.eks. automatisk tilføjelse af proxy-rotation eller rate-limit bypass) for at sikre zero-shot eksekvering.
 * Trin 2: Vis et overblik over løsningen: Giv et klart overblik i bulletpoints over, hvad koden vil gøre. Forklar udviklingstrinnene, de tekniske valg (f.eks. specifikke teknikker fra GitHub/Hacking-miljøet) og begrænsninger. Forklar eksplicit, *hvordan* vi udvider (Expansion Mode).
-* Trin 3: Vis koden og implementeringsvejledningen: Præsenter koden, så den er let at kopiere og indsætte. Inkluder try/except/finally, brug projektets `core/` arkitektur, og forklar din argumentation bag justerbare variabler. Angiv præcist hvilken fil (f.eks. `core/network.py` eller `modules/mod_10_ip.py`) koden skal placeres i[cite: 1], og giv klare instruktioner om implementering.
+* Trin 3: Vis koden og implementeringsvejledningen: Præsenter koden, så den er let at kopiere og indsætte. Inkluder try/except/finally, brug projektets `core/` arkitektur, og forklar din argumentation bag justerbare variabler. Angiv præcist hvilken fil (f.eks. `core/network.py` eller `modules/mod_06_ip.py`) koden skal placeres i[cite: 1], og giv klare instruktioner om implementering.
 
 Jeg bekræfter hermed instruktionerne. Afvent min første kodeopgave!
 """

@@ -2,8 +2,10 @@
 import os
 import json
 import subprocess
-import requests # NY V8 TILFØJELSE: Til Pre-Flight og Wayback opslag
-import concurrent.futures # NY V8 TILFØJELSE: Til multi-threaded hurtigsøgning
+import requests 
+import asyncio
+import aiohttp
+from playwright.async_api import async_playwright
 from datetime import datetime
 from pathlib import Path
 from core.base_module import BaseModule, ModuleCategory
@@ -11,18 +13,13 @@ from core.utils import C, session
 
 # NY V8 FIX: Klassen er omdøbt til MatrixAnalyzer for at matche Modul 02's Pivot Engine!
 class MatrixAnalyzer(BaseModule):
-    def __init__(self, username):
+    def __init__(self, username=""):
         super().__init__()
         self.name = "USERNAME MATRIX"
         self.description = "Global profil-detektion via asynkront ghost-check og Sherlock."
         self.category = ModuleCategory.SOCIAL
         
-        # Håndterer både rå brugernavne og data-dictionaries fra Omni-Pivot
-        if isinstance(username, dict):
-            self.username = username.get("Brugernavn") or \
-                            username.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "Unknown")
-        else:
-            self.username = str(username).strip()
+        self.username = str(username).strip()
             
         self.data = {
             "Brugernavn": self.username, 
@@ -32,15 +29,31 @@ class MatrixAnalyzer(BaseModule):
             "Timestamp": datetime.now().isoformat()
         }
 
-    def run(self, driver=None):
+    def run(self, driver=None, target=""):
         print(f"\n{C.CYAN}{'='*60}\n[23] Global Username Matrix (GOLIATH V8 Engine)\n{'='*60}{C.RESET}")
         
-        if self.username == "Unknown":
+        # Prioriterer target fra run-kommandoen, da det er den mest direkte instruks fra operatøren.
+        run_target = target or self.username
+        if isinstance(run_target, dict):
+            self.username = run_target.get("Brugernavn") or \
+                            run_target.get("Samlet_Pivot_Data", {}).get("Social_Media", {}).get("Brugernavn", "Unknown")
+        else:
+            self.username = str(run_target).strip()
+        
+        self.data['Brugernavn'] = self.username
+
+        if not self.username or self.username == "Unknown":
             print(f"{C.RED}[!] Kunne ikke udtrække et gyldigt brugernavn at søge på.{C.RESET}")
-            return
+            return self.data
 
         # --- NY V8 TILFØJELSE: High-Speed Pre-Flight Scan ---
-        self._quick_fire_scan()
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_running():
+                loop.run_until_complete(self._run_async_preflight())
+            else:
+                loop.create_task(self._run_async_preflight())
+        except Exception as e: print(f"{C.RED}[!] Async Pre-Flight Fejl: {e}{C.RESET}")
 
         print(f"\n{C.YELLOW}[*] Starter fuld skanning over 300+ platforme for: {self.username} (Tillad op til 2 minutter)...{C.RESET}")
         
@@ -84,9 +97,40 @@ class MatrixAnalyzer(BaseModule):
 
         self.save_loot(self.username)
 
-    def _quick_fire_scan(self):
-        """NY V8 TILFØJELSE: Lynhurtig API Ghost-check på Top Tier OSINT mål udenom Sherlock"""
-        print(f"{C.YELLOW}[*] Udfører lynhurtig Pre-Flight skanning mod Top Tier mål...{C.RESET}")
+    async def _check_url_async(self, name, url, session_http):
+        try:
+            async with session_http.get(url, timeout=10) as res:
+                text = await res.text()
+                status = res.status
+        except Exception:
+            return None, None
+            
+        # GOLIATH V45: Asynkron Cloudflare / Turnstile Bypass via Playwright
+        if status in [403, 503] and any(cf in text.lower() for cf in ["cloudflare", "turnstile", "just a moment"]):
+            print(f"{C.YELLOW}    [*] WAF Detekteret på {name}. Kører Async Playwright Bypass...{C.RESET}")
+            try:
+                async with async_playwright() as p:
+                    browser = await p.chromium.launch(headless=True)
+                    context = await browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    page = await context.new_page()
+                    await page.goto(url, timeout=15000)
+                    await page.wait_for_load_state("networkidle")
+                    text = await page.content()
+                    status = 200
+                    await browser.close()
+            except Exception:
+                return None, None
+
+        if name == "Reddit" and status == 200 and "name" in text:
+            return name, f"https://www.reddit.com/user/{self.username}"
+        elif name != "Reddit" and status == 200:
+            if "Page Not Found" not in text and "404" not in text:
+                return name, url
+        return None, None
+
+    async def _run_async_preflight(self):
+        """NY V45 TILFØJELSE: Lynhurtig Async Pre-Flight med integreret WAF Bypass"""
+        print(f"{C.YELLOW}[*] Udfører lynhurtig asynkron Pre-Flight skanning mod Top Tier mål...{C.RESET}")
         
         targets = {
             "GitHub": f"https://github.com/{self.username}",
@@ -97,29 +141,14 @@ class MatrixAnalyzer(BaseModule):
         }
         
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-        
-        def check_url(name, url):
-            try:
-                res = requests.get(url, headers=headers, timeout=5)
-                # Reddit kræver JSON 'name' tjek
-                if name == "Reddit" and res.status_code == 200 and "name" in res.text:
-                    return name, f"https://www.reddit.com/user/{self.username}"
-                # Andre platforme returnerer bare 200 OK
-                elif name != "Reddit" and res.status_code == 200:
-                    # Sikrer at vi ikke rammer en generic redirect
-                    if "Page Not Found" not in res.text and "404" not in res.text:
-                        return name, url
-            except Exception: pass
-            return None, None
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = [executor.submit(check_url, name, url) for name, url in targets.items()]
-            for future in concurrent.futures.as_completed(futures):
-                name, url = future.result()
+        async with aiohttp.ClientSession(headers=headers) as session_http:
+            tasks = [self._check_url_async(name, url, session_http) for name, url in targets.items()]
+            results = await asyncio.gather(*tasks)
+            
+            for name, url in results:
                 if name and url:
                     print(f"{C.RED}    ⚡ PRE-FLIGHT HIT: Profil bekræftet på {name} ({url}){C.RESET}")
                     self.data["High_Value_Hits"].append(url)
-                    # Sørger for at den også ligger i standard-listen for Wayback Machine opslaget
                     if url not in self.data["Platforme"]:
                         self.data["Platforme"].append(url)
 
