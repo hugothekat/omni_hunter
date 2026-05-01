@@ -12,10 +12,13 @@
 import os
 import json
 import re
+import sqlite3
+import glob
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Set, Any
 from core.utils import C, session
+from core.utils import sanitize_filename
 try:
     from core.nexus import nexus
 except ImportError:
@@ -156,6 +159,215 @@ class AutomatedCaseReporter:
                 edges.append({"from": target_node, "to": i, "label": "Host"})
 
         return json.dumps({"nodes": nodes, "edges": edges})
+
+    def generate_target_dossier(self, target: str) -> str:
+        """Batch 12: Genererer et målrettet Evidence Dossier for et specifikt target."""
+        print(f"\n{C.CYAN}[*] Bygger Tactical Evidence Dossier for {target}...{C.RESET}")
+        db_path = self.loot_dir / "omni_datalake.db"
+        personas = []
+        
+        if db_path.exists():
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                try:
+                    cursor.execute("SELECT name, email, phone, social_handle, last_ip, location, raw_data_ref FROM master_personas WHERE target=?", (target,))
+                    for row in cursor.fetchall():
+                        personas.append({
+                            "name": row[0], "email": row[1], "phone": row[2], 
+                            "social_handle": row[3], "last_ip": row[4] or "Ukendt", 
+                            "location": row[5] or "Ukendt", "raw": row[6]
+                        })
+                except sqlite3.OperationalError:
+                    print(f"{C.RED}[!] Database mangler geo-kolonner. Genstart Worker for at auto-migrere!{C.RESET}")
+
+        evidence_files = glob.glob(str(self.loot_dir / f"*{sanitize_filename(target)}*.*"))
+        safe_target = sanitize_filename(target)
+        dossier_file = self.loot_dir / f"GOLIATH_DOSSIER_{safe_target}_{self.timestamp}.html"
+        
+        # Bygger HTML Person-Kort
+        persona_cards = ""
+        geo_markers = []
+        for p in personas:
+            ip_badge = f"<span class='badge bg-danger'>IP: {p['last_ip']}</span>" if p['last_ip'] != "Ukendt" else ""
+            geo_badge = f"<span class='badge bg-warning text-dark'>GEO: {p['location']}</span>" if p['location'] != "Ukendt" else ""
+            
+            if p['location'] != "Ukendt":
+                coords = p['location'].replace(" ", "").split(",")
+                if len(coords) == 2:
+                    geo_markers.append({"lat": coords[0], "lon": coords[1], "desc": p['name'] or p['social_handle']})
+
+            persona_cards += f"""
+            <div class="box accent" style="margin-bottom: 15px;">
+                <h3>{p['name'] or 'Ukendt Navn'} {ip_badge} {geo_badge}</h3>
+                <p><strong>Email:</strong> {p['email'] or 'N/A'} | <strong>Telefon:</strong> {p['phone'] or 'N/A'} | <strong>Alias:</strong> {p['social_handle'] or 'N/A'}</p>
+                <details>
+                    <summary style="color: var(--accent); cursor: pointer;">Vis Rå JSON Kilde</summary>
+                    <pre style="background: #12121c; padding: 10px; border-radius: 4px; overflow-x: auto; color: #a5b1c2; font-size: 0.8rem;">{p['raw']}</pre>
+                </details>
+            </div>
+            """
+            
+        file_links = ""
+        for f in evidence_files:
+            basename = os.path.basename(f)
+            file_links += f"<li><a href='file://{os.path.abspath(f)}' target='_blank' style='color: var(--accent); text-decoration: none;'>📂 {basename}</a></li>"
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="da">
+        <head>
+            <meta charset="UTF-8">
+            <title>EVIDENCE DOSSIER: {target}</title>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                :root {{ --bg: #12121c; --card: #1e1e2f; --border: #3b3b54; --accent: #00e5ff; --danger: #ff007f; --text: #cfd2d9; }}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); padding: 30px; max-width: 1200px; margin: 0 auto; }}
+                h1 {{ color: var(--danger); border-bottom: 2px solid var(--border); padding-bottom: 10px; }}
+                .box {{ background: var(--card); border-radius: 8px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }}
+                .box.accent {{ border-left: 4px solid var(--accent); }}
+                .badge {{ padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; margin-left: 10px; }}
+                .bg-danger {{ background-color: var(--danger); color: white; }}
+                .bg-warning {{ background-color: #f1c40f; color: black; }}
+                ul {{ list-style: none; padding: 0; }}
+                ul li {{ background: var(--card); margin-bottom: 5px; padding: 10px; border-radius: 4px; border-left: 2px solid var(--danger); }}
+                #geo-map {{ width: 100%; height: 400px; border-radius: 6px; border: 1px solid var(--border); margin-top: 15px; }}
+            </style>
+        </head>
+        <body>
+            <h1>CLASSIFIED EVIDENCE DOSSIER</h1>
+            <p><strong>Mål:</strong> {target} | <strong>Genereret:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            
+            <h2 style="color: var(--accent); margin-top: 30px;">Identificerede Personas ({len(personas)})</h2>
+            {persona_cards if persona_cards else "<p>Ingen personas rekonstrueret for dette mål endnu.</p>"}
+
+            <h2 style="color: var(--accent); margin-top: 30px;">Geo-Spatial Attribution</h2>
+            <div id="geo-map"></div>
+
+            <h2 style="color: var(--accent); margin-top: 30px;">Sikret Bevismateriale (Lokale Filer)</h2>
+            <ul>{file_links if file_links else "<li>Ingen filer fundet.</li>"}</ul>
+            
+            <script>
+                var map = L.map('geo-map').setView([55.676098, 12.568337], 6);
+                L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; OpenStreetMap contributors' }}).addTo(map);
+                
+                var geoPoints = {json.dumps(geo_markers)};
+                var bounds = [];
+                geoPoints.forEach(function(pt) {{
+                    var marker = L.circleMarker([parseFloat(pt.lat), parseFloat(pt.lon)], {{ color: '#00e5ff', fillColor: '#00e5ff', fillOpacity: 0.7, radius: 8 }}).addTo(map);
+                    marker.bindPopup("<b>" + pt.desc + "</b>");
+                    bounds.push([parseFloat(pt.lat), parseFloat(pt.lon)]);
+                }});
+                if(bounds.length > 0) map.fitBounds(bounds, {{padding: [50, 50]}});
+            </script>
+        </body>
+        </html>
+        """
+        dossier_file.write_text(html_content, encoding='utf-8')
+        return str(dossier_file.absolute())
+
+    def generate_verified_dossier(self, target: str) -> str:
+        """GOLIATH V56: Genererer en Strict Verified Report til endelig overdragelse."""
+        print(f"\n{C.CYAN}[*] Bygger STRICT VERIFIED Dossier for {target}...{C.RESET}")
+        db_path = self.loot_dir / "omni_datalake.db"
+        personas = []
+        
+        if db_path.exists():
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                try:
+                    # Filtrerer KUN for verificerede personas og henter confidence_score
+                    cursor.execute("SELECT name, email, phone, social_handle, last_ip, location, raw_data_ref, confidence_score FROM master_personas WHERE target=? AND is_verified=1", (target,))
+                    for row in cursor.fetchall():
+                        personas.append({
+                            "name": row[0], "email": row[1], "phone": row[2], 
+                            "social_handle": row[3], "last_ip": row[4] or "Ukendt", 
+                            "location": row[5] or "Ukendt", "raw": row[6], "confidence": row[7] or 0
+                        })
+                except sqlite3.OperationalError as e:
+                    print(f"{C.RED}[!] Database fejl i Verified Dossier: {e}{C.RESET}")
+
+        evidence_files = glob.glob(str(self.loot_dir / f"*{sanitize_filename(target)}*.*"))
+        safe_target = sanitize_filename(target)
+        dossier_file = self.loot_dir / f"GOLIATH_VERIFIED_DOSSIER_{safe_target}_{self.timestamp}.html"
+        
+        persona_cards = ""
+        geo_markers = []
+        for p in personas:
+            ip_badge = f"<span class='badge bg-danger'>IP: {p['last_ip']}</span>" if p['last_ip'] != "Ukendt" else ""
+            geo_badge = f"<span class='badge bg-warning text-dark'>GEO: {p['location']}</span>" if p['location'] != "Ukendt" else ""
+            conf_badge = f"<span class='badge bg-success'>🛡️ VERIFICERET ({p['confidence']}%)</span>"
+            
+            if p['location'] != "Ukendt":
+                coords = p['location'].replace(" ", "").split(",")
+                if len(coords) == 2:
+                    geo_markers.append({"lat": coords[0], "lon": coords[1], "desc": p['name'] or p['social_handle']})
+
+            persona_cards += f"""
+            <div class="box accent" style="margin-bottom: 15px; border-left: 4px solid #2ecc71;">
+                <h3>{p['name'] or 'Ukendt Navn'} {conf_badge} {ip_badge} {geo_badge}</h3>
+                <p><strong>Email:</strong> {p['email'] or 'N/A'} | <strong>Telefon:</strong> {p['phone'] or 'N/A'} | <strong>Alias:</strong> {p['social_handle'] or 'N/A'}</p>
+                <details>
+                    <summary style="color: #2ecc71; cursor: pointer; margin-bottom: 10px;">Vis Rå JSON Kilde</summary>
+                    <pre style="background: #12121c; padding: 10px; border-radius: 4px; overflow-x: auto; color: #a5b1c2; font-size: 0.8rem;">{p['raw']}</pre>
+                </details>
+            </div>
+            """
+            
+        file_links = ""
+        for f in evidence_files:
+            basename = os.path.basename(f)
+            file_links += f"<li><a href='file://{os.path.abspath(f)}' target='_blank' style='color: #2ecc71; text-decoration: none;'>📂 {basename}</a></li>"
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="da">
+        <head>
+            <meta charset="UTF-8">
+            <title>VERIFIED EVIDENCE: {target}</title>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                :root {{ --bg: #12121c; --card: #1e1e2f; --border: #3b3b54; --accent: #2ecc71; --danger: #ff007f; --text: #cfd2d9; }}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); padding: 30px; max-width: 1200px; margin: 0 auto; }}
+                h1 {{ color: var(--accent); border-bottom: 2px solid var(--border); padding-bottom: 10px; }}
+                .box {{ background: var(--card); border-radius: 8px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }}
+                .badge {{ padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; margin-left: 10px; }}
+                .bg-danger {{ background-color: var(--danger); color: white; }}
+                .bg-warning {{ background-color: #f1c40f; color: black; }}
+                .bg-success {{ background-color: var(--accent); color: black; }}
+                ul {{ list-style: none; padding: 0; }}
+                ul li {{ background: var(--card); margin-bottom: 5px; padding: 10px; border-radius: 4px; border-left: 2px solid var(--accent); }}
+                #geo-map {{ width: 100%; height: 400px; border-radius: 6px; border: 1px solid var(--border); margin-top: 15px; }}
+            </style>
+        </head>
+        <body>
+            <h1>STRICT VERIFIED EVIDENCE DOSSIER</h1>
+            <p><strong>Mål:</strong> {target} | <strong>Genereret:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p style="color: #f1c40f; font-size: 0.9rem;">⚠️ Dette dossier indeholder KUN efterretninger, der er manuelt verificeret af en operatør via GOLIATH Peer-Review systemet.</p>
+            <h2 style="color: var(--accent); margin-top: 30px;">Bekræftede Personas ({len(personas)})</h2>
+            {persona_cards if persona_cards else "<p>Ingen verificerede personas for dette mål.</p>"}
+            <h2 style="color: var(--accent); margin-top: 30px;">Verificeret Geo-Spatial Attribution</h2>
+            <div id="geo-map"></div>
+            <h2 style="color: var(--accent); margin-top: 30px;">Sikret Bevismateriale</h2>
+            <ul>{file_links if file_links else "<li>Ingen filer fundet.</li>"}</ul>
+            <script>
+                var map = L.map('geo-map').setView([55.676098, 12.568337], 6);
+                L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; OpenStreetMap' }}).addTo(map);
+                var geoPoints = {json.dumps(geo_markers)};
+                var bounds = [];
+                geoPoints.forEach(function(pt) {{
+                    var marker = L.circleMarker([parseFloat(pt.lat), parseFloat(pt.lon)], {{ color: '#2ecc71', fillColor: '#2ecc71', fillOpacity: 0.7, radius: 8 }}).addTo(map);
+                    marker.bindPopup("<b>" + pt.desc + "</b>");
+                    bounds.push([parseFloat(pt.lat), parseFloat(pt.lon)]);
+                }});
+                if(bounds.length > 0) map.fitBounds(bounds, {{padding: [50, 50]}});
+            </script>
+        </body>
+        </html>
+        """
+        dossier_file.write_text(html_content, encoding='utf-8')
+        return str(dossier_file.absolute())
 
     def generate(self):
         print(f"\n{C.CYAN}[*] Kompilerer The Goliath Master Report (Vis.js & Leaflet.js)...{C.RESET}")

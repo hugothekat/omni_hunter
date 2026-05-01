@@ -434,12 +434,64 @@ class OmniDataLake:
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, username TEXT, password TEXT)''')
             conn.execute('''CREATE TABLE IF NOT EXISTS extracted_apis
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, method TEXT)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS harvested_data
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, endpoint TEXT, payload TEXT)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS master_personas
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, target TEXT, name TEXT, email TEXT, phone TEXT, social_handle TEXT, raw_data_ref TEXT, last_ip TEXT, location TEXT)''')
+            
+            # GOLIATH V53: Real-time Alert Engine Tabeller
+            conn.execute('''CREATE TABLE IF NOT EXISTS watchlist
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT, type TEXT, added_at DATETIME)''')
+            conn.execute('''CREATE TABLE IF NOT EXISTS security_alerts
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, keyword TEXT, snippet TEXT, is_read BOOLEAN DEFAULT 0)''')
+                            
+            # GOLIATH V56: Peer-Review & Validation
+            conn.execute('''CREATE TABLE IF NOT EXISTS persona_reviews
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, operator_name TEXT, comment TEXT, rating INTEGER, timestamp DATETIME)''')
+                            
             conn.execute('CREATE INDEX IF NOT EXISTS idx_email ON extracted_emails(email)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_cred_user ON extracted_credentials(username)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_api ON extracted_apis(endpoint)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_harvest_target ON harvested_data(target)')
+            
+            # GOLIATH V52 Auto-Heal Migration: Tilføj kolonner hvis tabellen allerede findes fra Batch 11
+            try:
+                conn.execute("ALTER TABLE master_personas ADD COLUMN last_ip TEXT")
+                conn.execute("ALTER TABLE master_personas ADD COLUMN location TEXT")
+            except sqlite3.OperationalError:
+                pass # Kolonnerne eksisterer allerede
+                
+            # GOLIATH V56 Auto-Heal Migration: Confidence Scoring
+            try:
+                conn.execute("ALTER TABLE master_personas ADD COLUMN confidence_score INTEGER DEFAULT 0")
+                conn.execute("ALTER TABLE master_personas ADD COLUMN is_verified BOOLEAN DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass # Kolonnerne eksisterer allerede
 
     def ingest(self, source_module: str, target: str, data: Dict[str, Any]) -> None:
         timestamp = datetime.now().isoformat()
+        
+        # HVT Alert Interception (GOLIATH V53)
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute("SELECT keyword FROM watchlist")
+                watchlist_items = [row[0].lower() for row in cursor.fetchall()]
+                
+                if watchlist_items:
+                    payload_str = json.dumps(data, ensure_ascii=False).lower()
+                    for w in watchlist_items:
+                        if w in payload_str:
+                            snippet = (payload_str[:150] + '...') if len(payload_str) > 150 else payload_str
+                            conn.execute("INSERT INTO security_alerts (timestamp, source_module, target, keyword, snippet) VALUES (?, ?, ?, ?, ?)",
+                                         (timestamp, source_module, target, w, snippet))
+                            # IPC Trigger til WebSocket Dæmonen
+                            pipe_path = Path("logs/ws_alerts.pipe")
+                            pipe_path.parent.mkdir(exist_ok=True)
+                            with open(pipe_path, "a", encoding="utf-8") as f:
+                                f.write(json.dumps({"type": "HVT_HIT", "keyword": w, "module": source_module, "target": target}) + "\n")
+        except Exception as e:
+            logger.error(f"Fejl i HVT Interception: {e}")
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("INSERT INTO osint_records (timestamp, source_module, target, data_json) VALUES (?, ?, ?, ?)",
                          (timestamp, source_module, target, json.dumps(data, ensure_ascii=False)))
@@ -485,6 +537,32 @@ class OmniDataLake:
                         if isinstance(api, dict) and api.get("endpoint"):
                             conn.execute("INSERT INTO extracted_apis (timestamp, source_module, target, endpoint, method) VALUES (?, ?, ?, ?, ?)",
                                          (timestamp, source_module, target, api.get("endpoint"), api.get("method", "GET")))
+                                         
+                # Mass Harvest Extraction for Batch 10
+                if "Harvested_Payloads" in data and isinstance(data["Harvested_Payloads"], list):
+                    for payload_data in data["Harvested_Payloads"]:
+                        if isinstance(payload_data, dict):
+                            conn.execute("INSERT INTO harvested_data (timestamp, source_module, target, endpoint, payload) VALUES (?, ?, ?, ?, ?)",
+                                         (timestamp, source_module, target, payload_data.get("url", ""), json.dumps(payload_data.get("payload", {}), ensure_ascii=False)))
+                                         
+                # Master Persona Ingestion for Batch 11
+                if "Master_Personas" in data and isinstance(data["Master_Personas"], list):
+                    for p in data["Master_Personas"]:
+                        if isinstance(p, dict):
+                            raw_ref = p.get("raw_data_ref", "")
+                            last_ip = p.get("last_ip", "")
+                            location = p.get("location", "")
+                            
+                            # Heuristisk Geo-Extraction (Batch 12)
+                            if not last_ip and raw_ref:
+                                ip_match = re.search(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', raw_ref)
+                                if ip_match: last_ip = ip_match.group(0)
+                            if not location and raw_ref:
+                                coord_match = re.search(r'("lat"|"latitude"|lat|latitude)[\s:"]+([-+]?[0-9]*\.?[0-9]+).*?("lon"|"lng"|"longitude"|lon|lng|longitude)[\s:"]+([-+]?[0-9]*\.?[0-9]+)', raw_ref, re.IGNORECASE)
+                                if coord_match: location = f"{coord_match.group(2)}, {coord_match.group(4)}"
+                                
+                            conn.execute("INSERT INTO master_personas (timestamp, target, name, email, phone, social_handle, raw_data_ref, last_ip, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                         (timestamp, target, p.get("name", ""), p.get("email", ""), p.get("phone", ""), p.get("social_handle", ""), raw_ref, last_ip, location))
             except Exception as e:
                 logger.error(f"Fejl ved Entity Extraction til Datalake: {e}")
 

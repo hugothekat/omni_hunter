@@ -99,5 +99,35 @@ class NexusGraph:
                 self.graph[src_key]["linked_entities"].append((tgt_key, label))
             logger.debug(f"[NEXUS] Linked: {source_val} --[{label}]--> {target_val}")
 
+    def predict_links(self) -> List[dict]:
+        """
+        GOLIATH V54: Graph-based Predictive Linking.
+        Scanner grafen for targets/personas der deler IP'er, netværk eller lokationer.
+        """
+        predictions = []
+        shared_nodes = {}
+        
+        # Identificerer delte enheder (f.eks. en IP-adresse to targets har ramt)
+        for edge in self.edges:
+            src = edge['source']
+            tgt = edge['target']
+            if tgt in self.graph and self.graph[tgt]['type'] in [EntityType.IP.value, EntityType.LOCATION.value, EntityType.BSSID.value]:
+                if tgt not in shared_nodes:
+                    shared_nodes[tgt] = set()
+                shared_nodes[tgt].add(src)
+                
+        # Forudsiger forbindelser mellem kilderne
+        for shared_node, sources in shared_nodes.items():
+            if len(sources) > 1:
+                src_list = list(sources)
+                for i in range(len(src_list)):
+                    for j in range(i+1, len(src_list)):
+                        pred_edge = {"source": src_list[i], "target": src_list[j], "label": f"Forudsagt: Deler {self.graph[shared_node]['type']}"}
+                        
+                        # Undgå dubletter af allerede eksisterende kanter
+                        if not any((e['source'] == pred_edge['source'] and e['target'] == pred_edge['target']) or (e['source'] == pred_edge['target'] and e['target'] == pred_edge['source']) for e in self.edges + predictions):
+                            predictions.append(pred_edge)
+        return predictions
+
 # GOLIATH Nexus global instans (Singleton)
 nexus = NexusGraph()

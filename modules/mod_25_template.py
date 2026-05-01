@@ -9,6 +9,7 @@ import os
 import json
 import glob
 from pathlib import Path
+import re
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import asyncio
@@ -77,7 +78,13 @@ class SPAInterceptorEngine(BaseModule):
     def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
         print(f"\n{C.CYAN}{'='*60}\n[25] SPA API INTERCEPTOR & REPLAY ENGINE V49\n{'='*60}{C.RESET}")
         self.target = target.strip() if target else "https://example.com"
-        if not self.target.startswith("http"): self.target = f"https://{self.target}"
+        
+        # GOLIATH AUTO-HEAL: Retter slåfejl som 'httpswww.' eller manglende skema
+        self.target = re.sub(r'^(https?://)?https?www\.', 'https://www.', self.target)
+        self.target = re.sub(r'^(https?://)+', 'https://', self.target)
+        if not self.target.startswith("http"): 
+            self.target = f"https://{self.target}"
+            
         self.data["Target"] = self.target
         
         print(f"{C.YELLOW}[*] Initierer passiv netværks-interception via Playwright mod: {self.target}...{C.RESET}")
