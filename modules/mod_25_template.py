@@ -120,12 +120,15 @@ class SPAInterceptorEngine(BaseModule):
                 
             if endpoints_to_replay:
                 print(f"\n{C.YELLOW}[*] Initierer Asynkront API Replay-Attack udenom Frontend DOM'en...{C.RESET}")
-                # Fanger asynkront data for at mass-scrape
-                loop = asyncio.get_event_loop()
-                if not loop.is_running():
-                    loop.run_until_complete(self._async_replay_attacks(endpoints_to_replay[:15], list(self.data["Extracted_Bearer_Tokens"])))
-                else:
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    loop = None
+                    
+                if loop and loop.is_running():
                     loop.create_task(self._async_replay_attacks(endpoints_to_replay[:15], list(self.data["Extracted_Bearer_Tokens"])))
+                else:
+                    asyncio.run(self._async_replay_attacks(endpoints_to_replay[:15], list(self.data["Extracted_Bearer_Tokens"])))
         except Exception as e:
             print(f"{C.RED}[!] Interception fejl: {e}{C.RESET}")
         finally:

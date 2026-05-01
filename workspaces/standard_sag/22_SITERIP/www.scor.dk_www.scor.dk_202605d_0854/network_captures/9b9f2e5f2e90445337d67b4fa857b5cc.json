@@ -1,0 +1,15 @@
+{
+  "url": "https://www.scor.dk/api/LogOn/GetAssertionOptions",
+  "status": 200,
+  "body": {
+    "options": {
+      "challenge": "SjuvioNm01eOpgR-LAquXQ",
+      "timeout": 60000,
+      "rpId": "www.scor.dk",
+      "allowCredentials": [],
+      "userVerification": "discouraged",
+      "hints": []
+    },
+    "value": "mXcaBTdFefjSXM8vSTITfn8boY1TwOxgxfb5MmRIhrgEe1kDRGq2ZLb7mYQFpg/sXYRmgl5xi5vRq/WupDv8Zzomth/kPlP9mjRhD4aIhrlwa/TZSeuB5d4xcZaSaSwMbaWzgbdg6EvwWSkauesSfZmFQtuhjqSsP6Ml62Cfx+AGrVH0Fp8pDXaU2sBnUMwD6u/cYaGrQe6JnjjQTVYyFmP4JEooQfpOPd2XHmNnpBgnIUq9pAmjjE6b6fpPjW6PGPp3Fr4AzdDxq4TYIJ+3SX6Kr42KNqmuUGYVtiDenqzAo5uB90WMpJaUvA1AkZmMpwFFRnEZCH8geVJTbDQf7pyFKIvbr0ARAUuMIvepPsOb+xoVPM6XApSgQBrZGXkN"
+  }
+}

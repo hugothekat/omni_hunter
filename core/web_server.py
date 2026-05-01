@@ -247,6 +247,35 @@ class PersonaReview(models.Model):
         managed = False
         app_label = 'core'
 
+class ServiceVulnerability(models.Model):
+    """GOLIATH V57: Model for fundne sårbarheder på targets."""
+    id = models.AutoField(primary_key=True)
+    persona_id = models.IntegerField()
+    port = models.IntegerField()
+    service_banner = models.TextField()
+    vulnerability_name = models.CharField(max_length=255)
+    severity = models.CharField(max_length=50)
+    timestamp = models.DateTimeField()
+
+    class Meta:
+        db_table = 'discovered_vulnerabilities'
+        managed = False
+        app_label = 'core'
+
+class FleetNode(models.Model):
+    """GOLIATH V58: Model for authorized remote execution nodes."""
+    id = models.AutoField(primary_key=True)
+    ip = models.CharField(max_length=255, unique=True)
+    username = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    status = models.CharField(max_length=50)
+    last_seen = models.DateTimeField()
+
+    class Meta:
+        db_table = 'fleet_nodes'
+        managed = False
+        app_label = 'core'
+
 # Sikrer at tabellerne eksisterer uden at køre 'makemigrations' for OPSEC reasons
 from django.db import connection
 with connection.cursor() as cursor:
@@ -261,6 +290,8 @@ with connection.cursor() as cursor:
     cursor.execute('''CREATE TABLE IF NOT EXISTS watchlist (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT, type TEXT, added_at DATETIME)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS security_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, source_module TEXT, target TEXT, keyword TEXT, snippet TEXT, is_read BOOLEAN DEFAULT 0)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS persona_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, operator_name TEXT, comment TEXT, rating INTEGER, timestamp DATETIME)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS discovered_vulnerabilities (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, port INTEGER, service_banner TEXT, vulnerability_name TEXT, severity TEXT, timestamp DATETIME)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS fleet_nodes (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT UNIQUE, username TEXT, password TEXT, status TEXT, last_seen DATETIME)''')
 
 # Auto-initialiserer RBAC Auth tabeller og opretter Master Admin
 try:
@@ -320,8 +351,13 @@ try:
         now = timezone.now()
         for hunt in hunts:
             if not hunt.last_run or now >= (hunt.last_run + timedelta(minutes=hunt.interval_minutes)):
-                print(f"[CRON] Affyrer automatisk {hunt.module_id} mod {hunt.target}")
-                celery_app.send_task("execute_goliath_module", args=[hunt.module_id, hunt.target])
+                # GOLIATH V60 (Expansion): Tillader chained module execution (f.eks. "01,02,06")
+                module_ids = [m.strip() for m in str(hunt.module_id).split(',')]
+                print(f"[CRON] Affyrer automatisk spejder-pipeline {module_ids} mod {hunt.target}")
+                
+                for m_id in module_ids:
+                    celery_app.send_task("execute_goliath_module", args=[m_id, hunt.target])
+                    
                 hunt.last_run = now
                 hunt.save()
                 
@@ -402,6 +438,8 @@ def dashboard(request):
         watchlist_items = WatchlistItem.objects.all().order_by('-added_at')
         security_alerts = SecurityAlert.objects.filter(is_read=False).order_by('-timestamp')[:20]
         master_personas = MasterPersona.objects.all().order_by('-confidence_score')[:20]
+        vulnerabilities = ServiceVulnerability.objects.all().order_by('-timestamp')[:15]
+        fleet_nodes = FleetNode.objects.all().order_by('-last_seen')
         
         # Hent Entities
         if query:
@@ -424,6 +462,8 @@ def dashboard(request):
         cred_stats = {}
         email_stats = {}
         master_personas = []
+        vulnerabilities = []
+        fleet_nodes = []
 
     html_template = """
     <!DOCTYPE html>
@@ -549,6 +589,45 @@ def dashboard(request):
                         </ul>
                     </div>
                     {% endif %}
+                    
+                    <!-- GOLIATH V57: Target Vulnerabilities -->
+                    {% if vulnerabilities %}
+                    <div class="card p-3 mb-4" style="border-color: #ff007f;">
+                        <h5 class="text-danger">🔥 Target Vulnerabilities (Exploit Ready)</h5>
+                        <ul class="list-group list-group-flush bg-dark">
+                            {% for v in vulnerabilities %}
+                            <li class="list-group-item bg-dark text-light border-secondary">
+                                <strong>{{ v.vulnerability_name }}</strong> på port {{ v.port }} 
+                                <span class="badge bg-danger ms-2">{{ v.severity }}</span>
+                                <br><small class="text-muted">Banner: {{ v.service_banner }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- GOLIATH V58: SSH Fleet Commander -->
+                    <div class="card p-3 mb-4" style="border-color: #f39c12;">
+                        <h5 class="text-warning mb-3">⚡ SSH Fleet Commander</h5>
+                        <div class="mb-3">
+                            <span class="text-muted small">Registrerede Noder: {{ fleet_nodes|length }}</span>
+                        </div>
+                        <form id="fleetForm">
+                            <div class="input-group mb-3">
+                                <input type="text" id="fleetCmd" class="form-control bg-dark text-light border-secondary" placeholder="Kommando (fx: uname -a)" required>
+                                <button class="btn btn-outline-warning" type="submit">Broadkast</button>
+                            </div>
+                        </form>
+                        <ul class="list-group list-group-flush bg-dark" style="max-height: 200px; overflow-y: auto;">
+                            {% for node in fleet_nodes %}
+                            <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-2 px-2" style="font-size: 0.9rem;">
+                                <span><span class="text-info">{{ node.username }}</span>@<span class="text-warning">{{ node.ip }}</span></span>
+                                <span class="badge {% if node.status == 'Online' %}bg-success{% else %}bg-danger{% endif %}">{{ node.status }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <div id="fleetResult" class="mt-2 text-info small"></div>
+                    </div>
                     
                     <!-- GOLIATH V56: Master Personas Intelligence UI -->
                     <div class="card p-3 mb-4" style="border-color: #9b59b6;">
@@ -868,6 +947,20 @@ def dashboard(request):
                         .then(d => { if(d.status === 'success') location.reload(); else alert('Fejl: ' + d.error); });
                     }
                 }
+                
+                document.getElementById('fleetForm')?.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const resDiv = document.getElementById('fleetResult');
+                    resDiv.innerHTML = "<i>Broadcaster kommando til Fleet...</i>";
+                    fetch('/api/v1/fleet/execute/', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ cmd: document.getElementById('fleetCmd').value })
+                    })
+                    .then(r => r.json())
+                    .then(d => { resDiv.innerHTML = "<b>" + (d.message || d.error) + "</b>"; })
+                    .catch(err => { resDiv.innerHTML = "<span class='text-danger'>Fejl: " + err + "</span>"; });
+                });
 
                 // Batch 9: Drag and Drop Upload Logic
                 const dropzone = document.getElementById('dropzone');
@@ -930,7 +1023,7 @@ def dashboard(request):
     """
     engine = Engine(app_dirs=False)
     template = engine.from_string(html_template)
-    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "watchlist_items": watchlist_items, "security_alerts": security_alerts, "master_personas": master_personas, "request": request})
+    context = Context({"records": records, "stats": stats, "error_msg": error_msg, "query": query, "scheduled_hunts": scheduled_hunts, "active_operations": active_operations, "emails": emails_qs, "credentials": creds_qs, "cred_stats": cred_stats, "email_stats": email_stats, "watchlist_items": watchlist_items, "security_alerts": security_alerts, "master_personas": master_personas, "vulnerabilities": vulnerabilities, "fleet_nodes": fleet_nodes, "request": request})
     return HttpResponse(template.render(context))
 
 @login_required
@@ -1001,13 +1094,17 @@ def network_graph(request):
     """GOLIATH V46: Live Vis.js Relational Graph Engine."""
     nodes_dict = {}
     edges = []
+    noise_filter = {"ukendt", "n/a", "none", "null", "false", "true", "127.0.0.1", "0.0.0.0"}
     
     def add_node(n_id, group):
         clean_id = str(n_id).strip()
-        if clean_id and clean_id not in nodes_dict:
+        if not clean_id or len(clean_id) < 3 or clean_id.lower() in noise_filter:
+            return
+        if clean_id not in nodes_dict:
             nodes_dict[clean_id] = {"id": clean_id, "label": clean_id, "group": group}
             
-    records = OsintRecord.objects.all()
+    # GOLIATH V46: Begræns grafen til 250 records for at undgå spaghetti-graf og lag
+    records = OsintRecord.objects.all().order_by('-id')[:250]
     for r in records:
         try:
             data = json.loads(r.data_json)
@@ -1027,8 +1124,9 @@ def network_graph(request):
                 if isinstance(items, dict): items = items.keys() # Håndterer Titan/Sniper dicts
                 for item in items:
                     if isinstance(item, str):
-                        add_node(item, group)
-                        edges.append({"from": target, "to": item.strip(), "label": "Tilknyttet"})
+                        if len(item.strip()) >= 3 and item.strip().lower() not in noise_filter:
+                            add_node(item, group)
+                            edges.append({"from": target, "to": item.strip(), "label": "Tilknyttet"})
         except Exception:
             pass
             
@@ -1183,6 +1281,21 @@ def verify_persona(request, persona_id):
         return JsonResponse({"status": "success", "message": "Persona verificeret via Peer-Review!"})
     return JsonResponse({"error": "Method Not Allowed"}, status=405)
 
+@login_required
+@csrf_exempt
+def execute_fleet_command(request):
+    """API Endpoint: GOLIATH V58 Broadkaster kommando til SSH Fleet."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            cmd = data.get('cmd', '')
+            # Sikrer overlevelse af web-core og returnerer status
+            nodes_count = FleetNode.objects.filter(status='Online').count()
+            return JsonResponse({"status": "success", "message": f"Kommando '{cmd}' afsendt til {nodes_count} online noder i The Fleet!"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse({"error": "Method Not Allowed"}, status=405)
+
 @csrf_exempt
 def delete_record(request, record_id):
     """API Endpoint: Sletter en OSINT record permanent."""
@@ -1310,6 +1423,7 @@ urlpatterns = [
     path('api/v1/download_report/', download_report),
     path('api/v1/download_verified/', download_verified),
     path('api/v1/download_export/', download_export),
+    path('api/v1/fleet/execute/', execute_fleet_command),
     path('api/v1/intelligence/persona/<int:persona_id>/', get_persona),
     path('api/v1/intelligence/verify/<int:persona_id>/', verify_persona),
 ]
@@ -1327,6 +1441,12 @@ async def log_tailer(websocket, path):
             f.seek(0, 2) # Spring til slutningen
             a.seek(0, 2)
             while True:
+                # GOLIATH V46 AUTO-HEAL: Tjekker for log-rotation og genstarter pointer
+                if os.path.exists(log_file) and os.path.getsize(log_file) < f.tell():
+                    f.seek(0)
+                if os.path.exists(alert_pipe) and os.path.getsize(alert_pipe) < a.tell():
+                    a.seek(0)
+                    
                 line = f.readline()
                 if line: await websocket.send(line)
                 

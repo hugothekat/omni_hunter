@@ -221,8 +221,17 @@ class WorkspaceManager:
     def __init__(self):
         self.base_dir = Path("workspaces")
         self.base_dir.mkdir(exist_ok=True)
-        self.current_workspace = "standard_sag"
-        self._set_workspace("standard_sag", quiet=True)
+        
+        saved_ws = "standard_sag"
+        if os.path.exists("omni_active_workspace.txt"):
+            try:
+                with open("omni_active_workspace.txt", "r") as f:
+                    ws = f.read().strip()
+                    if ws: saved_ws = ws
+            except: pass
+            
+        self.current_workspace = saved_ws
+        self._set_workspace(saved_ws, quiet=True)
 
     def _set_workspace(self, name: str, quiet=False):
         safe_name = military_sanitize_input(name).replace(" ", "_").lower()
@@ -231,6 +240,10 @@ class WorkspaceManager:
         ws_dir.mkdir(exist_ok=True)
         session["loot_folder"] = str(ws_dir)
         session["workspace"] = safe_name
+        try:
+            with open("omni_active_workspace.txt", "w") as f:
+                f.write(safe_name)
+        except: pass
         if not quiet:
             console.print(f"[bold green]\\[+] Operativ sag sat til:[/bold green] [bold white]{safe_name.upper()}[/bold white]")
 
@@ -484,7 +497,7 @@ def run_pipeline(args):
             
     reporter = AutomatedCaseReporter()
     reporter.generate()
-    webbrowser.open(f"file://{reporter.report_file.absolute()}")
+    console.print(f"\n[bold green][✓] Rapport opdateret: file://{reporter.report_file.absolute()}[/bold green]")
 
 def main():
     parser = argparse.ArgumentParser(description="PET FE - OSINT Framework")

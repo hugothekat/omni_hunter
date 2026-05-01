@@ -1,0 +1,585 @@
+{
+  "url": "https://www.scor.dk/api/Support/SearchFaqEntries?category=1&skip=0&take=30",
+  "status": 200,
+  "body": {
+    "totalCount": 32,
+    "items": [
+      {
+        "languageId": "da-DK",
+        "question": "Hvorfor skal jeg genbekræfte at jeg har rettigheder til medier jeg uploader?",
+        "answer": "<p>Det er et krav, at du har ophavsretten eller brugsretten til de billeder og videoer du uploader - vær opmærksom på at det meste materiale på Internettet er underlagt ophavsret, og derfor ikke frit kan kopieres og bruges på Scor. Hvis der er andre personer på billedet/i videoen, kræver det desuden samtykke fra disse. Krænkelse af dette kan i yderste konsekvens medføre politianmeldelse.</p><p>Dette er ikke nyt og alle brugere har ved oprettelse af deres profil, bekræftet at de vil overholde disse regler – Alligevel sker det fra tid til anden at nogen tilsigtet eller utilsigtet får uploadet materiale, som er i strid med disse regler. Derfor skal du bekræfte at du har ophavsret/brugsret samt evt. samtykke, hver gang du uploader medier.&nbsp;</p><p>På Scor tolererer vi ikke ulovligt materiale men det er ikke alt vores screeningsværktøjer og stikprøver fanger, så ser du noget, der ikke overholder vores regler eller gældende lovgivning, opfordres du til at anmelde det til vores support. På profilsiden er der en knap til dette, ellers er du altid velkommen til at kontakte os på en af kontakt-mulighederne listet nederst på hjemmesiden.</p>",
+        "metaTitle": "Hvorfor skal jeg genbekræfte rettigheder til medier?",
+        "metaDescription": "Du skal genbekræfte rettigheder til uploadede medier for at sikre, at du har ophavs- eller brugsret og samtykke fra personer på billederne, i henhold til lovgivningen.",
+        "rating": {
+          "yesRatings": 5116,
+          "noRatings": 218
+        },
+        "createdDate": "2023-04-29T10:05:52.68+02:00",
+        "modifiedDate": "2025-11-20T14:25:44.2945928+01:00",
+        "solutions": [],
+        "id": 96,
+        "priority": 100,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Vejledende retningslinjer for billeder og videoer på Scor.dk",
+        "answer": "<p>Vejledende retningslinjer for billeder og videoer på Scor.dk:</p>\r\n<p>&nbsp;</p>\r\n<p>For profilbilleder gælder der:</p>\r\n<ul>\r\n  <li><p><em>Dit primære profilbillede skal være helt eller delvist af dig selv, og du skal have ophavsretten eller brugsretten til dette. På billedet må alene optræde den eller de personer, som står bag profilen.</em></p>\r\n</li>\r\n  <li><p><em>Det skal være tydeligt at det er en person som er en del af billede. <br>Stof (tøj) hvor man ikke kan se at der er en person i tøjet, vil blive afvist.</em></p>\r\n</li>\r\n  <li><p><em>Farve indstillinger, meget mørke eller lyse billeder som skjuler personen på billedet vil ikke blive godkendt.</em></p>\r\n</li>\r\n  <li><p><em>Kraftig filter / brug af AI, der gør at profilejer f.eks. ser yngre/ældre ud, afvises.</em></p>\r\n</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p>&nbsp;</p>\r\n<p>For alle billeder og videoer (inkl. profilbilleder) gælder disse retningslinjer. Disse er ikke fyldestgørende, om et billede/video overholder retningslinjer, er en vurdering som support i den sidste end tager.</p>\r\n<ul>\r\n  <li><p><em>Man skal have brugsretten og evt. samtykke til billede/video man uploader.</em></p></li>\r\n  <li><p><em>Der må ikke være ”børn” på billeder/videoer på Scor.dk (Børn betyder personer under 18 år). <br>Hellere ikke sløret, ”børn” skal skjules med maskering så de ikke er synlig.</em></p></li>\r\n  <li><p><em>Der må ikke være www adresse/URL til andre steder på nettet på billede/i video.</em></p></li>\r\n  <li><p><em>Billede/Video må ikke indeholde QR kode.</em></p></li>\r\n  <li><p><em>Visning af SoMe kontakt info, navne, mailadresse, telefonnummer, snapnavn, instagram etc. er ikke tilladt.</em></p></li>\r\n  <li><p><em>Billeder/Video som bruger kendte personer/figurer afvises.</em><br><em>Eks. Mickey Mouse, Barbie, Garfield, div. forfattere, sportsfolk, skuespillere.</em></p></li>\r\n  <li><p><em>Musik er ikke tilladt på videoer der vurderes som erotisk. </em></p></li>\r\n  <li><p><em>Billeder/Video hvor der er registreret varemærke, kan være logo eller tekst, afvises da det krænker varemærket.</em></p></li>\r\n  <li><p><em>Video som er GIF's lavet ud fra en film, som man ikke har brugsretten til, afvises. Hvis GIF er lavet fra eget optaget film, godkendes video.</em></p></li>\r\n  <li><p><em>Billede/Tegning/Video som indeholder kunstners signatur eller copyright afvises..</em></p></li>\r\n  <li><p><em>Billede/Video som virker truende for den der ser billede/video afvises. Ingen våben rettet mod den der ser billede/video, ok at en jæger står ikke truende med sit våben.</em></p></li>\r\n  <li><p><em>Billede/Video der er lavet med AI afvises, hvis billede/video har for stor lighed med kendte person/figur.</em><br><em>AI genererede billeder/videoer med børn (under 18 år), dyr, fantasivæsner eller AI genererede billeder/videoer som kan henlede tankerne på børn (under 18 år), dyr, fantasivæsner er ikke tilladt på Scor.dk.</em><br><em>Det gælder også hvis det kun er en del af den AI genererede person/figur som er børn (under 18 år), dyr, fantasivæsner eller henleder tankerne på dette.</em></p></li>\r\n  <li><p><em>Memes hvor der er genkendelige personer eller figur på afvises.</em></p></li>\r\n  <li><p><em>Billede/Video hvor der med tekst er skrevet en \"her og nu\" søgende tekst afvises. Lav en </em><a target=\"_blank\" rel=\"noopener\" href=\"https://www.scor.dk/Promote/QuickScor\"><em>QuickScor </em></a><em>i stedet for.</em></p></li></ul>\r\n<p>Det er dig som uploader et billede på Scor.dk, der har det juridiske ansvar for delingen. Det er ulovligt at dele private billeder og video og du kan drages til ansvar hvis du ikke har samtykke fra den eller de involverede personer. Der er således tale om en strafbar handling efter straffelovens bestemmelser (f.eks. § 232 og § 264D) og det kan medføre bødestraf, erstatningsansvar og/eller fængsel i op til flere år, samt plet på straffeattesten og eventuelt børneattesten, og dermed påvirke dine muligheder for at få eller beholde et job.</p>\r\n<p>&nbsp;</p>\r\n<p>På Scor.dk forsøger vi at være proaktive, ved at kontrollere alle billeder der uploades til siden og antallet af ulovlige medier er derfor begrænset, men kan ikke helt udelukkes. Derfor er det vigtigt at du som bruger anmelder, hvis du har mistanke om at et billede er ulovligt. Vi ønsker nemlig ikke at lægge platform til spredningen af krænkende materiale.</p>\r\n",
+        "metaTitle": "Vejledende retningslinjer for billeder og videoer - Scor.dk",
+        "metaDescription": "Retningslinjer for billeder og videoer på Scor.dk – krav til profilbilleder, samtykke, ophavsret og sikker deling af lovligt og respektfuldt indhold.",
+        "rating": {
+          "yesRatings": 1180,
+          "noRatings": 35
+        },
+        "createdDate": "2024-06-26T09:51:36.2+02:00",
+        "modifiedDate": "2025-12-15T15:19:51.1234093+01:00",
+        "solutions": [],
+        "id": 102,
+        "priority": 90,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Køn og seksuel orientering  – hvad kan jeg vælge?",
+        "answer": "<p>På Scor.dk har vi valgt at begrænse kønnene man kan vælge til henholdsvis mand og kvinde. Derudover har vi givet mulighed for at man kan angive sig selv som værende transkønnet (TK). Transkønnede profiler fremstår med deres egen lilla kønsfarve.</p><p>Dermed kan man vælge det fysiologiske køn man identificerer sig med, samt vise at man er transkønnet. Hvis man vælger det køn som matcher ens CPR-nr., har man ligeledes mulighed for at validere sin profil med MitID.</p><p>Vi er godt klar over at der findes mange flere køn man kan identificere sig med, men vi har bevidst valgt at begrænse udvalget til de køn, som giver mest mening på vores dating -platform.</p><p>Ønsker man at uddybe sit køn og seksualitet yderligere end vores muligheder tillader det, kan dette gøres med profilteksten eller med matchord.</p><p>Listen af seksuelle orienteringer er udvidet til 8 muligheder:</p><p>• Heteroseksuel</p><p>• Homoseksuel</p><p>• Biseksuel</p><p>• Hetero-fleksibel</p><p>• Homo-fleksibel</p><p>• Panseksuel</p><p>• Sapioseksuel</p><p>• Aseksuel</p><p>For en nærmere forklaring af ovenstående seksuelle orienteringer, kan vi henvise til hjemmesiden LGBT+ Danmark, som vi har været i dialog med omkring udvalget af seksualiteter på sitet.</p><p><br></p>",
+        "metaTitle": "Køn og seksuel orientering  – hvad kan jeg vælge? - Scor.dk",
+        "metaDescription": "På Scor.dk kan du vælge køn som mand, kvinde eller transkønnet og angive seksuel orientering blandt otte muligheder, inkl. hetero-, homo-, bi-, pan-, sapio- og aseksuel.",
+        "rating": {
+          "yesRatings": 1093,
+          "noRatings": 128
+        },
+        "createdDate": "2020-01-23T13:11:15.137+01:00",
+        "modifiedDate": "2025-11-20T14:32:04.8763704+01:00",
+        "solutions": [],
+        "id": 29,
+        "priority": 40,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan sletter jeg min profil?",
+        "answer": "<p>Det er naturligvis super ærgerligt at du har lyst til at slette din profil. Vi håber du har haft en god tid herinde, og husk, du er altid velkommen tilbage igen.</p><p>Det er nemt og enkelt at slette din profil. Følg blot anvisningerne herunder.</p><p>Når du har sat din profil til sletning, er den ikke længere synlig for andre profiler på sitet. Der går efterfølgende op til 14 dage før den er slettet fra vores systemer. Dine samtaler med andre profiler slettes efter 72 timer. En sletning kan ikke fortrydes, og slettede profiler kan ikke genskabes. </p>",
+        "metaTitle": "Slet din Scor-profil hurtigt og sikkert - Scor.dk",
+        "metaDescription": "Du kan slette din profil under “Rediger profil”. Bekræft med kodeordet, vælg årsag, og profilen fjernes fra siden. Sletning er permanent og kan ikke fortrydes.",
+        "rating": {
+          "yesRatings": 922,
+          "noRatings": 38
+        },
+        "createdDate": "2020-01-23T12:15:16.203+01:00",
+        "modifiedDate": "2026-02-05T15:14:23.7028695+01:00",
+        "solutions": [
+          {
+            "id": 6,
+            "entryId": 28,
+            "text": "<ol><li>Åbn <strong>Profilmenuen </strong>i højre side.</li><li>Klik på menupunktet <i class=\"fas fa-user-edit\"></i> <strong>Rediger profil</strong>.</li><li>I øverste højre hjørne finder du knappen <strong>Slet profil</strong>.</li><li>Du må rigtig gerne fortælle os hvorfor du forlader os. Du kan vælge en årsag i boksen, og evt. uddybe din årsag i tekstfeltet.</li><li>Tast dit kodeord for at bekræfte at du ønsker at slette profilen.</li><li>Tryk til slut på knappen <strong>Slet profil</strong>.</li></ol>",
+            "common": false,
+            "desktop": true,
+            "tablet": true,
+            "mobile": true,
+            "ios": false
+          }
+        ],
+        "id": 28,
+        "priority": 50,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan validerer jeg min profil?",
+        "answer": "<p>Som det første datingsite i Danmark, kræver vi NemID (som det hed dengang sidenhen MitID) validering af samtlige brugere. Det gør vi for at gøre op med kritikken af, at siden var fyldt med falske profiler, og selvom vi ikke kan garantere at du finder din eneste ene eller at en date faktisk møder op til en aftale, så er det vores klare indtryk, at initiativet har haft en positiv effekt på seriøsiteten. Hvad vi faktisk kan garantere, inden for rammerne af sikkerhed omkring MitID er, at der ingen mindreårige er på siden og profilen faktisk har den alder og køn, som er angivet i profilen.</p><p>&nbsp;</p><p>Du kan desuden vælge at <a target=\"_blank\" rel=\"noopener\" href=\"https://www.scor.dk/ProfileValidation\">videovalidere</a> din profil, for at skabe større sikkerhed om hvem der er bag. Dette giver typisk mest mening, hvis du i forvejen har billeder på din profil, men er ikke et krav. Videovalideringen ses af mange som et stempel for seriøsitet fordi der er sammenhæng mellem billeder på profilen og virkeligheden. Der udtrækkes også tilfældige profiler, til tvungen videovalidering. Der behøver således ikke være nogen begrundet mistanke, men kan være det.</p><p>Som udgangspunkt er det altså frivilligt at videovalidere sig, men er man udtrukket og undlader, vil ens profil blive låst og på sigt slettet.</p><p>Videovalideringen gemmes sammen med profilen, men er ikke synlig for andre på siden, og den slettes sammen med de øvrige data, hvis man ønsker at slette sin profil.</p><p>&nbsp;</p><p>Som en sidste mulighed, kan man blive personligt valideret. Dette kan kun ske fysisk og man render på en medarbejder, f.eks. til et event vil man på forespørgsel kunne valideres. Denne form for validering indikerer at man godt tør møde op irl.</p>",
+        "metaTitle": "Hvordan validerer jeg min profil? - Scor.dk",
+        "metaDescription": "Profiler på Scor.dk valideres via MitID, frivillig videovalidering eller personlig validering, hvilket sikrer alder, køn og seriøsitet på siden.",
+        "rating": {
+          "yesRatings": 592,
+          "noRatings": 29
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:19:51.2512916+01:00",
+        "solutions": [],
+        "id": 10,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan ser jeg hvem der har mig som favorit?",
+        "answer": "<p>Favoritlisten er en medlemsfunktion, som gør det muligt hurtigt at finde netop de profiler man finder interessante. Man kan desuden få besked når en favorit opdaterer deres profil med ny tekst, eller flere billeder og videoer.</p><p>Som medlemsprofil kan du altid se hvem der har dig på sin <a href=\"/Tags\" rel=\"noopener noreferrer\" target=\"_blank\">favoritliste</a>. Følg anvisningen herunder.</p>",
+        "metaTitle": "Hvordan ser jeg hvem der har mig som favorit? - Scor.dk",
+        "metaDescription": "Som medlem kan du se, hvem der har dig som favorit, via din favoritliste. Dette giver overblik over interesserede profiler og opdateringer fra dem.",
+        "rating": {
+          "yesRatings": 443,
+          "noRatings": 64
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:46:44.8279764+01:00",
+        "solutions": [
+          {
+            "id": 1,
+            "entryId": 25,
+            "text": "<ol><li>Åbn <strong>Profilmenuen</strong> i højre side.</li><li>Vælg <i class=\"fas fa-star\"></i> <strong>Favoritter &amp; Tags.</strong></li><li>Vælg <i class=\"fas fa-user\"></i> <strong>Mig som favorit</strong> i søgeboksen. Husk at fjerne evt. andre filtre.</li></ol>",
+            "common": false,
+            "desktop": true,
+            "tablet": true,
+            "mobile": true,
+            "ios": false
+          }
+        ],
+        "id": 25,
+        "priority": 25,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan aktiverer jeg 2-faktor godkendelse på min profil?",
+        "answer": "<p>2-faktor godkendelse (eller 2FA) er et ekstra sikkerhedslag på din profil, for at sikre at du er den eneste, der kan få adgang til din profil, selv hvis nogen kender din adgangskode. Med tofaktor godkendelse er din profil optimalt beskyttet mod at andre kan logge ind på den.</p><p><strong>Sådan virker det</strong></p><p>Når du skal logge ind på din profil, skal du indtaste to oplysninger: din adgangskode og en 6-cifret godkendelseskode, der automatisk vises på den smartphone du forbinder med din profil. Koden ændrer sig konstant, og er dermed en væsentlig forbedring af sikkerheden for din profil.</p><p>Du skal indtaste en ny sikkerhedskode hver gang du logger på din profil, og kan derfor ikke logge ind uden at have din smartphone ved dig.</p><p><strong>Fungerer det også for par-profiler?</strong></p><p>Ja, I kan som par også sagtens benytte 2-faktor godkendelse. I skal blot begge to scanne QR koden inde på hver jeres smartphone, inden I indtaster den første godkendelseskode.</p><p><strong>Download Google Authenticator</strong></p><p>Vi anbefaler at du benytter Google Authenticator, som fåes til både iOS og Android. Det er også muligt at benytte andre godkendelsesprogrammer, men det er ikke noget vores support kan vejlede i.</p><p><strong>Aktivering</strong></p><p>Efter du har hentet app'en, skal du gøre følgende for at aktivere 2-faktor godkendelse:</p><p><br></p><ol><li><p>Åbn <strong>Profilmenuen</strong> og klik på <em><i class=\"fas fa-user-edit\"></i></em> <strong>Rediger profil</strong></p></li><li><p>Tryk på knappen <strong>Aktiver</strong> under 2-faktor godkendelse for at parre din godkendelsesapp med din profil.</p></li><li><p>Scan QR koden på skærmen med app'en</p></li><li><p>Indtast den 6-cifrede kode i app'en og tryk på <strong>Aktiver</strong> for at færdiggøre parringen.</p></li></ol><p>Næste gang du logger på sitet, vil du nu blive bedt om at indtaste den 6-cifrede kode fra din godkendelsesapp.</p><p><strong>Deaktivering</strong></p><p><br></p><ol><li><p>Åbn <strong>Profilmenuen</strong> og klik på <em><i class=\"fas fa-user-edit\"></i></em> <strong>Rediger profil</strong></p></li><li><p>Tryk på knappen Slå fra under 2-faktor godkendelse</p></li><li><p>Indtast din profils kodeord og tryk på knappen Deaktiver</p></li></ol><p>Nu er 2-faktor godkendelse slået fra, og din profil er ikke længere beskyttet.</p>",
+        "metaTitle": "Hvordan aktiverer jeg 2FA godkendelse på min profil? - Scor",
+        "metaDescription": "Aktivér 2-faktor godkendelse på Scor.dk for ekstra sikkerhed. Brug Google Authenticator til at generere koder og beskyt din profil mod uautoriseret adgang.",
+        "rating": {
+          "yesRatings": 339,
+          "noRatings": 29
+        },
+        "createdDate": "2020-08-25T14:27:32.037+02:00",
+        "modifiedDate": "2025-11-20T14:25:22.3775089+01:00",
+        "solutions": [],
+        "id": 49,
+        "priority": 100,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan uploader jeg et billede eller video til min profil?",
+        "answer": "<p>En stor del af en god profil afhænger af de billeder og videoer man vælger at dele. Det kan give et rigtig godt helhedsindtryk af dig, og vil være medvirkende til at du får flere besøg - og forhåbentlig flere gode oplevelser i soveværelset.</p><p>Husk at alt indhold du uploader til din profil, skal overholde vores retningslinjer, som du <a target=\"_blank\" rel=\"noopener\" href=\"/Support/GeneralTerms\">finder på dette link</a>.</p>",
+        "metaTitle": "Hvordan uploader jeg billede og video til min profil?",
+        "metaDescription": "Upload billeder og videoer til din profil via “Mine billeder & videoer” i profilmenuen. Vælg type, tryk Upload og følg instruktionerne. Alt indhold skal følge retningslinjerne.",
+        "rating": {
+          "yesRatings": 279,
+          "noRatings": 85
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:45:17.5897515+01:00",
+        "solutions": [
+          {
+            "id": 8,
+            "entryId": 18,
+            "text": "<ol><li><p>Åbn <strong>Profilmenuen&nbsp;</strong>i højre side.</p></li><li><p>Åbn <strong>Mine billeder &amp; videoer</strong>.</p></li><li><p>Klik på det type indhold du ønsker at uploade.</p></li><li><p><strong>Profilbilleder</strong> - det første billede brugeren ser på din profil, og som vises i søgeresultater på sitet.</p></li><li><p><strong>Billeder &amp; video</strong> - dine egne albums, som vises på din profil, samt på siden <a target=\"_blank\" rel=\"noopener\" href=\"/Pictures\">Billeder &amp; Video</a>.</p></li><li><p><strong>Beskyttede billeder </strong>finder du på oversigten af alle dine billeder &amp; videoer på din profil - Beskyttede billeder er et specielt album til billeder du kun vil dele med udvalgte profiler. Læs mere om <a target=\"_blank\" rel=\"noopener\" href=\"/Support/FAQ/35\">Beskyttede billeder</a> her.</p></li><li><p>Tryk på knappen <strong>Upload</strong> og følg anvisningerne i dialogen.</p></li></ol><p></p>",
+            "common": false,
+            "desktop": true,
+            "tablet": true,
+            "mobile": true,
+            "ios": false
+          }
+        ],
+        "id": 18,
+        "priority": 18,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Kan jeg slette billeder/videoer og tekst jeg har delt med andre?",
+        "answer": "<p>Billeder/videoer og tekst du har delt i en samtale kan du vælge at slette igen, hvis du ikke ønsker at modparten stadig skal have adgang til dem. Se herunder hvordan du gør.</p><p>Hvis du har et billede du jævnligt ønsker at dele med andre profiler, og samtidig nemt vil kunne dele og have kontrol over hvem du har delt det med, bør du se nærmere på funktionen <a href=\"https://www.scor.dk/Support/FAQ/35\" rel=\"noopener\">Beskyttede billeder</a>.</p>",
+        "metaTitle": "Kan jeg slette billeder, videoer og tekst jeg har delt?",
+        "metaDescription": "Du kan slette billeder, videoer og tekst fra en samtale på Scor.dk. Valgte medier fjernes både hos dig og modparten, så de ikke længere er tilgængelige",
+        "rating": {
+          "yesRatings": 276,
+          "noRatings": 19
+        },
+        "createdDate": "2020-06-04T14:31:43.447+02:00",
+        "modifiedDate": "2025-11-20T14:38:55.2326717+01:00",
+        "solutions": [
+          {
+            "id": 11,
+            "entryId": 48,
+            "text": "<ol><li><p>Åbn samtalen hvori billederne/videoerne er delt.</p></li><li><p>Klik på knappen <i class=\"fas fa-images\"></i> <strong>Medier.</strong></p></li><li><p>Under <strong>Delte filer tryk på slet ikonet</strong>.</p></li><li><p>Sæt flueben ved de medier du ønsker at slette.</p></li><li><p>Tryk på knappen <strong>Slet valgte medier</strong> og bekræft dit valg.</p></li></ol><p>Herefter er de valgte medier ikke længere tilgængelige for modparten.</p>",
+            "common": true,
+            "desktop": false,
+            "tablet": false,
+            "mobile": false,
+            "ios": false
+          },
+          {
+            "id": 22,
+            "entryId": 48,
+            "text": "<ol><li><p>Åben samtalen du ønsker at slette indhold i.</p></li><li><p>Klik på de tre prikker ud for det du vil slette, vælg slet, gentag hvis der er flere dele du vil slette.</p></li></ol><p>Dette sletter indholdet både hos dig og hos modparten.</p><p><strong>Hvis du sletter hele samtalen på en gang, slettes det KUN hos dig selv.</strong></p><p>Slet flere billeder eller videoer sendt i samtalen på engang.</p><ol><li><p>Åbn samtalen hvori billederne/videoerne er delt.</p></li><li><p>Klik på knappen <i class=\"fas fa-images\"></i>  <strong>Medier</strong>.</p></li><li><p>Tryk på slet ikonet (Skraldespand).</p></li><li><p>Tryk på de medier du ønsker at slette.</p></li><li><p>Tryk på knappen <strong>Slet valgte medier</strong> og bekræft dit valg.</p></li></ol>",
+            "common": false,
+            "desktop": true,
+            "tablet": false,
+            "mobile": false,
+            "ios": false
+          }
+        ],
+        "id": 48,
+        "priority": 1,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Billederne er sløret, selvom jeg er medlem, hvorfor? ",
+        "answer": "<p>Det er dit erotikfilter, der er slået til. Du kan rette det ved at klikke på menuen til højre. Sæt markering ved erotikfilter til hvid.</p>",
+        "metaTitle": "Ret erotikfilter og se skarpe billeder - Scor.dk",
+        "metaDescription": "Dine billeder er slørede, fordi erotikfilteret er aktivt. Slå det fra i profilmenuen til højre ved at sætte markeringen til hvid.",
+        "rating": {
+          "yesRatings": 260,
+          "noRatings": 17
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:47:51.4299778+01:00",
+        "solutions": [],
+        "id": 6,
+        "priority": 6,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvad er beskyttede billeder?",
+        "answer": "<p>Med beskyttede billede kan du dele op til to billeder med netop de profiler du ønsker. Du giver med et enkelt klik adgang til dit beskyttede billedalbum i samtalen med profilen, og kan efterfølgende stoppe delingen når du ønsker det.</p><p>Mange vælger at lægge deres ansigtsbilleder i dette album, hvis man ikke ønsker at vise ansigtet på sin profil. Andre vælger at have et par erotiske billeder i albummet, som de så kan vise til netop de profiler de ønsker.</p><p><strong>Sådan tilføjer du beskyttede billeder til din profil</strong></p><ol><li><p>Åbn <strong>Profilmenuen</strong> i højre side.</p></li><li><p>Åbn <strong>Mine billeder &amp; videoer</strong> og du finder <strong>Beskyttede billeder </strong>øverst på siden.</p></li><li><p>Tryk på knappen <strong>Upload </strong>for at uploade dit første beskyttede billede. Du kan gemme to i alt.</p></li></ol><p><strong>Sådan deler du adgang til dine beskyttede billeder</strong></p><ol><li><p>Åbn samtalen med den profil du ønsker at dele dine beskyttede billeder med.</p></li><li><p>Klik på knappen <i class=\"fas fa-images\"></i> Delte medier i toppen af samtalen.</p></li><li><p>Vælg fanen BESKYTTEDE BILLEDER</p></li><li><p>Tryk på knappen <strong>Giv adgang</strong> for at give profilen adgang til dine beskyttede billeder.</p></li></ol><p><strong>Sådan fjerner du adgangen til dine beskyttede billeder</strong></p><p>Du kan fjerne adgangen til de beskyttede billeder direkte i en samtale med den enkelte profil.</p><p>Du kan også gå til siden Beskyttede billeder, og se alle de profiler som har adgang til dine billeder. Herfra kan du fjerne adgangen til de profiler som ikke længere skal kunne se dine beskyttede billeder.</p><ol><li><p>Åbn <strong>Profilmenuen</strong> i højre side.</p></li><li><p>Under <strong>Mine billeder &amp; videoer</strong> vælger du <strong>Beskyttede billeder</strong>.</p></li><li><p>Tryk på krydset i øverste højre hjørne på de profiler som du ønsker at fjerne adgangen for.</p></li><li><p>Bekræft dit valg, og herefter er adgangen fjernet.</p></li></ol><p><br></p>",
+        "metaTitle": "Hvad er beskyttede billeder? - Scor.dk",
+        "metaDescription": "Beskyttede billeder på Scor.dk er private billeder, som du kun deler med udvalgte profiler og kan stoppe adgangen til når som helst.",
+        "rating": {
+          "yesRatings": 232,
+          "noRatings": 17
+        },
+        "createdDate": "2020-02-19T14:16:46.587+01:00",
+        "modifiedDate": "2025-11-20T14:22:24.3096887+01:00",
+        "solutions": [],
+        "id": 35,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvad betyder det at jeg er blevet blacklistet?",
+        "answer": "<p>At blive blacklistet betyder at en profil har fravalgt yderligere kontakt fra dig, og derfor har blokeret din adgang til vedkommende profil. Du kan derfor ikke længere se profilen, dennes billeder og videoer, eller skrive med vedkommende.</p><p>Der kan være flere årsager til at en profil har valgt af blackliste det. Det kan være du er gået over deres grænse, enten verbalt eller visuelt, hvis du eksempelvis har sendt frække billeder til dem uden de har bedt om det. Det kan også bare være profilens måde at sortere i de mange henvendelser de får, og de blot blacklister for at begrænse yderligere kommunikation fra profiler de ikke finder interessante.</p><p>Du kan læse mere om hvordan du selv blacklister andre profiler i <a href=\"/Support/FAQ/33\" rel=\"noopener noreferrer\" target=\"_blank\">denne artikel</a>.</p>",
+        "metaTitle": "Hvad betyder det at jeg er blevet blacklistet? - Scor.dk",
+        "metaDescription": "At blive blacklistet betyder, at en profil har blokeret dig. Du kan ikke se deres profil, billeder, videoer eller sende beskeder til dem.",
+        "rating": {
+          "yesRatings": 214,
+          "noRatings": 6
+        },
+        "createdDate": "2020-02-19T13:09:29.24+01:00",
+        "modifiedDate": "2025-11-20T14:47:29.5557727+01:00",
+        "solutions": [],
+        "id": 32,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvad er AI media og hvad er tilladt på Scor.dk?",
+        "answer": "<p>AI, eller kunstig intelligens, refererer til teknologi, der simulerer menneskelig intelligens for at skabe indhold såsom billeder eller videoer.</p><p>Denne type indhold er tilladt på vores platform, det skal på profilen uploades i dedikeret AI albums for at sikre gennemsigtighed og vises ikke på start-siden. Dette sikrer, at brugere tydeligt kan skelne mellem autentisk og AI-skabt indhold.</p><p></p><p>AI media skal overholder de generelle betingelser og <a target=\"_blank\" rel=\"noopener\" href=\"https://www.develop.test.scor.dk/Support/FAQ/102\">Vejledende retningslinjer for billeder og videoer på Scor.dk</a></p><p></p><p>AI media og medier der ligner AI-indhold vil blive afvist/slettet hvis:</p><ul><li><p>Media uploadet til profilen, ikke er til et AI album.</p></li><li><p>Media der er lavet med AI har for stor lighed med kendte person/figur.</p></li><li><p>Det AI genererede billeder/videoer er med børn (under 18 år), dyr herunder fantasivæsner eller henleder tankerne herpå.</p></li><li><p>Det gælder også hvis det kun er en del af den AI genererede person/figur som er børn (under 18 år), dyr, fantasivæsner eller henleder tankerne på dette.</p></li></ul>",
+        "metaTitle": "Hvad er AI media og er det tilladt på Scor.dk?",
+        "metaDescription": "AI-media på Scor.dk må kun uploades i AI-albums og skal overholde retningslinjer. Indhold med børn, dyr eller kendte personer afvises eller slettes.",
+        "rating": {
+          "yesRatings": 182,
+          "noRatings": 9
+        },
+        "createdDate": "2025-04-23T11:29:54.27+02:00",
+        "modifiedDate": "2026-03-22T13:22:38.6060446+01:00",
+        "solutions": [],
+        "id": 117,
+        "priority": 20,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan retter jeg min profil?",
+        "answer": "<p>Din profil består af mange forskellige oplysninger, og det er vigtigt at sørge for at holde den opdateret. Herunder finder du lidt information om hvad du kan rette, og hvordan du retter den til.</p><p><strong>Mine personlige oplysninger, samt profiltekst</strong></p><p>Ønsker du at ændre dine grundlæggende oplysninger, så som profilnavn, postnummer, højde og vægt, så skal du finde siden med din <a rel=\"noopener noreferrer\" href=\"https://www.scor.dk/EditProfile\">Basisinformation</a>. Det er også her at du kan ændre din e-mail adresse, dit kodeord, og din profiltekst.</p><p><strong>Mine matchindstillinger</strong></p><p>Ønsker du at ændre i dine primære søgekriterier, så skal du ind på siden <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/EditProfile/MatchSettings\">Matchindstillinger</a>. Her kan du ændre hvad du søger efter, baseret på køn, seksualitet, højde, alder, vægt, område og flere andre kriterier. Det er også her du kan tilføje og redigere dine matchord.</p><p><strong>Mine billeder og videoer</strong></p><p>Du har mulighed for at uploade et ubegrænset antal billeder og videoer til din profil. Du har sågar mulighed for at uploade nogle billeder, som kun udvalgte profiler har adgang til, kaldet Beskyttede billeder. Læs mere på siden omkring <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/Support/FAQ/18\">billeder og videoer</a>.</p><p><strong>Jeg har mødt én - kan jeg lave min profil om til en par-profil?</strong></p><p>Fedt, dejligt at høre! Ja, naturligvis kan du det. Du kan læse mere om hvordan du <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/Support/FAQ/20\">skifter mellem en single og par profil her</a>.</p><p><strong>Hvad kan jeg ikke rette?</strong></p><p>Det er ikke muligt at ændre sit køn eller fødselsdato. Det er en del af vores arbejde for at undgå falske profiler, og da et køns- eller alderskifte ikke ligefrem er noget alle kaster sig ud i til hverdag, så kræver det altså et <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/Support\">smut forbi supporten</a> for at få rettet en eventuel fejl i disse oplysninger.</p>",
+        "metaTitle": "Ret din profil nemt og hurtigt - Scor.dk",
+        "metaDescription": "På Scor.dk kan du opdatere personlige oplysninger, profiltekst, matchindstillinger, billeder og videoer via din profil, men køn og fødselsdato kan kun ændres via support.",
+        "rating": {
+          "yesRatings": 176,
+          "noRatings": 23
+        },
+        "createdDate": "2020-01-24T11:46:19.16+01:00",
+        "modifiedDate": "2025-11-20T14:24:57.9031796+01:00",
+        "solutions": [],
+        "id": 30,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvordan ændrer jeg min profil til en par-profil, eller tilbage igen?",
+        "answer": "<p>Det sker jo at man har brug for at ændre sin profil til enten par eller single, alt efter hvor man er i sit liv. Du kan frit skifte din profil fra single til par, og omvendt, dog med enkelte begrænsninger.</p><p>Har du oprettet dig som single profil, og derefter ændret til en par profil, så kan du kun ændre tilbage til single med den samme person som den oprindelige profil blev lavet med.</p><p>Har du oprettet dig som par, kan du valgfrit vælge hvilken person du ønsker at blive single på. Men derefter er din profil &quot;låst&quot; til denne person, ligesom beskrevet herover.</p><p>Dette er lavet for at man ikke kan bruge par-funktionen til at omgåes vores restriktioner på skift af køn.</p>",
+        "metaTitle": "Skift mellem single- og par-profil på Scor - Scor.dk",
+        "metaDescription": "Du kan frit skifte mellem single- og par-profil på Scor.dk via “Rediger profil”. Systemet sikrer, at parfunktionen ikke misbruges til at ændre køn eller identitet.",
+        "rating": {
+          "yesRatings": 161,
+          "noRatings": 14
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:26:44.0652135+01:00",
+        "solutions": [
+          {
+            "id": 7,
+            "entryId": 20,
+            "text": "<ol><li>Åbn <strong>Profilmenuen </strong>i højre side.</li><li>Klik på menupunktet <em><i class=\"fas fa-user-edit\"></i></em> <strong>Rediger profil</strong>.</li><li>I øverste højre hjørne finder du knappen <strong>Konverter profil</strong>.</li></ol><p><strong>Skift fra single til par</strong></p><p>Når du konverterer fra en single-profil til en par-profil, skal du indtaste oplysninger om den anden person. Udfyld alle felter, og tryk derefter på <strong>Konverter</strong>. Dermed oprettes den anden person i parret.</p><p><strong>Skift fra par til single</strong></p><p>Første gang du skifter fra en par-profil til single-profil skal du vælge hvilken person du ønsker at bevare. Tryk på knappen <strong>Konverter</strong>, og herefter vil den anden person blive fjernet fra profilen. </p>",
+            "common": false,
+            "desktop": true,
+            "tablet": true,
+            "mobile": true,
+            "ios": false
+          }
+        ],
+        "id": 20,
+        "priority": 20,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Kan man være anonym på Scor.dk?",
+        "answer": "<p>Naturligvis kan du det. Det er dit privatliv. Vi gemmer ikke unødvendige oplysninger. Når du betaler med dit kort, vil der stå Digital Contact på kontoudtoget. Betalingen sker mellem dig og Nets i sikker kryptering. <a rel=\"noopener\" href=\"https://www.scor.dk\">Scor.dk</a> er godkendt af Datatilsynet. Det er kun på myndighedernes forlangende at vi kan blive bedt om at udlevere dine oplysninger.</p>",
+        "metaTitle": "Din fulde anonymitet og sikker betaling på scor.dk",
+        "metaDescription": "Du kan være anonym på Scor.dk. Dine oplysninger behandles fortroligt, betalinger vises som Digital Contact, og data deles kun ved myndighedskrav.",
+        "rating": {
+          "yesRatings": 129,
+          "noRatings": 13
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:30:44.6105087+01:00",
+        "solutions": [],
+        "id": 5,
+        "priority": 5,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Må jeg have erotiske billeder og videoer på min profil?",
+        "answer": "<p>Scor.dk er et erotisk forum, og her må du naturligvis gerne have både erotiske billeder og videoer på din profil. Der er højt til loftet, så længe indholdet ikke er i strid med dansk lovgivning.</p><p>Det er ligeledes tilladt at dele erotiske billeder med andre profiler når man skriver sammen, men hav respekt for den anden profil, og vent med at sende de frække billeder til vedkommende har bedt om det. Ikke alle værdsætter at få et billede af din aubergine eller kødpita leveret i indbakken, helt uopfordret. Læs vedkommendes profil, og mærk efter hvornår det er det rigtige tidspunkt at løfte sløret for den fulde pakke. :-)</p><p>Du kan med fordel bruge dit <a href=\"/Support/FAQ/35\" rel=\"noopener noreferrer\" target=\"_blank\">beskyttede billedalbum</a> til at dele enten ansigtsbilleder, eller de mere erotiske. </p>",
+        "metaTitle": "Må jeg have erotiske billeder & videoer på profil? - Scor.dk",
+        "metaDescription": "På Scor.dk må du have erotiske billeder og videoer på din profil og dele dem respektfuldt via beskeder eller beskyttede albums.",
+        "rating": {
+          "yesRatings": 73,
+          "noRatings": 5
+        },
+        "createdDate": "2020-02-21T09:01:29.803+01:00",
+        "modifiedDate": "2025-11-20T14:31:09.4280965+01:00",
+        "solutions": [],
+        "id": 37,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvor finder jeg mine breve/samtaler?",
+        "answer": "Dine samtaler finder du på startsiden under menupunktet post eller klik på menuen i venstre hjørne, og herefter på post i oversigten. Her finder du oversigten over de breve/samtaler, som du har modtaget. Klik på den enkelte samtale i venstre side, som du ønsker at læse. Samtalen besvares nederst i det hvide tekstfelt. Du kan sende smileys, vedhæfte billeder og sende standardbeskeder.",
+        "metaTitle": "Sådan finder du dine breve og samtaler på Scor.dk",
+        "metaDescription": "Dine breve og samtaler findes under menupunktet “Post” på startsiden eller i venstre menu. Klik på en samtale for at læse og besvare den nederst i tekstfeltet.",
+        "rating": {
+          "yesRatings": 48,
+          "noRatings": 24
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:46:34.1493146+01:00",
+        "solutions": [],
+        "id": 16,
+        "priority": 16,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Kan jeg have erotiske billeder på min profil?",
+        "answer": "<p>Naturligvis kan du det - du er på Scor.dk, og vi har ingen fordomme. Har du erotisk indhold på din profil i form af billeder eller video, vil disse billeder/videoer blive klassificeret som erotisk, så vi kan sikre, at profiler som ikke ønsker at se erotisk indhold, kan slå det fra via deres erotikfilter. Erotisk indhold defineres som billeder af kønsorganer og bryster. Dine erotiske billeder/videoer vil blive vist tilslørede til profiler, der har deres erotikfilter slået til. En smart detalje hvis man gerne vil være på Scor.dk - hvor andre mennesker er til stede, f.eks. i udlandet, hvor holdningen til erotik godt kan være anderledes end hvad vi er vant til.</p>",
+        "metaTitle": "Kan jeg have erotiske billeder på min profil? - Scor.dk",
+        "metaDescription": "På Scor.dk kan du have erotiske billeder og videoer, som klassificeres automatisk og tilsløres for profiler med erotikfilter aktiveret.",
+        "rating": {
+          "yesRatings": 41,
+          "noRatings": 4
+        },
+        "createdDate": "2019-12-03T13:38:43.497+01:00",
+        "modifiedDate": "2025-11-20T14:34:27.0516609+01:00",
+        "solutions": [],
+        "id": 21,
+        "priority": 21,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Visning af fødselsdag",
+        "answer": "<p>Det er muligt at blive hyldet på startsiden på sin fødselsdag.</p><p>Når du logger ind på din fødselsdag kvitterer vi med en gratis QuickScor eller Søgefremhævning, og muligheden for at blive hyldet på startsiden.</p><p>Ønsker du ikke at benytte dette tilbud, behøver du ikke at gøre noget. Det kræver altså en aktiv handling, for at aktivere det, og logger du ikke ind på din fødselsdag, eller undlader du at sige \"Ja tak\", sker der altså ikke noget.</p><p>Næste år til din fødselsdag vil du igen blive spurgt, og du bliver altså ikke automatisk vist, selvom om du tidligere har sagt \"Ja tak\".</p><p></p><p>Har du ikke takket ja, skal du være opmærksom på, at din alder ikke nødvendigvis opdateres på selve din fødselsdag. Vi har lavet et røgslør, for at andre ikke skal kunne gætte din fødselsdag, og alderen opdateres en tilfældig dag tæt på din fødselsdag.</p><p></p><p>Har du spørgsmål til ovenstående eller andet vi kan hjælpe dig med, er du altid velkommen til at kontakte os i supporten - vi elsker at hjælpe.</p>",
+        "metaTitle": "Visning af fødselsdag - hvordan viser jeg min fødselsdag?",
+        "metaDescription": "På din fødselsdag kan du få en gratis QuickScor eller søgefremhævning og blive vist på startsiden, hvis du logger ind og aktivt siger \"Ja tak\".",
+        "rating": {
+          "yesRatings": 37,
+          "noRatings": 1
+        },
+        "createdDate": "2025-03-21T10:04:28.963+01:00",
+        "modifiedDate": "2025-11-20T14:45:06.850121+01:00",
+        "solutions": [],
+        "id": 116,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvorfor kan jeg ikke se det profil/albumbillede jeg lige har uploadet?",
+        "answer": "<p>Samtlige billeder på Scor.dk bliver screenet inden de offentliggøres med henblik på at forhindre at der spredes ulovligt materiale via platformen. Det er heldigvis yderst sjældent at vi oplever alvorlige overtrædelser, men vi vurderer at det er bedre at genere den almindelige bruger en lille bitte smugle, hvis vi kan afværge bare én alvorlig krænkelse.</p><p>Vi bestræber os på at tjekke løbende, også udenfor almindelig kontortid, men der kan forekomme tidspunkter hvor der vil være forsinkelse fra upload-tidspunkt til offentliggørelse på siden.</p>\r\n",
+        "metaTitle": "Hvorfor kan jeg ikke se det meider jeg lige har uploadet?",
+        "metaDescription": "Billeder på Scor.dk screenes manuelt for ulovligt materiale før offentliggørelse, så der kan gå lidt tid, før dit uploadede billede bliver synligt.",
+        "rating": {
+          "yesRatings": 31,
+          "noRatings": 1
+        },
+        "createdDate": "2023-12-14T14:28:22.057+01:00",
+        "modifiedDate": "2025-11-20T14:26:23.3592661+01:00",
+        "solutions": [],
+        "id": 99,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvorfor kan jeg ikke længere uploade billeder i chatten?",
+        "answer": "<p>Da alle billeder bliver screenet før offentliggørelse på siden, er det ikke muligt at uploadet billeder direkte i chatten. I stedet kan du anvende billeder fra dit galleri eller arkiv. Du kan med fordel sørge for at billeder du vil bruge i chatten, er uploadet på forhånd og hvis du ikke ønsker at de skal ligge til offentligt skue, kan du uploade dem til arkivet, hvor andre ikke kan se dem.</p>\r\n",
+        "metaTitle": "Hvorfor kan jeg ikke længere uploade billeder i chat? - Scor",
+        "metaDescription": "Upload i chatten er slået fra, da alle billeder screenes før offentliggørelse. Brug i stedet billeder fra dit galleri eller beskyttet arkiv.",
+        "rating": {
+          "yesRatings": 28,
+          "noRatings": 2
+        },
+        "createdDate": "2023-12-14T14:31:29.443+01:00",
+        "modifiedDate": "2025-11-20T14:43:45.5574134+01:00",
+        "solutions": [],
+        "id": 100,
+        "priority": 10,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Media editor",
+        "answer": "<p>Ved upload eller ved redigering efter upload kan du bruge media editoren på <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a> til at tilføje figurer, tekst, vandmærke til dit billede.<br>Du kan sløre et område af billedet for f.eks. At skjule en anden person eller synlige tattoos.<br>Beskær billedet så det får den størrelse du ønsker, der er også flere standard beskæringer at vælge imellem.<br>Når ændring lavet i media editoren er gemt, kan de ikke fjernes fra billedet igen.&nbsp;</p><p></p><p>En video kan få tilrettet start og slut tidspunkt, så du kan klippe video til at starte med \"action\".<br>Der kan også tilføjes vandmærke til videoen.</p>",
+        "metaTitle": "Media editor på Scor til redigering af billede og videoer",
+        "metaDescription": "Media editor på Scor.dk lader dig redigere billeder og videoer: tilføj figurer, tekst eller vandmærke, slør områder, beskær billeder og klip videoens start/stop.",
+        "rating": {
+          "yesRatings": 26,
+          "noRatings": 2
+        },
+        "createdDate": "2025-02-17T15:41:05.72+01:00",
+        "modifiedDate": "2025-11-20T14:46:23.6461282+01:00",
+        "solutions": [],
+        "id": 113,
+        "priority": 30,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "”Din adgangskode er fundet i et datalæk fra en anden side”",
+        "answer": "<p>Får du denne besked, når du logger på, er det ikke fordi dine data er blevet lækket fra <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a></p><p>Du har derimod genbrugt en kode, som enten du selv eller en anden har brugt på en side, der har haft et datalæk.</p><p>&nbsp;</p><p>Skal jeg være bekymret?</p><p>Selvom din adgangskode tilsyneladende ligger på nettet, kræver det stadig at vedkommende kender dit brugernavn for at logge ind, så medmindre du også genbruger det på andre sites, er der ikke risiko for at andre får adgang til din profil.</p><p>Du bør alligevel skifte adgangskoden til <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a> og generelt aldrig anvende samme kode til forskellige sider. Du kan desuden overveje at benytte to-faktor godkendelse – se mere her: <a target=\"_blank\" rel=\"noopener\" href=\"https://www.scor.dk/Support/FAQ/49\">https://www.scor.dk/Support/FAQ/49</a></p><p>På den måde bliver det så godt som umuligt for en anden person at logge ind, selv hvis vedkommende kender dit brugernavn og adgangskode.</p>",
+        "metaTitle": "Adgangskode i datalæk - Hvad kan vi gøre ved det? - Scor.dk",
+        "metaDescription": "Beskeden betyder, at din adgangskode er fundet i et eksternt datalæk, ikke hos Scor.dk. Skift din kode og brug 2-faktor godkendelse for ekstra sikkerhed.",
+        "rating": {
+          "yesRatings": 10,
+          "noRatings": 1
+        },
+        "createdDate": "2025-07-29T12:40:25.903+02:00",
+        "modifiedDate": "2025-11-20T14:26:10.5552349+01:00",
+        "solutions": [],
+        "id": 120,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Har du været udsat for digitale krænkelser?",
+        "answer": "<p>Sammen med Dansk Stalking Center har vi udarbejdet denne vejledning, som du kan bruge, hvis du har været udsat for digitale krænkelser.</p><p></p><p>Udover anmeldelse til politiet, anbefale vi at du kontakter nedenstående organisationer. Her kan du både få rådgivning og aktiv hjælp hvis du er udsat for digital chikane eller digital stalking. Vi har fremhævet fire organisationer, som kan hjælpe dig. Du er velkommen til at kontakte dem og få den nødvendige rådgivning.</p><p>&nbsp;</p><p>Vi fremhæver her enkelte råd hvis du er udsat for stalking eller en digital krænkelse:</p><ul><li><p><strong>Dokumentation -&nbsp;</strong>Gem dokumentation og beviser, og anvend logskema</p></li><li><p><strong>Gå til politiet&nbsp;</strong>– Anmeld online på politi.dk</p></li><li><p><strong>Nulkontakt -</strong>&nbsp;Sig tydeligt fra én gang&nbsp;og gengæld herefter ikke kontakten&nbsp;</p></li><li><p><strong>Inddrag netværk​​&nbsp;</strong>– Få hjælp i dit netværk, så du ikke sidder med det alene</p></li></ul><p>&nbsp;</p><p><strong>Dansk Stalking Center</strong>&nbsp;– Kontakt dem hvis du er udsat for stalking. Stalking skal forstås som en systematisk række af kontaktforsøg og adfærd, som er uønsket og vedvarende og som opleves grænseoverskridende og intimiderende for den udsatte</p><p>Se hvordan du kommer i kontakt med dem her:&nbsp;<a target=\"_blank\" rel=\"noopener\" href=\"https://danskstalkingcenter.dk/\"><u>https://danskstalkingcenter.dk/</u></a></p><p>&nbsp;</p><p><strong>StopChikane</strong>&nbsp;- Kontakt dem hvis du er udsat for digitale krænkelser. Typisk vil det være enkeltstående hændelser hvor de kan hjælpe med rådgivning ved f.eks., ulovlig billeddeling.</p><p>Se hvordan du kommer i kontakt med dem her:&nbsp;<a target=\"_blank\" rel=\"noopener\" href=\"https://stopchikane.nu/\"><u>https://stopchikane.nu/</u></a></p><p>&nbsp;</p><p><strong>Sletdet&nbsp;</strong>– Rådgivningen er primært for unge under 18, som er udsat for digitale krænkelser.</p><p>Se hvordan du kommer i kontakt med dem her:&nbsp;<a target=\"_blank\" rel=\"noopener\" href=\"https://sletdet.redbarnet.dk/\"><u>https://sletdet.redbarnet.dk/</u></a></p><p>&nbsp;</p><p><strong>Offerrådgivningen</strong>&nbsp;- Få rådgivning hvis du er udsat for kriminalitet.</p><p>Se hvordan du kommer i kontakt med dem her:&nbsp;<a target=\"_blank\" rel=\"noopener\" href=\"https://offerraadgivning.dk/\"><u>https://offerraadgivning.dk/</u></a></p>",
+        "metaTitle": "Har du været udsat for digitale krænkelser? - Scor.dk",
+        "metaDescription": "Få hjælp og rådgivning ved digitale krænkelser og stalking. Læs vejledninger, kontakt relevante organisationer og beskyt dig online",
+        "rating": {
+          "yesRatings": 7,
+          "noRatings": 0
+        },
+        "createdDate": "2024-08-30T17:09:53.583+02:00",
+        "modifiedDate": "2025-11-20T14:11:19.0655891+01:00",
+        "solutions": [],
+        "id": 103,
+        "priority": 1000,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvad er en Widget?",
+        "answer": "<p>En widget er en lille komponent, man kan tilføje sin profil, for at gøre den mere unik og personlig. Det kan f.eks. være en afstemning du laver på din profil, med et mere eller mindre essentielt eller filosofisk spørgsmål. <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a>’s support kan vælge at fremhæve netop din widget på startsiden, hvis vi finder den særligt sjov, finurlig eller på anden måde fortjener lidt ekstra opmærksomhed. Bliver netop din widget fremhævet, kan du forvente øget trafik på din profil, men der er ikke noget du selv kan gøre, for at fremhæve den – andet end at være kreativ.</p>",
+        "metaTitle": "Widgets på din Scor-profil",
+        "metaDescription": "Beskrivelse af, hvordan du kan anvende widgets til at personliggøre din profil, så den fremstår unik.",
+        "rating": {
+          "yesRatings": 7,
+          "noRatings": 1
+        },
+        "createdDate": "2025-12-01T08:02:02.813+01:00",
+        "modifiedDate": "2025-12-01T08:03:23.133936+01:00",
+        "solutions": [],
+        "id": 123,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Hvad er jeres regler for brugen af screenshots?",
+        "answer": "<p>Vi fraråder fortsat brug af screenshots - også i tilfælde, hvor billedet forestiller dig selv, og du har rettighederne til det oprindelige billede.</p><p>Vores holdning er uændret: Screenshots kan bidrage til at normalisere en adfærd, hvor billeder af andre tages og deles uden samtykke. Det ønsker vi fortsat ikke at understøtte, da vi arbejder proaktivt for at forebygge chikane og hadforbrydelser.</p><p>Samtidig er vi opmærksomme på, at screenshots i praksis ofte anvendes af legitime og praktiske grunde - f.eks. som en hurtig måde at udvælge billeder fra kamerarullen eller i forbindelse med billedredigering. For at mindske unødig friktion for vores brugere vil vi derfor <strong>ikke længere automatisk afvise billeder alene, fordi de er screenshots eller ligner screenshots.</strong></p><p>Det betyder dog ikke, at ansvaret er flyttet fra brugeren.</p><p><strong>Dit ansvar som bruger</strong></p><p>Når du uploader billeder, er det <strong>altid dit ansvar</strong>, at:</p><p></p><ul><li><p>du har rettighederne til billedet</p></li><li><p>billedet forestiller dig selv</p></li><li><p>billedet ikke krænker andre</p></li></ul><p></p><p>Screenshots kan indeholde elementer som rammer, sorte bjælker, værktøjssymboler eller referencer til andre platforme. Det kan give et uroligt eller uprofessionelt udtryk og i nogle tilfælde skabe tvivl om billedets ophav.</p><p>&nbsp;</p><p><strong>Hvornår kan screenshots stadig blive afvist?</strong></p><p>Selvom vi har lempet praksis, forbeholder vi os retten til fortsat at afvise screenshots i konkrete tilfælde. Det vil typisk være, hvis:</p><p></p><ul><li><p>vi ikke med rimelig sikkerhed kan vurdere, at du er ophavsmand eller rettighedshaver til billedet</p></li><li><p>billedet indeholder symboler, tekst, vandmærker eller visuelle referencer til eksterne platforme, tjenester eller ressourcer</p></li><li><p>billedet fremstår som taget direkte fra en anden profil, et socialt medie.</p></li></ul><p></p><p>I disse tilfælde vil billedet blive behandlet på samme måde som øvrigt indhold, der giver anledning til tvivl om rettigheder eller intention.</p><p>&nbsp;</p><p><strong>Vores anbefaling</strong></p><p>For det bedste resultat - både visuelt og oplevelsesmæssigt - anbefaler vi altid at uploade <strong>originalbilleder frem for screenshots.</strong></p><p>Screenshots kan desuden sende et uheldigt signal til modtageren om, at der ikke er gjort meget ud af præsentationen, og at æstetik og kvalitet ikke har haft høj prioritet. Et originalbillede fremstår som regel mere gennemtænkt, indbydende og seriøst - og giver dermed et bedre førstehåndsindtryk.</p><p>Ved at anvende originalbilleder er du med til at sikre både en troværdig profil og et trygt, respektfuldt miljø for alle.</p>",
+        "metaTitle": "Hvad er jeres regler for Screenshots?",
+        "metaDescription": "Vi opfordre altid til at anvende originalbilledet, for at sikre et trygt miljø, men ved at der er situationer, hvor det kan være besværligt. Derfor afviser vi ikke længere kategorisk screenshots. Vi ønsker stadig at forebygge chikane og hadforbrydelser og afviser stadig billeder, hvor der er tvivl om rettighederne.",
+        "rating": {
+          "yesRatings": 6,
+          "noRatings": 0
+        },
+        "createdDate": "2025-12-14T10:30:16.593+01:00",
+        "modifiedDate": "2026-02-10T09:51:02.1954908+01:00",
+        "solutions": [],
+        "id": 125,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Adgangsnøgler",
+        "answer": "<p><strong>Adgangsnøgler</strong><br>Man har altid kunne logge på <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a> ved at bruge sit profilnavn og tilhørende kodeord.<br>Vi har nu September 2025 tilføjet nye muligheder for at godkende ens login på ens profil, vi kalder det for adgangsnøgler.</p><p><br>Adgangsnøgler er en mere sikker og nemmere metode til at logge på apps og websteder som <a target=\"_blank\" rel=\"noopener\" href=\"http://Scor.dk\">Scor.dk</a> uden at skulle huske kompleks kodeord. I stedet logger du ind med dine biometriske data eller din skærmlås.</p><p><br>For at oprette en adgangsnøgle skal du<br>Åben profilmenuen til højre på Scor.<br>Åbne undermenuen ved \"Rediger profil\".<br>Vælge \"Kodeords administration\".<br>Tryk på \"TILFØJ ADGANGSNØGLE\".</p><p><br>Alt efter din enhed kan du lave forskellige adgangsnøgler:<br>Bruge dit fingeraftryk<br>Bruge ansigt genkendelse<br>Brug enhedens Pinkode</p><p><br>Support kan ikke hjælpe med login problemer der fås via adgangsnøgler, da en adgangsnøgle består af et privat-offentligt nøglepar. Scor har ikke adgang til den private del af nøgleparret.<br>Ved adgangsnøgle login problem/fejl, benyt profilnavn og kodeord.</p>",
+        "metaTitle": "Alt du skal vide om adgangsnøgler til din profil - Scor.dk",
+        "metaDescription": "Adgangsnøgler på Scor.dk giver en sikker og nem loginmetode via fingeraftryk, ansigtsgenkendelse eller pinkode – uden behov for at huske kodeord.",
+        "rating": {
+          "yesRatings": 4,
+          "noRatings": 0
+        },
+        "createdDate": "2025-09-22T13:17:56.093+02:00",
+        "modifiedDate": "2025-11-20T14:25:55.9663174+01:00",
+        "solutions": [],
+        "id": 122,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Min indbakke er eksploderet - hvad gør jeg?",
+        "answer": "<p>Vi anerkender at det kan være en overvældende oplevelse at starte på Scor. Interessen for særligt nye profiler er altid stor og alene det at man er online, kan afstedkomme yderligere interesse og deraf ekstra tryk på indbakken.</p><p>Når du opretter en profil er der derfor et filter på din indbakke, så du kun ser post fra dine mulige match.</p><p>Fjerner du dette filter eller oplever du stadig større interesse, end du kan nå at honorerer, kan du med fordel sætte filteret på igen og justere på dine match indstillinger.</p><p></p><p>Når du står i <a rel=\"noopener\" href=\"https://www.scor.dk/Mail\"><strong>Indbakken</strong></a><strong> </strong>klikker du på <strong>Filter-ikonet </strong>og vælger<strong> “Mulige match”</strong>. Så vises kun beskeder fra profiler, der matcher dine kriterier.</p><p></p><p>Tag et kig på <a rel=\"noopener\" href=\"https://www.scor.dk/EditProfile/MatchSettings\">indstillingerne</a> og gør den endnu mere præcis:</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Søger du mænd, kvinder og/eller par</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Seksuel orientering</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Geografisk afstand</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rygning, tatoveringer, børn, relationsstatus</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Alder, højde og vægt</p><p>·&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Om de søger sexpartner, kæreste eller venner</p><p>Jo skarpere dine kriterier er, desto mere reduceres mængden af irrelevante henvendelser.</p><p></p><p>Du kan naturligvis altid fjerne filtret, hvis du vil se om der er noget interessant, som er blevet filtreret fra, men husk at sætte filteret på igen, så du ikke drukner igen.</p><p></p><p><strong>Bonustip</strong>:</p><p>Du kan med fordel skrive en tydelig <a rel=\"noopener\" href=\"https://www.scor.dk/EditProfile\">profiltekst</a> om, hvad du konkret søger, så andre har noget at tage afsæt i, når de henvender sig. Udfyld også gerne <a rel=\"noopener\" href=\"https://www.scor.dk/EditProfile/MatchSettings\">matchord</a>, for endnu bedre match. </p><p>Et effektivt greb er at bede alle starte deres besked med en bestemt emoji. Den kan du se direkte i indbakken uden at åbne beskeden og dermed hurtigt sortere dem fra, der ikke har læst din profil.</p><p>Endelig kan du bruge både <a rel=\"noopener\" href=\"https://www.scor.dk/Support/FAQ/43\"><strong>Nej tak</strong></a><strong>, Afvis</strong> og <a rel=\"noopener\" href=\"https://www.scor.dk/Support/FAQ/33\"><strong>Blacklist</strong></a> på profiler, du ikke finder relevante – særligt hvis du allerede har været i dialog med dem.</p><p>Samlet set vil de tiltag normalt reducere mængden af post markant og samtidig øge kvaliteten af de henvendelser, du modtager.</p><p>&nbsp;</p>",
+        "metaTitle": "Hvad gør du, hvis din indbakke eksploderer?",
+        "metaDescription": "Her er nogle råd til, hvordan du kan begrænse mængden af post, fra profiler der ikke opfylder dine matchkriterier",
+        "rating": {
+          "yesRatings": 1,
+          "noRatings": 0
+        },
+        "createdDate": "2026-02-26T12:04:35.387+01:00",
+        "modifiedDate": "2026-02-26T12:35:24.9310892+01:00",
+        "solutions": [],
+        "id": 127,
+        "priority": 0,
+        "category": 1
+      },
+      {
+        "languageId": "da-DK",
+        "question": "Videovalidering – hvad er det, og hvorfor bruger vi det?",
+        "answer": "<p><strong>Hvad er videovalidering?</strong></p><p>Videovalidering er en kort bekræftelsesvideo, hvor den eller de personer, der står bag en profil, optager sig selv og  bl.a. tydeligt siger profilens navn.</p><p>Videoen uploades direkte til platformen og gennemgås manuelt af en supportmedarbejder.</p><p>Videoen:</p><ul><li><p>Er ikke offentlig</p></li><li><p>Kan ikke ses af andre brugere</p></li><li><p>Bruges udelukkende til validering</p></li><li><p>Slettes efter intern behandling i henhold til vores datapraksis</p></li></ul><p>Formålet er at sikre, at personen bag profilen er den samme, som fremgår af profilens billeder og oplysninger.</p><p></p><p><strong>Hvad bruges videovalidering til?</strong></p><p>Videovalidering er et ekstra sikkerhedslag.</p><p>Den kan bruges til at bekræfte:</p><ul><li><p>At profilen repræsenterer en reel person</p></li><li><p>At personen svarer til de billeder, der er uploadet</p></li><li><p>At alder og køn stemmer overens med den dokumentation, der evt. allerede er verificeret via MitID</p></li><li><p>At profilen ikke anvender billeder, der tilhører andre</p></li></ul><p>Det øger trygheden – både for den enkelte profil og for fællesskabet som helhed.</p><p></p><p><strong>Hvorfor kan jeg blive bedt om at gennemføre videovalidering?</strong></p><p>I nogle situationer kan vi bede en profil om at gennemføre videovalidering. Det sker som led i vores løbende sikkerhedsprocedurer.</p><p>Det kan eksempelvis være, hvis:</p><ul><li><p>Der registreres usædvanlige loginmønstre (fx adgang fra geografisk vidt forskellige lokationer inden for kort tid)</p></li><li><p>Der uploades billeder, som ligner materiale fundet andre steder online</p></li><li><p>Der opstår tekniske uoverensstemmelser i profilens oplysninger</p></li><li><p>En profil indgår i en stikprøvekontrol som led i vores generelle sikkerhedsarbejde</p></li><li><p>Vi modtager henvendelser, som giver anledning til at sikre, at alt er korrekt</p></li></ul><p>Listen er ikke udtømmende.</p><p>Det er vigtigt at understrege, at en anmodning om videovalidering ikke er en anklage. Det er en standardiseret sikkerhedsforanstaltning, som skal beskytte både den enkelte bruger og resten af platformens medlemmer.</p><p></p><p><strong>Hvad hvis jeg ikke ønsker at gennemføre videovalidering?</strong></p><p>Videovalidering er i nogle tilfælde en forudsætning for at kunne fortsætte på platformen. Hvis den ikke gennemføres, kan profilen ikke forblive aktiv.</p><p>Dette skyldes, at vi prioriterer et trygt og verificerbart miljø for alle brugere.</p><p></p><p><strong>Hvorfor gør I det?</strong></p><p>Vi driver en platform, hvor tillid er afgørende.</p><p>Falske profiler, misbrug af andres billeder og delte loginoplysninger kan skade både den enkelte bruger og fællesskabet. Videovalidering er et redskab til at:</p><ul><li><p>Forebygge identitetstyveri</p></li><li><p>Beskytte mod ophavsretskrænkelser</p></li><li><p>Reducere risikoen for svindel og misbrug</p></li><li><p>Øge gennemsigtigheden mellem brugere</p></li></ul><p>Jo højere grad af autenticitet, desto bedre oplevelse for alle.</p>",
+        "metaTitle": "Videovalidering",
+        "metaDescription": "Videovalidering er en kort bekræftelsesvideo, hvor den eller de personer, der står bag en profil, optager sig selv og  bl.a. tydeligt siger profilens navn.",
+        "rating": {
+          "yesRatings": 0,
+          "noRatings": 0
+        },
+        "createdDate": "2026-02-16T15:54:11.363+01:00",
+        "modifiedDate": "2026-02-16T16:02:45.6646538+01:00",
+        "solutions": [],
+        "id": 126,
+        "priority": 0,
+        "category": 1
+      }
+    ],
+    "lastPage": false
+  }
+}

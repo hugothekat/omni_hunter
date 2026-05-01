@@ -1,0 +1,24 @@
+{
+  "url": "https://www.scor.dk/api/Support/FaqEntry?id=10",
+  "status": 200,
+  "body": {
+    "entry": {
+      "languageId": "da-DK",
+      "question": "Hvordan validerer jeg min profil?",
+      "answer": "<p>Som det første datingsite i Danmark, kræver vi NemID (som det hed dengang sidenhen MitID) validering af samtlige brugere. Det gør vi for at gøre op med kritikken af, at siden var fyldt med falske profiler, og selvom vi ikke kan garantere at du finder din eneste ene eller at en date faktisk møder op til en aftale, så er det vores klare indtryk, at initiativet har haft en positiv effekt på seriøsiteten. Hvad vi faktisk kan garantere, inden for rammerne af sikkerhed omkring MitID er, at der ingen mindreårige er på siden og profilen faktisk har den alder og køn, som er angivet i profilen.</p><p>&nbsp;</p><p>Du kan desuden vælge at <a target=\"_blank\" rel=\"noopener\" href=\"https://www.scor.dk/ProfileValidation\">videovalidere</a> din profil, for at skabe større sikkerhed om hvem der er bag. Dette giver typisk mest mening, hvis du i forvejen har billeder på din profil, men er ikke et krav. Videovalideringen ses af mange som et stempel for seriøsitet fordi der er sammenhæng mellem billeder på profilen og virkeligheden. Der udtrækkes også tilfældige profiler, til tvungen videovalidering. Der behøver således ikke være nogen begrundet mistanke, men kan være det.</p><p>Som udgangspunkt er det altså frivilligt at videovalidere sig, men er man udtrukket og undlader, vil ens profil blive låst og på sigt slettet.</p><p>Videovalideringen gemmes sammen med profilen, men er ikke synlig for andre på siden, og den slettes sammen med de øvrige data, hvis man ønsker at slette sin profil.</p><p>&nbsp;</p><p>Som en sidste mulighed, kan man blive personligt valideret. Dette kan kun ske fysisk og man render på en medarbejder, f.eks. til et event vil man på forespørgsel kunne valideres. Denne form for validering indikerer at man godt tør møde op irl.</p>",
+      "metaTitle": "Hvordan validerer jeg min profil? - Scor.dk",
+      "metaDescription": "Profiler på Scor.dk valideres via MitID, frivillig videovalidering eller personlig validering, hvilket sikrer alder, køn og seriøsitet på siden.",
+      "rating": {
+        "yesRatings": 592,
+        "noRatings": 29
+      },
+      "createdDate": "2019-12-03T13:38:43.497+01:00",
+      "modifiedDate": "2025-11-20T14:19:51.2512916+01:00",
+      "solutions": [],
+      "id": 10,
+      "priority": 10,
+      "category": 1
+    },
+    "voted": false
+  }
+}

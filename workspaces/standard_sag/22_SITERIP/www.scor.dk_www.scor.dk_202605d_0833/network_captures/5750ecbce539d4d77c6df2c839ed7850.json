@@ -1,0 +1,285 @@
+{
+  "url": "https://www.scor.dk/api/Seo/FrontpageLandingPages",
+  "status": 200,
+  "body": [
+    {
+      "id": 2,
+      "keywords": "dating",
+      "introduction": "En rigtig god grund til at lede efter kærligheden på en dating side er, at forskning viser, at par der, møder hinanden på dating sider, er lykkeligere i deres parforhold, end folk der har mødt hinanden andre steder. ",
+      "pageTitle": "Dating for mænd og kvinder i alle aldre",
+      "coverImage": "Dating",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "To singler på romantisk date for at finde kærligheden",
+      "url": "/dating",
+      "author": {
+        "id": 2,
+        "siteId": 1,
+        "name": "Susie Castenlund",
+        "gender": 2,
+        "description": "Susie er vores faste blogger som skriver om alt mellem himmel og jord.",
+        "title": "Blogger på Scor.dk",
+        "imageId": 613,
+        "image": {
+          "id": 613,
+          "fileName": "Susie Castenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Susie Castenlund",
+          "created": "2023-03-06T17:25:56.04+01:00"
+        }
+      },
+      "category": "Dating",
+      "publishedAt": "2023-03-06T23:00:00+01:00",
+      "timeToRead": 6
+    },
+    {
+      "id": 4,
+      "keywords": "sex",
+      "introduction": "Sex er for mange danskere en stor del af deres liv. Det er vigtigt at være tilfreds med sit eget sexliv - både for krop, sjæl og sind. På Scor har vi samlet alt om sex, som du kan bruge til at udforske dine frække fantasier og lyster - uanset om du er mand eller kvinde, single, i et fast forhold eller alt derimellem.",
+      "pageTitle": "Alt om sex - Sådan krydrer du dit sexliv",
+      "coverImage": "Sex",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Par putter under dynen i soveværelset efter sex",
+      "url": "/sex",
+      "author": {
+        "id": 1,
+        "siteId": 1,
+        "name": "Michelle Gudmand Petersen",
+        "gender": 2,
+        "description": "Michelle burde være sexolog med den ufattelige viden hun har om parterapi ",
+        "title": "Sexolog",
+        "imageId": 614,
+        "image": {
+          "id": 614,
+          "fileName": "Michelle Gudmand Petersen",
+          "width": 110,
+          "height": 110,
+          "alt": "Michelle Gudmand Petersen",
+          "created": "2023-03-06T17:26:20.21+01:00"
+        }
+      },
+      "category": "Sex",
+      "publishedAt": "2023-03-06T22:00:00+01:00",
+      "timeToRead": 6
+    },
+    {
+      "id": 9,
+      "keywords": "chat",
+      "introduction": "Nogle bruger fræk chat som opvarmning til et møde. Andre ser fræk chat som en let mulighed for at finde en flirt eller at udforske en forbudt fantasi, uden at det bliver til mere.",
+      "pageTitle": "Chat på gode chatsider",
+      "coverImage": "Chat",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Pige sidder derhjemme og chatter med andre singler på chat",
+      "url": "/chat",
+      "author": {
+        "id": 1,
+        "siteId": 1,
+        "name": "Michelle Gudmand Petersen",
+        "gender": 2,
+        "description": "Michelle burde være sexolog med den ufattelige viden hun har om parterapi ",
+        "title": "Sexolog",
+        "imageId": 614,
+        "image": {
+          "id": 614,
+          "fileName": "Michelle Gudmand Petersen",
+          "width": 110,
+          "height": 110,
+          "alt": "Michelle Gudmand Petersen",
+          "created": "2023-03-06T17:26:20.21+01:00"
+        }
+      },
+      "category": "Chat",
+      "publishedAt": "2023-03-06T22:00:00+01:00",
+      "timeToRead": 5
+    },
+    {
+      "id": 64,
+      "keywords": "BDSM & bondage",
+      "introduction": "BDSM bondage er for mange en verden, der både tiltrækker og afskrækker. Det er en verden af lyst, som mange ikke ved noget om eller ikke nok om. For hvor går man hen når lysten er sådan lidt ”til en anden side”?",
+      "pageTitle": "Hvad er BDSM bondage?",
+      "coverImage": "BDSM-og-bondage",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Pige er sexslave i BDSM bondage med hendes sex partner",
+      "url": "/bdsm-og-bondage",
+      "author": {
+        "id": 1,
+        "siteId": 1,
+        "name": "Michelle Gudmand Petersen",
+        "gender": 2,
+        "description": "Michelle burde være sexolog med den ufattelige viden hun har om parterapi ",
+        "title": "Sexolog",
+        "imageId": 614,
+        "image": {
+          "id": 614,
+          "fileName": "Michelle Gudmand Petersen",
+          "width": 110,
+          "height": 110,
+          "alt": "Michelle Gudmand Petersen",
+          "created": "2023-03-06T17:26:20.21+01:00"
+        }
+      },
+      "category": "BDSM og bondage",
+      "publishedAt": "2023-03-06T23:00:00+01:00",
+      "timeToRead": 8
+    },
+    {
+      "id": 70,
+      "keywords": "Dating tips",
+      "introduction": "Det kan være en udfordring at lave en datingprofil. Heldigvis er der mange gode dating tips at hente, både online og offline. ",
+      "pageTitle": "Datingtips til kvinder og mænd der søger kærligheden",
+      "coverImage": "Dating-tips",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Mand og kvinde har fundet kærligheden efter de fandt de rigtige dating tips",
+      "url": "/dating-tips",
+      "author": {
+        "id": 3,
+        "siteId": 1,
+        "name": "Jannick Rosenlund",
+        "gender": 1,
+        "description": "Jannick er halv Italiener og en rigtig charmør. Jannick skriver om flirt, dating og hvordan man holder fast i gnisten i en forhold",
+        "title": "Mr. Love",
+        "imageId": 615,
+        "image": {
+          "id": 615,
+          "fileName": "Jannick Rosenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Jannick Rosenlund",
+          "created": "2023-03-06T17:26:33.5+01:00"
+        }
+      },
+      "category": "Dating tips",
+      "publishedAt": "2023-03-06T23:00:00+01:00",
+      "timeToRead": 8
+    },
+    {
+      "id": 73,
+      "keywords": "julekuglen",
+      "introduction": "\"Nogle mænd har opdaget, at der er noget, der hedder klitoris, men de ved ikke, hvad de skal gøre ved den.\"",
+      "pageTitle": "Julekuglen - Kvinder har en klitoris, mænd!",
+      "coverImage": "julekuglen",
+      "coverImageWidth": 694,
+      "coverImageHeight": 1024,
+      "coverImageAlt": "null",
+      "url": "/julekuglen",
+      "author": {
+        "id": 3,
+        "siteId": 1,
+        "name": "Jannick Rosenlund",
+        "gender": 1,
+        "description": "Jannick er halv Italiener og en rigtig charmør. Jannick skriver om flirt, dating og hvordan man holder fast i gnisten i en forhold",
+        "title": "Mr. Love",
+        "imageId": 615,
+        "image": {
+          "id": 615,
+          "fileName": "Jannick Rosenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Jannick Rosenlund",
+          "created": "2023-03-06T17:26:33.5+01:00"
+        }
+      },
+      "category": "Sex",
+      "publishedAt": "2023-03-06T23:00:00+01:00",
+      "timeToRead": 3
+    },
+    {
+      "id": 140,
+      "keywords": "Sex og dating i Danmark",
+      "introduction": "Det er en rigtig god ide at vide, hvor i Danmark du kan finde den sex og dating du ønsker. Hvor du kommer fra har selvfølgelig stor betydning. Men hvordan det kan være, kan du læse her!",
+      "pageTitle": "Find sex og dating i Danmark",
+      "coverImage": "Sex-og-dating-i-Danmark",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Singler der bruger Scor til at finde sex og dating i Danmark",
+      "url": "/sex-og-dating-i-danmark",
+      "author": {
+        "id": 2,
+        "siteId": 1,
+        "name": "Susie Castenlund",
+        "gender": 2,
+        "description": "Susie er vores faste blogger som skriver om alt mellem himmel og jord.",
+        "title": "Blogger på Scor.dk",
+        "imageId": 613,
+        "image": {
+          "id": 613,
+          "fileName": "Susie Castenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Susie Castenlund",
+          "created": "2023-03-06T17:25:56.04+01:00"
+        }
+      },
+      "category": "Sex og dating",
+      "publishedAt": "2023-03-08T22:00:00+01:00",
+      "timeToRead": 7
+    },
+    {
+      "id": 324,
+      "keywords": "scor rabatkode",
+      "introduction": "Er du på udkig efter rabatkoder til Scor.dk, må vi desværre skuffe. På Scor.dk har vi ikke rabatkoder, da vi i forvejen tilbyder vores service til en yderst god pris.",
+      "pageTitle": "Scor rabatkoder og værdikuponer findes ikke",
+      "coverImage": "scor-rabatkoder-og-vaerdikuponer",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Find rabatkoder og værdikuponer til Scor.dk",
+      "url": "/scor-rabatkode",
+      "author": {
+        "id": 2,
+        "siteId": 1,
+        "name": "Susie Castenlund",
+        "gender": 2,
+        "description": "Susie er vores faste blogger som skriver om alt mellem himmel og jord.",
+        "title": "Blogger på Scor.dk",
+        "imageId": 613,
+        "image": {
+          "id": 613,
+          "fileName": "Susie Castenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Susie Castenlund",
+          "created": "2023-03-06T17:25:56.04+01:00"
+        }
+      },
+      "category": "Sex",
+      "publishedAt": "2023-03-08T22:00:00+01:00",
+      "timeToRead": 3
+    },
+    {
+      "id": 1028,
+      "keywords": "etik",
+      "introduction": "Vi er Danmarks ældste voksen-datingsite og har siden 1998 arbejdet for at levere en social platform til voksne, hvor der er højt til loftet og frirum til at finde ligesindede at udveksle erfaringer med. På Scor.dk er det tilladt at stå ved sin seksualitet og nyde den sjove del af voksenlivet. Vi stræber efter at nedbryde fordomme og tabuer omkring erotik og sex som en naturlig del af livet.\n\nVi mener, det er vigtigt, at vi i dagens samfund kan være åbne og ærlige omkring vores individuelle seksualiteter, og vi vil gerne være med til at sætte sex på dagsordenen og gøre det i en sikker kontekst.",
+      "pageTitle": "Etisk regelsæt for Scor.dk",
+      "coverImage": "dejting-app",
+      "coverImageWidth": 1022,
+      "coverImageHeight": 700,
+      "coverImageAlt": "Tjej letar efter dejting på hennes dejting app",
+      "url": "/etisk-regelsaet",
+      "author": {
+        "id": 2,
+        "siteId": 1,
+        "name": "Susie Castenlund",
+        "gender": 2,
+        "description": "Susie er vores faste blogger som skriver om alt mellem himmel og jord.",
+        "title": "Blogger på Scor.dk",
+        "imageId": 613,
+        "image": {
+          "id": 613,
+          "fileName": "Susie Castenlund",
+          "width": 110,
+          "height": 110,
+          "alt": "Susie Castenlund",
+          "created": "2023-03-06T17:25:56.04+01:00"
+        }
+      },
+      "category": "Dating",
+      "publishedAt": "2024-07-01T00:00:00+02:00",
+      "timeToRead": 4
+    }
+  ]
+}

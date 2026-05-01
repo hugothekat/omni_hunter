@@ -1,0 +1,18 @@
+{
+  "url": "https://www.scor.dk/api/Common/GetSiteCountries",
+  "status": 200,
+  "body": [
+    {
+      "id": "dk",
+      "name": "Danmark"
+    },
+    {
+      "id": "se",
+      "name": "Sverige"
+    },
+    {
+      "id": "no",
+      "name": "Norge"
+    }
+  ]
+}

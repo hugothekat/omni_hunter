@@ -1,0 +1,14 @@
+{
+  "url": "https://www.scor.dk/api/Support/ChangeLogEntries?skip=0&take=1",
+  "status": 200,
+  "body": [
+    {
+      "id": 133,
+      "date": "2025-12-09T12:00:00+01:00",
+      "text": "<h2>Afstemning</h2><p>Udviklingsteamet har igen været flittige og begavet os med en tidlig julegave. I dagens opdatering er der ud over en masse mindre opdateringer og rettelser også kommet et par ting, som fortjener fremhævelse.</p><p>Det har været muligt at lave afstemning på sin profil noget tid og enkelte afstemninger fremhæver vi i supporten til også at være på startsiden. Vi har fået flere positive tilbagemeldinger om, at det skaber en masse trafik på profilerne og vi kan kun opfordre til at benytte widgten og lave din egen sjove, seriøse eller sjofle afstemning. Med den mulighed opstod der straks et ønske om også at kunne lave afstemninger i loge- og blogindlæg, så det ønske har vi efterlevet (det er dog stadig kun muligt at få fremhævet afstemninger fra sin profilside). Vi vil elske at se flere afstemninger rundt omkring på siden og håber du også synes det er en god måde at gøre din profil og nu også loge- og blogindlæg mere unikt.</p>",
+      "language": "da-DK",
+      "important": false,
+      "unread": false
+    }
+  ]
+}

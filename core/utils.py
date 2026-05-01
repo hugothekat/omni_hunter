@@ -56,6 +56,15 @@ class C:
     BG_RED = '\033[41m'
     RESET = '\033[0m'
 
+def get_active_workspace() -> str:
+    try:
+        if os.path.exists("omni_active_workspace.txt"):
+            with open("omni_active_workspace.txt", "r") as f:
+                ws = f.read().strip()
+                if ws: return f"workspaces/{ws}"
+    except: pass
+    return "workspaces/standard_sag"
+
 session: Dict[str, Any] = {
     "name": "", 
     "city": "", 
@@ -63,7 +72,7 @@ session: Dict[str, Any] = {
     "phone": "",
     "username": "",
     "found_links": [],
-    "loot_folder": "loot_evidence"
+    "loot_folder": get_active_workspace()
 }
 
 def get_input(prompt_text: str, session_key: str) -> str:
@@ -414,8 +423,14 @@ class OmniDataLake:
     def __init__(self, base_dir: str = "loot_evidence"):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = self.base_dir / "omni_datalake.db"
         self._init_db()
+
+    @property
+    def db_path(self) -> Path:
+        """Dynamisk Path resolution sikrer, at alle moduler skriver til det aktive workspace."""
+        active_dir = Path(session.get("loot_folder", get_active_workspace()))
+        active_dir.mkdir(parents=True, exist_ok=True)
+        return active_dir / "omni_datalake.db"
 
     def _init_db(self) -> None:
         with sqlite3.connect(self.db_path) as conn:
@@ -449,6 +464,14 @@ class OmniDataLake:
             conn.execute('''CREATE TABLE IF NOT EXISTS persona_reviews
                             (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, operator_name TEXT, comment TEXT, rating INTEGER, timestamp DATETIME)''')
                             
+            # GOLIATH V57: Discovered Vulnerabilities
+            conn.execute('''CREATE TABLE IF NOT EXISTS discovered_vulnerabilities
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, persona_id INTEGER, port INTEGER, service_banner TEXT, vulnerability_name TEXT, severity TEXT, timestamp DATETIME)''')
+                            
+            # GOLIATH V58: Fleet Management Nodes
+            conn.execute('''CREATE TABLE IF NOT EXISTS fleet_nodes
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT UNIQUE, username TEXT, password TEXT, status TEXT, last_seen DATETIME)''')
+
             conn.execute('CREATE INDEX IF NOT EXISTS idx_email ON extracted_emails(email)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_cred_user ON extracted_credentials(username)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_api ON extracted_apis(endpoint)')
@@ -563,6 +586,12 @@ class OmniDataLake:
                                 
                             conn.execute("INSERT INTO master_personas (timestamp, target, name, email, phone, social_handle, raw_data_ref, last_ip, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                                          (timestamp, target, p.get("name", ""), p.get("email", ""), p.get("phone", ""), p.get("social_handle", ""), raw_ref, last_ip, location))
+                                         
+                # Active Service Prober Ingestion for Batch 17
+                if "Discovered_Vulns" in data and isinstance(data["Discovered_Vulns"], list):
+                    for v in data["Discovered_Vulns"]:
+                        conn.execute("INSERT INTO discovered_vulnerabilities (persona_id, port, service_banner, vulnerability_name, severity, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                                     (v.get("persona_id"), v.get("port"), v.get("banner"), v.get("vuln"), v.get("severity"), timestamp))
             except Exception as e:
                 logger.error(f"Fejl ved Entity Extraction til Datalake: {e}")
 

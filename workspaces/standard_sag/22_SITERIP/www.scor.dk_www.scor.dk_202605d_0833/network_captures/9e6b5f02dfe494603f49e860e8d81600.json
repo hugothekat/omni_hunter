@@ -1,0 +1,7 @@
+{
+  "url": "https://stats.scor.dk/api/track",
+  "status": 200,
+  "body": {
+    "success": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "url": "https://www.scor.dk/api/CreateProfile/Start",
+  "status": 200,
+  "body": {
+    "trackingId": "3cb2d3fe-2224-497c-a98c-65b7d918c11b"
+  }
+}

@@ -18,6 +18,7 @@ class ModuleCategory(Enum):
     FORENSICS = "Digital Forensics & OPSEC"
     REPORTING = "Rapportering & Visualisering"
     GENERAL = "Generel Efterretning"
+    ANALYSIS = "Data Analyse & Bearbejdning"
 
 class BaseModule(ABC):
     """Master Class for alle PETFE GOLIATH Moduler (Python 3.10+ Compliant)."""

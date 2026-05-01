@@ -1,0 +1,8 @@
+{
+  "url": "https://www.scor.dk/api/Seo/TicketsRating",
+  "status": 200,
+  "body": {
+    "satisfiedPercentage": 84,
+    "satisfiedCount": 39691
+  }
+}

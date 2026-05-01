@@ -1,0 +1,18 @@
+{
+  "url": "https://www.scor.dk/api/Support/FaqCategories?",
+  "status": 200,
+  "body": [
+    {
+      "id": 1,
+      "questions": 32
+    },
+    {
+      "id": 2,
+      "questions": 6
+    },
+    {
+      "id": 3,
+      "questions": 23
+    }
+  ]
+}

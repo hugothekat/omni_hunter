@@ -48,11 +48,14 @@ class MatrixAnalyzer(BaseModule):
 
         # --- NY V8 TILFØJELSE: High-Speed Pre-Flight Scan ---
         try:
-            loop = asyncio.get_event_loop()
-            if not loop.is_running():
-                loop.run_until_complete(self._run_async_preflight())
-            else:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
                 loop.create_task(self._run_async_preflight())
+            else:
+                asyncio.run(self._run_async_preflight())
         except Exception as e: print(f"{C.RED}[!] Async Pre-Flight Fejl: {e}{C.RESET}")
 
         print(f"\n{C.YELLOW}[*] Starter fuld skanning over 300+ platforme for: {self.username} (Tillad op til 2 minutter)...{C.RESET}")

@@ -16,6 +16,7 @@ import sqlite3
 import glob
 from pathlib import Path
 from datetime import datetime
+import html
 from typing import List, Dict, Set, Any
 from core.utils import C, session
 from core.utils import sanitize_filename
@@ -28,7 +29,7 @@ class AutomatedCaseReporter:
     def __init__(self):
         self.loot_dir = Path(session.get("loot_folder", "loot_evidence"))
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.report_file = self.loot_dir / f"GOLIATH_MASTER_REPORT_{self.timestamp}.html"
+        self.report_file = self.loot_dir / "GOLIATH_MASTER_REPORT_LATEST.html"
         
         # Samledata
         self.all_emails: Set[str] = set()
@@ -49,6 +50,15 @@ class AutomatedCaseReporter:
             try:
                 data = json.loads(f.read_text(encoding='utf-8'))
                 
+                # GOLIATH EXPANSION: Global IOC Extraction fra alle moduler
+                for key in ["Fundne_Emails", "Emails_Identificeret", "Deep_Scrape_Emails"]:
+                    if key in data: self.all_emails.update(data[key])
+                if "Telefonnumre" in data: self.all_phones.update(data["Telefonnumre"])
+                if "Fundne_Brugernavne" in data: self.all_usernames.update(data["Fundne_Brugernavne"])
+                if "IP_Adresser" in data: self.all_ips.update(data["IP_Adresser"])
+                if "Domæner" in data: self.all_domains.update(data["Domæner"])
+                if "CPR_Fragments" in data: self.all_cpr.update(data["CPR_Fragments"])
+
                 # Modul 15 (Orchestrator) Extraction
                 if "Confidence_Score" in data:
                     self.master_score = f"{data['Confidence_Score']}/100"
@@ -92,23 +102,23 @@ class AutomatedCaseReporter:
                 # Udtrækker Lækkede Credentials og Knækkede Hashes (Modul 36, 05, 03, 05_Darkweb)
                 if "Knækkede_Passwords_Klartekst" in data:
                     for cred in data["Knækkede_Passwords_Klartekst"]:
-                        self.cracked_credentials.append({"source": "De-Hash Engine", "target": cred.get("Hash", "")[:12]+"...", "secret": cred.get("Cleartext", "")})
+                        self.cracked_credentials.append({"source": "De-Hash Engine", "target": html.escape(cred.get("Hash", "")[:12]+"..."), "secret": html.escape(cred.get("Cleartext", ""))})
                 
                 if "Rå_Kredentialer" in data:
                     for cred in data["Rå_Kredentialer"]:
                         if ":" in cred:
                             t, s = cred.split(":", 1)
-                            self.cracked_credentials.append({"source": "Pastebin Leak", "target": t, "secret": s})
+                            self.cracked_credentials.append({"source": "Pastebin Leak", "target": html.escape(t), "secret": html.escape(s)})
                             
                 if "Credentials" in data:
                     for cred in data["Credentials"]:
-                        self.cracked_credentials.append({"source": "Offline DB", "target": cred.get("Konto", "Unknown"), "secret": cred.get("Secret", "")})
+                        self.cracked_credentials.append({"source": "Offline DB", "target": html.escape(cred.get("Konto", "Unknown")), "secret": html.escape(cred.get("Secret", ""))})
                         
                 if "Lækkede_Kredentialer" in data:
                     for cred in data["Lækkede_Kredentialer"]:
                         if ":" in cred:
                             t, s = cred.split(":", 1)
-                            self.cracked_credentials.append({"source": "Darknet Spider", "target": t, "secret": s})
+                            self.cracked_credentials.append({"source": "Darknet Spider", "target": html.escape(t), "secret": html.escape(s)})
 
             except Exception as e:
                 print(f"{C.DIM}[-] Fejl ved parsing af {f.name}: {e}{C.RESET}")
@@ -469,7 +479,7 @@ class AutomatedCaseReporter:
                     <div class="box accent">
                         <h2>Sikret Bevismateriale ({len(files)} Filer)</h2>
                         <ul class="list-group">
-                            {''.join([f"<li style='border-left-color: #2ecc71;'>{f.name}</li>" for f in files])}
+                            {''.join([f"<li style='border-left-color: #2ecc71;'><a href='file://{f.absolute()}' target='_blank' style='color: #cfd2d9; text-decoration: underline;'>{f.name}</a></li>" for f in files])}
                         </ul>
                     </div>
 
@@ -545,4 +555,4 @@ class AutomatedCaseReporter:
 
         self.report_file.write_text(html_content, encoding='utf-8')
         print(f"{C.GREEN}[✓] The Goliath Master Report er kompagneret og krypteret!{C.RESET}")
-        print(f"{C.CYAN}    -> Dobbeltklik filen for at åbne i din browser: {self.report_file.absolute()}{C.RESET}")
+        print(f"{C.CYAN}    -> Klik på linket for at åbne i din browser: file://{self.report_file.absolute()}{C.RESET}")
