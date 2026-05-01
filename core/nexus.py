@@ -19,6 +19,7 @@ class EntityType(Enum):
     LOCATION = "LOCATION"
     CREDENTIAL = "CREDENTIAL"
     SOCIAL = "SOCIAL"
+    BSSID = "BSSID"
     UNKNOWN = "UNKNOWN"
 
 class NexusGraph:
@@ -29,6 +30,10 @@ class NexusGraph:
         # graph: map fra normaliseret node_val til metadata dictionary
         self.graph: Dict[str, dict] = {} 
         self.edges: List[dict] = []
+        
+        # NYT V43: Adjacency list til hurtig opslag i Reporteren
+        self.adjacency: Dict[str, List[tuple]] = {}
+        
         logger.info("[NEXUS] Graph Engine initialiseret i hukommelsen.")
 
     def ingest(self, entity_type: EntityType, value: str, source: str = "Unknown", confidence: float = 1.0) -> None:
@@ -48,7 +53,8 @@ class NexusGraph:
                 "label": str(value).strip(), # Beholder original casing til UI'en
                 "sources": [source],
                 "confidence": confidence,
-                "first_seen": source
+                "first_seen": source,
+                "linked_entities": [] # Til reporterens fallback
             }
             logger.debug(f"[NEXUS] Ingested NEW Node: [{entity_type.value}] {value} (Source: {source})")
         else:
@@ -87,6 +93,10 @@ class NexusGraph:
         # Check for dublet-kanter for at undgå at UI'en tegner den samme linje flere gange.
         if edge not in self.edges:
             self.edges.append(edge)
+            
+            # Opdaterer linked_entities for Reporterens _build_graph_data
+            if (tgt_key, label) not in self.graph[src_key]["linked_entities"]:
+                self.graph[src_key]["linked_entities"].append((tgt_key, label))
             logger.debug(f"[NEXUS] Linked: {source_val} --[{label}]--> {target_val}")
 
 # GOLIATH Nexus global instans (Singleton)

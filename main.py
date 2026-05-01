@@ -34,6 +34,8 @@ def ensure_ui_deps():
     except ImportError: missing.append("prompt_toolkit")
     try: import psutil
     except ImportError: missing.append("psutil")
+    try: import structlog
+    except ImportError: missing.append("structlog")
     
     if missing:
         print(f"\033[93m[*] Auto-installerer kritiske UI-afhængigheder: {', '.join(missing)}\033[0m")
@@ -73,6 +75,9 @@ try:
     
     try: from core.nexus import nexus
     except ImportError: nexus = None
+    
+    try: from core.web_server import GoliathWebServer
+    except ImportError: GoliathWebServer = None
 
 except ImportError as e:
     console.print(Panel(f"[bold red]KRITISK FEJL: Core-komponenter mangler.[/bold red]\nFejl: {e}", title="SYSTEM FAILURE"))
@@ -258,7 +263,7 @@ class GoliathShell:
         self.current_target = None
         
         # Opretter en intelligent WordCompleter til TUI'en
-        commands = ['target', 'scan', 'modules', 'run', 'case', 'workspace', 'jobs', 'report', 'darknet', 'clear', 'exit', 'help']
+        commands = ['target', 'scan', 'modules', 'run', 'case', 'workspace', 'jobs', 'report', 'darknet', 'web', 'clear', 'exit', 'help']
         self.completer = WordCompleter(commands, ignore_case=True)
         
         # Prompt Style
@@ -358,6 +363,13 @@ class GoliathShell:
                         self.workspace_manager.list_workspaces()
                 elif cmd == "jobs":
                     self.job_manager.display_jobs()
+                elif cmd in ["web", "server"]:
+                    if GoliathWebServer:
+                        console.print("[bold cyan][*] Klargør Django Web Server i baggrunden...[/bold cyan]")
+                        GoliathWebServer.start_background()
+                        console.print("[bold green][+] Server kører! Besøg Dashboardet: http://127.0.0.1:8000/[/bold green]")
+                    else:
+                        console.print("[bold red][!] Web Server Core ikke fundet.[/bold red]")
                 elif cmd == "scan":
                     args.insert(0, "auto")
                     self.execute_cmd(args)
@@ -416,6 +428,7 @@ class GoliathShell:
         table.add_row("case <navn>", "Opret eller skift operativ sagsmappe (workspace)")
         table.add_row("jobs", "Se status på asynkrone baggrundsopgaver")
         table.add_row("report", "Generér interaktiv HTML efterretningsrapport")
+        table.add_row("web", "Start Django Command Center i baggrunden")
         table.add_row("clear", "Rens skærmen og genindlæs dashboard")
         table.add_row("darknet <url>,<word>", "Kør direkte darknet scraping på onion-URL")
         table.add_row("exit", "Sikr databaser og afslut")
@@ -434,7 +447,7 @@ class GoliathShell:
             console.print("[bold yellow][!] Intet mål valgt. Brug 'target <navn>' først for at låse et mål.[/bold yellow]")
             return
 
-        if mod_id.lower() == "auto": mod_id = "30"
+        if mod_id.lower() == "auto": mod_id = "15"
 
         module = self.module_manager.get_module(mod_id)
         if not module:
@@ -459,7 +472,7 @@ def run_pipeline(args):
     target = military_sanitize_input(args.target)
     session["name"] = target
 
-    mod_list = ["30"] if args.auto else [m.strip() for m in args.modules.split(",")]
+    mod_list = ["15"] if args.auto else [m.strip() for m in args.modules.split(",")]
     
     for m_id in mod_list:
         module = mm.get_module(m_id)

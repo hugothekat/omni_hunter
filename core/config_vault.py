@@ -180,7 +180,7 @@ class GoliathVault:
                 
         print(f"{C_RED}[!] Alle historiske versioner er også korrupte. Destroying vault.{C_RESET}")
         self.vault_path.unlink(missing_ok=True)
-        raise RuntimeError("Total Vault Corruption.")
+        return
 
     def get(self, section: str, key: str = None) -> Any:
         """Trådsikker hentning af konfigurationer."""

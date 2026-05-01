@@ -7,7 +7,7 @@
    - FASTSAT: bleach v6.0+ kompatibilitet løst.
    - Unicode Homoglyph Normalization (NFKC).
    - Indbygget OmniWAF (SQLi, XSS, Path Traversal, NoSQLi).
-   - In-Memory Rate Limiter Engine.
+   - In-Memory Rate Limiter Engine (Thread-Safe).
    - Bulletproof Boot Sequence & Dynamic Auto-Heal.
    - Military-Grade Input Sanitization & PBKDF2 Encryption.
    - Deep Threat Intel Extraction & JWT Decoder.
@@ -27,6 +27,7 @@ import base64
 import sqlite3
 import re
 import socket
+import threading
 import subprocess
 import math
 import binascii
@@ -88,15 +89,17 @@ class RateLimiter:
     def __init__(self, calls: int, period: int):
         self.calls = calls
         self.period = period
-        self.history = defaultdict(list)
+        self.history: Dict[str, List[float]] = defaultdict(list)
+        self.lock = threading.Lock()
 
     def is_allowed(self, identifier: str) -> bool:
         now = time.time()
-        self.history[identifier] = [t for t in self.history[identifier] if now - t < self.period]
-        if len(self.history[identifier]) >= self.calls:
-            return False
-        self.history[identifier].append(now)
-        return True
+        with self.lock:
+            self.history[identifier] = [t for t in self.history[identifier] if now - t < self.period]
+            if len(self.history[identifier]) >= self.calls:
+                return False
+            self.history[identifier].append(now)
+            return True
 
 class OmniWAF:
     """Lokal Web Application Firewall der opfanger ondsindede payloads før parsing."""

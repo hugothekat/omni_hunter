@@ -1,0 +1,83 @@
+{
+    "Offline_Scan_Findings": {
+        "Mål": "vok",
+        "Sti": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217",
+        "Hits": [
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/tvillinger.jpg.html:<html style=\"height: 100%;\"><head><meta content=\"width=device-width, minimum-scale=0.1\" name=\"viewport\"/><title>tvillinger.jpg (688×554)</title></head><body style=\"margin: 0px; height: 100%; background-color: rgb(14, 14, 14);\"><img src=\"http://vok.dk/tvillinger.jpg\" style=\"display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;\"/></body></html>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-<meta content=\"vordingborg køkken håndvask vask badekar bruser bord bordplade batteri blandingsbatteri køleskab fryser kummefryser microbølgeovn marmor murer skabe skab skuffer el koge kogeplade enhætte emfang liste gulv blomberg knive gafler opvask maskine opvaskemaskine køle frys\" name=\"KeyWords\"/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-</head>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-<p>Sælgeren sagde : \"Det tager kun 2 uger\" for en total løsning",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:(130.000,-) (<a href=\"http://vok.dk/ordre.txt\">ordrebekræftelse og priser</a>) <br/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:og da vi lige havde fået <a href=\"http://vok.dk/tvillinger.jpg\">tvillinger</a>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-, var det vores primære grund til at vælge Vordingborg Køkkenet. </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-af Vordingborg Køkkener !!!</span> </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:<p><a href=\"http://www.vok.dk/trussel.html\">Ja, du læste rigtigt !!! Følg dette",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-link !!!</a> </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-color:red\">Hvis du vil handle med Vordingborg Køkkener,</span></b> <br/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:<b><span style=\"font-size:24.0pt;color:red\">så vær parat til at blive <a href=\"http://www.vok.dk/trussel.html\">TRUET</a> af deres advokat,</span></b> <br/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-<b><span style=\"font-size:24.0pt;color:red\">hvis der er noget du ikke mener er",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-andre...</span></b></p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:<p><a href=\"http://www.vok.dk/huskat.html\">Læs her hvad du skal huske, når du",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-køber køkken...</a> </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-ramme BAGMÆNDENDE !!!</span></b> </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:<p align=\"center\" style=\"text-align:center\"><b><span style=\"font-size:24.0pt\"><a href=\"http://www.vok.dk/19direkte.html\">Hvis du ikke fik set det, så er her en",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-mulighed.</a></span></b> </p>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-Lars Dohn. <br/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html:</span><a href=\"mailto:LarsDohn%3Csnabel-a%3Evok.dk\"><span lang=\"EN-GB\" style=\"mso-ansi-language:EN-GB\">LarsDohn&lt;snabel-a&gt;vok.dk</span></a><span lang=\"EN-GB\" style=\"mso-ansi-language:EN-GB\"> <br/>",
+            "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-  <br/>"
+        ],
+        "Credentials": [
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/tvillinger.jpg.html",
+                "Secret": "\"/></body></html>"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-<p>Sælgeren sagde",
+                "Secret": "\"Det tager kun 2 uger\" for en total løsning"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//vok.dk/ordre.txt\">ordrebekræftelse og priser</a>) <br/>"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//vok.dk/tvillinger.jpg\">tvillinger</a>"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//www.vok.dk/trussel.html\">Ja, du læste rigtigt !!! Følg dette"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-color",
+                "Secret": "red\">Hvis du vil handle med Vordingborg Køkkener,</span></b> <br/>"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//www.vok.dk/trussel.html\">TRUET</a> af deres advokat,</span></b> <br/>"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html-<b><span style=\"font-size",
+                "Secret": "red\">hvis der er noget du ikke mener er"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//www.vok.dk/huskat.html\">Læs her hvad du skal huske, når du"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "//www.vok.dk/19direkte.html\">Hvis du ikke fik set det, så er her en"
+            },
+            {
+                "Konto": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217/index.html",
+                "Secret": "EN-GB\"> <br/>"
+            }
+        ],
+        "Hashes": [],
+        "Cracked_Hashes": [],
+        "Tokens": [],
+        "Timestamp": "2026-05-01T02:17:54.190767"
+    },
+    "Target": "https://vok.dk",
+    "Loot_Directory": "workspaces/standard_sag/22_SITERIP/vok.dk_vok.dk_202605d_0217",
+    "Timestamp": "2026-05-01T02:17:54.220151"
+}

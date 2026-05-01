@@ -6,7 +6,7 @@ import re
 import requests # NY V8: Tilføjet til Auto-Dehash API
 from datetime import datetime
 from pathlib import Path
-from core.utils import C, session
+from core.utils import C, session, sanitize_filename
 
 class OfflineDatabaseAnalyzer:
     def __init__(self, target, file_path):

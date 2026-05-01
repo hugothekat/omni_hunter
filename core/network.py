@@ -75,6 +75,32 @@ class C:
 logger = logging.getLogger("GOLIATH_NET")
 
 # ====================== GLOBAL OSINT UTILITIES ======================
+class TurnstilePlaywrightInjector:
+    """GOLIATH V42: Integreret Cloudflare Turnstile Bypass via Playwright DOM-injektion."""
+    @staticmethod
+    def sync_bypass(url: str) -> Dict[str, Any]:
+        from core.browser import OmniHunterBrowser, BrowserConfig
+        
+        # Henter API nøgle sikkert fra Vault
+        api_key = CONFIG.get("api_keys", {}).get("2captcha_api_key", "")
+        if not api_key:
+            logger.warning("⚠️ Ingen 2Captcha API-nøgle fundet i Vault. Playwright forsøger stealth uden resolver.")
+            
+        config = BrowserConfig(
+            browser_type="chromium",
+            headless=True,
+            js_rendering=True,
+            captcha_api_key=api_key,
+            anti_detection=True,
+            behavior_level="high" # Algoritmisk human emulation for at varme cookien op
+        )
+        hunter = OmniHunterBrowser(config)
+        hunter.start()
+        try:
+            return hunter.fetch(url)
+        finally:
+            hunter.close()
+
 class OmniStealthSession(requests.Session):
     """GOLIATH V36: Active Rate-Limit Bypass & Evasion Engine (Expansion Mode)."""
     def request(self, method, url, **kwargs):
@@ -104,6 +130,20 @@ class OmniStealthSession(requests.Session):
                 headers['X-Forwarded-For'] = socket.inet_ntoa(struct.pack('>I', random.randint(0x01000000, 0xEFFFFFFF)))
                 res = super().request(method, url, **kwargs)
                 if res.status_code != 429: break
+                
+        # 5. NYT V42: Auto-Detect CF/Turnstile og deploy Playwright DOM-Injektion
+        if res.status_code in [403, 503] and any(cf_sig in res.text.lower() for cf_sig in ["cloudflare", "turnstile", "just a moment"]):
+            logger.warning(f"⚠️ [WAF] Cloudflare Turnstile udfordring mødt på {url}. Skifter til Playwright DOM-injektion...")
+            try:
+                bypass_res = TurnstilePlaywrightInjector.sync_bypass(url)
+                if bypass_res and bypass_res.get("html"):
+                    # Infiltrerer response-objektet transparent, så scraper-modulet fortsætter uforstyrret
+                    res._content = bypass_res["html"].encode('utf-8')
+                    res.status_code = 200
+                    logger.info("✅ Cloudflare knust! Returnerer Playwright-rendret HTML payload.")
+            except Exception as e:
+                logger.error(f"❌ Playwright Bypass fejlede: {e}")
+                
         return res
 
 def get_stealth_session() -> requests.Session:
@@ -180,8 +220,21 @@ def safe_get_with_retry(driver: Any, url: str, max_retries: int = 3) -> bool:
     for attempt in range(max_retries):
         try:
             if driver:
-                driver.get(url)
+                # Hvis det er undetected_chromedriver, bruger vi .get() direkte
+                if hasattr(driver, 'get'):
+                    driver.get(url)
+                else:
+                    driver.get(url)
                 time.sleep(random.uniform(1.5, 3.5))
+                
+                # NYT V42: Auto-Detect Cloudflare Turnstile direkte i WebDriveren
+                page_source = driver.page_source.lower()
+                if any(cf_sig in page_source for cf_sig in ["cf-turnstile", "just a moment", "cloudflare"]):
+                    logger.warning("⚠️ Cloudflare udfordring i Selenium! Overdrager session til Playwright...")
+                    bypass_res = TurnstilePlaywrightInjector.sync_bypass(url)
+                    if bypass_res and bypass_res.get("html"):
+                        logger.info("✅ Turnstile knust via dedikeret asynkron DOM-injektion!")
+                        return True # Vi markerer navigationen som en succes
                 return True
         except Exception as e:
             time.sleep(2)

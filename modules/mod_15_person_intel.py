@@ -918,7 +918,7 @@ class AutonomousOrchestrator(BaseModule):
         
         ws_folder = session.get("loot_folder", "loot_evidence")
         os.makedirs(ws_folder, exist_ok=True)
-        path = Path(ws_folder) / f"30_ORCHESTRATOR_{sanitize_filename(self.target_name)}.json"
+        path = Path(ws_folder) / f"15_ORCHESTRATOR_{sanitize_filename(self.target_name)}.json"
         if os.path.exists(path):
             try: os.remove(path)
             except: pass

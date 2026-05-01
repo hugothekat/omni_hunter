@@ -10,8 +10,12 @@ from playwright.async_api import async_playwright
 
 from core.base_module import BaseModule, ModuleCategory
 from core.utils import C, datalake, ThreatIntelExtractor
-from core.network import AsyncTurnstileSolver, omni_dork_search
+from core.network import AsyncTurnstileSolver, omni_dork_search, http
 from core.config_vault import vault
+try:
+    from core.nexus import nexus, EntityType
+except ImportError:
+    nexus = None
 
 class AbyssDarkwebSpider(BaseModule):
     """
@@ -36,6 +40,8 @@ class AbyssDarkwebSpider(BaseModule):
             "Kryptovaluta": set(),
             "Hashes_Fundet": set(),
             "Emails_Identificeret": set(),
+            "Lækkede_Kredentialer": set(),
+            "Raw_Dumps_Scraped": 0,
             "Turnstile_Bypassed": False
         }
 
@@ -95,6 +101,23 @@ class AbyssDarkwebSpider(BaseModule):
         prefix = "  " * depth
         print(f"{C.CYAN}{prefix}[*] Dykker (Niveau {depth}): {url[:70]}...{C.RESET}")
         
+        # Hvis URL'en peger direkte på et dump/log, scraper vi det lynhurtigt med network.py via Tor
+        if any(url.lower().endswith(ext) for ext in ['.txt', '.csv', '.sql', '.log', '.dump', '.db']):
+            print(f"{C.YELLOW}{prefix}  [*] Raw Dump detekteret. Udfører stealth-ekstraktion via core.network...{C.RESET}")
+            try:
+                # Bruger Tor-proxies direkte med stealth-sessionen fra network.py
+                proxies = {"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"}
+                res = await asyncio.to_thread(http.get, url, proxies=proxies, timeout=20)
+                if res.status_code == 200:
+                    # Sikker UTF-8 håndtering til danske lækager (Expansion Mode)
+                    text_content = res.content.decode('utf-8', errors='replace')
+                    self._extract_credentials(text_content, prefix)
+                    self.data["Raw_Dumps_Scraped"] += 1
+                return
+            except Exception as e:
+                print(f"{C.RED}{prefix}  [!] Raw Dump fejl: {e}{C.RESET}")
+                return
+
         page = await context.new_page()
         try:
             await page.goto(url, timeout=45000, wait_until="domcontentloaded")
@@ -128,6 +151,9 @@ class AbyssDarkwebSpider(BaseModule):
             self.data["Kryptovaluta"].update(iocs.get("crypto_btc", []) + iocs.get("crypto_xmr", []) + iocs.get("crypto_eth", []))
             self.data["Emails_Identificeret"].update(iocs.get("email", []))
             self.data["Hashes_Fundet"].update(iocs.get("md5", []) + iocs.get("sha256", []))
+            
+            # Ekstraherer de-hashed passwords / klartekst-kredentialer fra DOM
+            self._extract_credentials(text_content, prefix)
 
             # Spidering logik
             if depth < 2:
@@ -142,6 +168,27 @@ class AbyssDarkwebSpider(BaseModule):
         finally:
             await page.close()
 
+    def _extract_credentials(self, text: str, prefix: str):
+        """GOLIATH V42: Ekstraherer klartekst email:password kombinationer med OPSEC-filtrering."""
+        creds = re.findall(r'([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+):([^\s<"\'/]{6,40})', text)
+        for c in creds:
+            pwd = c[1]
+            # Filtrerer kryptografiske hashes, så vi kun får de-hashed (klartekst)
+            if len(pwd) not in [32, 40, 64] and not pwd.startswith('$2'):
+                cred_str = f"{c[0]}:{pwd}"
+                if cred_str not in self.data["Lækkede_Kredentialer"]:
+                    self.data["Lækkede_Kredentialer"].add(cred_str)
+                    print(f"{C.RED}{prefix}  🔥 Klartekst/De-hashed Credential fundet: {c[0]}:{pwd[:3]}***{C.RESET}")
+                    
+                    # GOLIATH V42: Nexus Graph Integration for Dashboard Visualisering
+                    if nexus:
+                        target = self.data.get("Target", "Ukendt Mål")
+                        email_addr = c[0]
+                        nexus.ingest(EntityType.EMAIL, email_addr, source="AbyssSpider", confidence=0.9)
+                        nexus.ingest(EntityType.CREDENTIAL, pwd, source="AbyssSpider", confidence=0.9)
+                        nexus.link(target, email_addr, "Eksponeret_Email")
+                        nexus.link(email_addr, pwd, "Lækket_Password")
+
     def _print_summary(self):
         print(f"\n{C.CYAN}--- ABYSS SPIDER SUMMARY ---{C.RESET}")
         print(f"[+] Sider Scannet over TOR: {C.WHITE}{len(self.data['Scraped_URLs'])}{C.RESET}")
@@ -149,3 +196,4 @@ class AbyssDarkwebSpider(BaseModule):
         print(f"[+] PGP Nøgler Fundet: {C.WHITE}{len(self.data['PGP_Public_Keys'])}{C.RESET}")
         print(f"[+] XMPP/Jabber Konti: {C.WHITE}{len(self.data['Jabber_XMPP_Konti'])}{C.RESET}")
         print(f"[+] Krypto-adresser: {C.WHITE}{len(self.data['Kryptovaluta'])}{C.RESET}")
+        if self.data["Lækkede_Kredentialer"]: print(f"[+] De-hashed Passwords: {C.RED}{len(self.data['Lækkede_Kredentialer'])}{C.RESET}")

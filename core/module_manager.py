@@ -66,7 +66,11 @@ class ModuleManager:
             except ImportError as e:
                 self.quarantine[mod_id] = {"file": file.name, "error": f"Mangler afhængighed: {e.name}"}
             except Exception as e:
-                self.quarantine[mod_id] = {"file": file.name, "error": str(e).split('\n')[0][:50]}
+                # Capture full traceback for debugging but show concise error in menu
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_next.tb_frame.f_code.co_filename)[1] if exc_tb and exc_tb.tb_next else file.name
+                line_no = exc_tb.tb_next.tb_lineno if exc_tb and exc_tb.tb_next else "unknown"
+                self.quarantine[mod_id] = {"file": file.name, "error": f"{str(e).splitlines()[0][:40]} ({fname}:{line_no})"}
 
     def display_dynamic_menu(self):
         print(f"\n{C.RED}--- [ OPERATIONELT VÆRKTØJSARSENAL ] ---{C.RESET}")

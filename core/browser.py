@@ -86,6 +86,8 @@ class BrowserConfig:
     proxy_fail_threshold: int = 3
     anti_detection: bool = True
     parallel_requests: int = 5
+    network_capture: bool = False # NYT V44: Aktiverer opsnapning af API-kald
+    network_capture_dir: Optional[str] = None # NYT V44: Mappe til gemte JSON-svar
     warmup_session: bool = True     # NYT: Opbygger trust før scanning
     auto_extract_osint: bool = True # NYT: Parser DOM for OSINT data auto
 
@@ -208,6 +210,9 @@ class ProxyManager:
             logging.warning(f"⚠️ Proxy fejl #{self.failed_attempts}/{self.config.proxy_fail_threshold}")
         else:
             logging.warning(f"⚠️ Forbindelsesfejl #{self.failed_attempts}/{self.config.max_retries}")
+
+    def report_success(self) -> None:
+        self.failed_attempts = 0
 
 # ====================== REAL CAPTCHA SOLVER (NYT V36) ======================
 class CaptchaSolver:
@@ -337,6 +342,7 @@ class SeleniumBrowser:
             return {"html": html, "osint": osint_data, "url": self.driver.current_url}
             
         except Exception as e:
+            self.logger.error(f"Selenium navigation failed for {url}: {e}")
             self.proxy_manager.report_failure()
             if retries < self.config.max_retries:
                 time.sleep(self.config.retry_delay * (2 ** retries))
@@ -429,12 +435,53 @@ class PlaywrightBrowser:
             viewport={"width": 1920, "height": 1080}
         )
         
+        # =====================================================================
+        # GOLIATH V43: AUTHENTICATED SESSION COOKIE INJECTION
+        # =====================================================================
+        if self.config.cookies_file and os.path.exists(self.config.cookies_file):
+            try:
+                with open(self.config.cookies_file, 'r', encoding='utf-8') as f:
+                    cookies = json.load(f)
+                    await context.add_cookies(cookies)
+                self.logger.info(f"🍪 Auth-Cookies injiceret succesfuldt fra {self.config.cookies_file}!")
+            except Exception as e:
+                self.logger.error(f"❌ Kunne ikke injicere cookies: {e}")
+
         # Avanceret Fingerprint Spoofing
         injection_script = FingerprintProfileManager.get_injection_script(self.config)
         await context.add_init_script(injection_script)
             
         page = await context.new_page()
-        
+
+        # =====================================================================
+        # GOLIATH V45: ADVANCED JS TELEMETRY & ERROR TRACKING
+        # =====================================================================
+        page.on("console", lambda msg: self.logger.warning(f"🖥️ [JS CONSOLE] {msg.text}") if msg.type in ["error", "warning"] else None)
+        page.on("pageerror", lambda exc: self.logger.error(f"💥 [JS FATAL ERROR] Siden mangler scripts eller WAF blokerer ressourcer: {exc}"))
+
+        # =====================================================================
+        # GOLIATH V44: NETWORK INTERCEPTION ENGINE
+        # =====================================================================
+        captured_files = []
+        if self.config.network_capture and self.config.network_capture_dir:
+            os.makedirs(self.config.network_capture_dir, exist_ok=True)
+            
+            async def handle_response(response):
+                if "application/json" in response.headers.get("content-type", ""):
+                    try:
+                        json_body = await response.json()
+                        url_hash = hashlib.md5(response.url.encode()).hexdigest()
+                        filename = f"{url_hash}.json"
+                        filepath = os.path.join(self.config.network_capture_dir, filename)
+                        
+                        with open(filepath, 'w', encoding='utf-8') as f:
+                            json.dump({"url": response.url, "status": response.status, "body": json_body}, f, indent=2, ensure_ascii=False)
+                        captured_files.append(filepath)
+                    except Exception:
+                        pass # Ignorer fejl, hvis body ikke er valid JSON
+            
+            page.on("response", handle_response)
+       
         try:
             await page.goto(url, timeout=self.config.timeout * 1000)
             self.proxy_manager.report_success()
@@ -455,9 +502,10 @@ class PlaywrightBrowser:
                 
             await browser.close()
             await playwright.stop()
-            return {"html": html, "osint": osint_data, "url": page.url}
+            return {"html": html, "osint": osint_data, "url": page.url, "captured_files": captured_files}
             
         except Exception as e:
+            self.logger.error(f"Playwright navigation failed for {url}: {e}")
             self.proxy_manager.report_failure()
             await browser.close()
             await playwright.stop()
@@ -491,6 +539,7 @@ class RequestsBrowser:
             return {"html": html, "osint": osint_data, "url": res.url}
             
         except Exception as e:
+            self.logger.error(f"Requests fetch failed for {url}: {e}")
             if retries < self.config.max_retries:
                 time.sleep(self.config.retry_delay * (2 ** retries))
                 return self.get(url, retries + 1)

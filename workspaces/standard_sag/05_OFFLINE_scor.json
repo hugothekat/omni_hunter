@@ -1,0 +1,808 @@
+{
+    "Mål": "scor",
+    "Sti": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253",
+    "Hits": [
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-  </style></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-    }",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:  </style><link href=\"https://www.scor.dk/\" rel=\"canonical\"/><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Scor.dk\",\"alternateName\":\"Scor\",\"description\":\"Dating hjemmeside for voksne. På Scor kan du flirte eller date med mænd kvinder og par i alle aldre.\",\"url\":\"https://www.scor.dk/\",\"logo\":\"https://www.scor.dk/manifest/images/android-chrome-192x192.png\",\"foundingDate\":\"1998\",\"contactPoint\":{\"@type\":\"ContactPoint\",\"telephone\":\"+45 7027 5959\",\"email\":\"support@scor.dk\"},\"legalName\":\"SCOR ApS\",\"address\":{\"@type\":\"PostalAddress\",\"addressCountry\":\"DK\",\"addressLocality\":\"Køge\",\"streetAddress\":\"Torvet 15\",\"postalCode\":\"4600\"},\"vatID\":\"VAT24242986\",\"sameAs\":[\"https://www.instagram.com/scor.dk\",\"https://www.facebook.com/scordk\",\"https://dk.linkedin.com/company/scor-aps\"]}</script></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script><iframe aria-hidden=\"true\" name=\"__uspapiLocator\" role=\"presentation\" style=\"display: none; position: absolute; width: 1px; height: 1px; top: -9999px;\" tabindex=\"-1\" title=\"Blank\"></iframe><iframe aria-hidden=\"true\" role=\"presentation\" src=\"https://consentcdn.cookiebot.eu/sdk/bc-v4.min.html\" style=\"position: absolute; width: 1px; height: 1px; top: -9999px;\" tabindex=\"-1\" title=\"Blank\"></iframe>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-    }",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:  </style><link href=\"https://www.scor.dk/\" rel=\"canonical\"/><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Scor.dk\",\"alternateName\":\"Scor\",\"description\":\"Dating hjemmeside for voksne. På Scor kan du flirte eller date med mænd kvinder og par i alle aldre.\",\"url\":\"https://www.scor.dk/\",\"logo\":\"https://www.scor.dk/manifest/images/android-chrome-192x192.png\",\"foundingDate\":\"1998\",\"contactPoint\":{\"@type\":\"ContactPoint\",\"telephone\":\"+45 7027 5959\",\"email\":\"support@scor.dk\"},\"legalName\":\"SCOR ApS\",\"address\":{\"@type\":\"PostalAddress\",\"addressCountry\":\"DK\",\"addressLocality\":\"Køge\",\"streetAddress\":\"Torvet 15\",\"postalCode\":\"4600\"},\"vatID\":\"VAT24242986\",\"sameAs\":[\"https://www.instagram.com/scor.dk\",\"https://www.facebook.com/scordk\",\"https://dk.linkedin.com/company/scor-aps\"]}</script></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-    }",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:  </style><link href=\"https://www.scor.dk/\" rel=\"canonical\"/><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Scor.dk\",\"alternateName\":\"Scor\",\"description\":\"Dating hjemmeside for voksne. På Scor kan du flirte eller date med mænd kvinder og par i alle aldre.\",\"url\":\"https://www.scor.dk/\",\"logo\":\"https://www.scor.dk/manifest/images/android-chrome-192x192.png\",\"foundingDate\":\"1998\",\"contactPoint\":{\"@type\":\"ContactPoint\",\"telephone\":\"+45 7027 5959\",\"email\":\"support@scor.dk\"},\"legalName\":\"SCOR ApS\",\"address\":{\"@type\":\"PostalAddress\",\"addressCountry\":\"DK\",\"addressLocality\":\"Køge\",\"streetAddress\":\"Torvet 15\",\"postalCode\":\"4600\"},\"vatID\":\"VAT24242986\",\"sameAs\":[\"https://www.instagram.com/scor.dk\",\"https://www.facebook.com/scordk\",\"https://dk.linkedin.com/company/scor-aps\"]}</script></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script><iframe aria-hidden=\"true\" name=\"__uspapiLocator\" role=\"presentation\" style=\"display: none; position: absolute; width: 1px; height: 1px; top: -9999px;\" tabindex=\"-1\" title=\"Blank\"></iframe><iframe aria-hidden=\"true\" role=\"presentation\" src=\"https://consentcdn.cookiebot.eu/sdk/bc-v4.min.html\" style=\"position: absolute; width: 1px; height: 1px; top: -9999px;\" tabindex=\"-1\" title=\"Blank\"></iframe>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9e6b5f02dfe494603f49e860e8d81600.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9e6b5f02dfe494603f49e860e8d81600.json:  \"url\": \"https://stats.scor.dk/api/track\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9e6b5f02dfe494603f49e860e8d81600.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/fc9139f4b166fd02c8836dccb729e8c3.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/fc9139f4b166fd02c8836dccb729e8c3.json:  \"url\": \"https://www.scor.dk/api/Common/GetContentTokens\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/fc9139f4b166fd02c8836dccb729e8c3.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b07f2aa8515152de96356a7d0b4f624.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b07f2aa8515152de96356a7d0b4f624.json:  \"url\": \"https://www.scor.dk/api/CurrentProfile/GetProfileData\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b07f2aa8515152de96356a7d0b4f624.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-  </style></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/assets/user-service-COdojALM.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/assets/pro-regular-svg-icons-DuImJV9H.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/assets/main-lpdj4q1M.js\" nonce=\"\" rel=\"modulepreload\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<script async=\"\" charset=\"UTF-8\" src=\"https://consent.cookiebot.eu/9644df63-b62a-403c-bc8c-1a6fd0c9c58f/cc.js?renew=false&amp;referer=www.scor.dk&amp;dnt=false&amp;init=false&amp;culture=da\" type=\"text/javascript\"></script><script async=\"\" src=\"https://stats.gnol.com/gtm.js?id=GTM-TNT3KBL\"></script><script data-site-id=\"7fece9bbc7a9\" defer=\"\" src=\"https://stats.scor.dk/api/script.js\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/assets/ProfileLinkScrambled-Dh0dTrY3.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/assets/router-CHr-EocN.css\" rel=\"stylesheet\" type=\"text/css\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<meta content=\"black\" name=\"apple-mobile-web-app-status-bar-style\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/manifest/images/apple-touch-icon.png\" rel=\"apple-touch-icon\" sizes=\"180x180\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<link href=\"/manifest/images/favicon.ico\" rel=\"shortcut icon\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<meta content=\"Scor.dk\" name=\"application-name\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<meta content=\"#3b0505\" name=\"msapplication-TileColor\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<meta content=\"#3b0505\" name=\"theme-color\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-    #CybotCookiebotDialog[dir=\"rtl\"] .CybotCookiebotScrollContainer .CybotCookiebotScrollbarContainer {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-    }",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:  </style><link href=\"https://www.scor.dk/\" rel=\"canonical\"/><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Scor.dk\",\"alternateName\":\"Scor\",\"description\":\"Dating hjemmeside for voksne. På Scor kan du flirte eller date med mænd kvinder og par i alle aldre.\",\"url\":\"https://www.scor.dk/\",\"logo\":\"https://www.scor.dk/manifest/images/android-chrome-192x192.png\",\"foundingDate\":\"1998\",\"contactPoint\":{\"@type\":\"ContactPoint\",\"telephone\":\"+45 7027 5959\",\"email\":\"support@scor.dk\"},\"legalName\":\"SCOR ApS\",\"address\":{\"@type\":\"PostalAddress\",\"addressCountry\":\"DK\",\"addressLocality\":\"Køge\",\"streetAddress\":\"Torvet 15\",\"postalCode\":\"4600\"},\"vatID\":\"VAT24242986\",\"sameAs\":[\"https://www.instagram.com/scor.dk\",\"https://www.facebook.com/scordk\",\"https://dk.linkedin.com/company/scor-aps\"]}</script></head>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<script type=\"text/javascript\">",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-    var siteLanguage = \"da-DK\";",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:    var siteInfo = {\"id\":1,\"name\":\"Scor.dk\",\"systemName\":\"ScorDk\",\"countryId\":\"dk\",\"dark\":false,\"currencyCode\":\"DKK\",\"disabledLodges\":false,\"disabledEvents\":false,\"zipCodeEnabled\":true,\"supportPhone\":\"\\u002B45 7027 5959\",\"supportEmail\":\"support@scor.dk\",\"openingHours\":\"Mandag til torsdag fra 10-16, fredag kl. 10-14.\",\"openingHoursData\":{\"1\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"2\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"3\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"4\":[{\"start\":\"10:00:00\",\"end\":\"16:00:00\"}],\"5\":[{\"start\":\"10:00:00\",\"end\":\"14:00:00\"}]},\"timezone\":\"Europe/Copenhagen\",\"machineName\":\"WEB12\",\"hideUnvalidatedMedia\":true,\"publicVapidKey\":\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:    var siteUrls = {\"supportSite\":\"https://backend.gnol.com\",\"darkSite\":\"https://www.scordark.dk/\",\"staticFileSite\":\"https://static.gnol.com/\",\"currentSite\":\"https://www.scor.dk/\",\"partnerSite\":\"https://www.scordark.dk/\"}",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-</script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<br/><br/>Har du spørgsmål til sikkerhed og anonymitet, står vores support team altid til rådighed. Vores personlige kunde support sikrer dig sikker færden på Scor.dk.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<br/><br/>Det er dog ikke kun folk der søger sexdating eller ønsker at udleve frække fantasier, der benytter sitet – mange benytter også siden til ganske almindelig dating, eller til at søge efter en kæreste eller gode venner.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html:<br/><br/>Her finder du alt fra enkelte profilbilleder, der viser personen bag profilen, til billeder, der tydeligt viser hvilken interesser man har i det seksuelle univers.Så der er rig mulighed for at opleve noget nyt eller blot lade sig inspirere.</div></article><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 448 512\"><path d=\"M91.2 36.9c-12.4-6.8-27.4-6.5-39.6 .7S32 57.9 32 72l0 368c0 14.1 7.5 27.2 19.6 34.4s27.2 7.5 39.6 .7l336-184c12.8-7 20.8-20.5 20.8-35.1s-8-28.1-20.8-35.1l-336-184z\" fill=\"currentColor\"></path></svg></i> Videoer af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du får på Scor.dk adgang til Danmarks største og frækkeste samling af hjemmevideoer. Det er brugernes egne frække videoer og lige nu er der mere end 16.000 videoer at vælge mellem, så ønsker du blot lidt fræk underholdning, så er der rig mulighed til at finde en yndlingsvideo eller to. Ligeledes kan du selv supplere din egen sexdating profil med en video, som fortæller om dig og hvad du søger.</div></article></div><article data-v-d35bfba7=\"\"><h2 data-v-d35bfba7=\"\"><i aria-hidden=\"true\" class=\"awesome-icon pr-1 pb-1\" data-v-d35bfba7=\"\" role=\"img\" style=\"font-size: 18px;\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på.",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<script src=\"https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=es2023%2Ces2022\" type=\"text/javascript\"></script>",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json:  \"url\": \"https://www.scor.dk/api/LogOn/GetAssertionOptions\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-      \"timeout\": 60000,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json:      \"rpId\": \"www.scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-      \"allowCredentials\": [],",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/ebe0ac553f0d14bf5d8c3330407bbee2.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/ebe0ac553f0d14bf5d8c3330407bbee2.json:  \"url\": \"https://www.scor.dk/api/Seo/OnlineProfilesCount\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/ebe0ac553f0d14bf5d8c3330407bbee2.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/84a07f536d68225e732f46843e89cb12.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/84a07f536d68225e732f46843e89cb12.json:  \"url\": \"https://stats.scor.dk/api/site/tracking-config/7fece9bbc7a9\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/84a07f536d68225e732f46843e89cb12.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-{",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:  \"url\": \"https://www.scor.dk/api/Seo/FrontpageLandingPages\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-  \"status\": 200,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\": \"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:        \"title\": \"Blogger på Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\": 613,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"keywords\": \"sex\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"introduction\": \"Sex er for mange danskere en stor del af deres liv. Det er vigtigt at være tilfreds med sit eget sexliv - både for krop, sjæl og sind. På Scor har vi samlet alt om sex, som du kan bruge til at udforske dine frække fantasier og lyster - uanset om du er mand eller kvinde, single, i et fast forhold eller alt derimellem.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"pageTitle\": \"Alt om sex - Sådan krydrer du dit sexliv\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageHeight\": 700,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"coverImageAlt\": \"Singler der bruger Scor til at finde sex og dating i Danmark\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"url\": \"/sex-og-dating-i-danmark\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\": \"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:        \"title\": \"Blogger på Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\": 613,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"id\": 324,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"keywords\": \"scor rabatkode\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"introduction\": \"Er du på udkig efter rabatkoder til Scor.dk, må vi desværre skuffe. På Scor.dk har vi ikke rabatkoder, da vi i forvejen tilbyder vores service til en yderst god pris.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"pageTitle\": \"Scor rabatkoder og værdikuponer findes ikke\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"coverImage\": \"scor-rabatkoder-og-vaerdikuponer\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageWidth\": 1022,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageHeight\": 700,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"coverImageAlt\": \"Find rabatkoder og værdikuponer til Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"url\": \"/scor-rabatkode\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"author\": {",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\": \"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:        \"title\": \"Blogger på Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\": 613,",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"keywords\": \"etik\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"introduction\": \"Vi er Danmarks ældste voksen-datingsite og har siden 1998 arbejdet for at levere en social platform til voksne, hvor der er højt til loftet og frirum til at finde ligesindede at udveksle erfaringer med. På Scor.dk er det tilladt at stå ved sin seksualitet og nyde den sjove del af voksenlivet. Vi stræber efter at nedbryde fordomme og tabuer omkring erotik og sex som en naturlig del af livet.\\n\\nVi mener, det er vigtigt, at vi i dagens samfund kan være åbne og ærlige omkring vores individuelle seksualiteter, og vi vil gerne være med til at sætte sex på dagsordenen og gøre det i en sikker kontekst.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:      \"pageTitle\": \"Etisk regelsæt for Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImage\": \"dejting-app\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\": \"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json:        \"title\": \"Blogger på Scor.dk\",",
+        "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\": 613,"
+    ],
+    "Credentials": [
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/chat.html-<script src=\"https",
+            "Secret": "features=es2023%2Ces2022\" type=\"text/javascript\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "//dk.linkedin.com/company/scor-aps\"]}</script></head>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Create.html-<script src=\"https",
+            "Secret": "\" tabindex=\"-1\" title=\"Blank\"></iframe>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "//dk.linkedin.com/company/scor-aps\"]}</script></head>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/dating.html-<script src=\"https",
+            "Secret": "features=es2023%2Ces2022\" type=\"text/javascript\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "//dk.linkedin.com/company/scor-aps\"]}</script></head>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/sex.html-<script src=\"https",
+            "Secret": "\" tabindex=\"-1\" title=\"Blank\"></iframe>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9e6b5f02dfe494603f49e860e8d81600.json",
+            "Secret": "//stats.scor.dk/api/track\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9e6b5f02dfe494603f49e860e8d81600.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/fc9139f4b166fd02c8836dccb729e8c3.json",
+            "Secret": "//www.scor.dk/api/Common/GetContentTokens\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/fc9139f4b166fd02c8836dccb729e8c3.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b07f2aa8515152de96356a7d0b4f624.json",
+            "Secret": "//www.scor.dk/api/CurrentProfile/GetProfileData\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b07f2aa8515152de96356a7d0b4f624.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/index.html-<script src=\"https",
+            "Secret": "features=es2023%2Ces2022\" type=\"text/javascript\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<link href=\"/assets/ScorImage-CGWTCDXc.js\" nonce=\"\" rel=\"modulepreload\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "//stats.scor.dk/api/script.js\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<link href=\"/assets/ScorImage-BQHDVIYd.css\" rel=\"stylesheet\" type=\"text/css\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"apple-mobile-web-app-title\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<meta content=\"Scor.dk\" name=\"application-name\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<link href=\"/manifest/ScorDk.manifest.json\" rel=\"manifest\"/>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "<title>Scor.dk - Sexdating for par, kvinder og mænd på Scor</title>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "//dk.linkedin.com/company/scor-aps\"]}</script></head>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-    var siteLanguage = \"da-DK\"",
+            "Secret": ""
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "\"BJukn_nhsOXiOmtbm20TmPJyNNyb83eX-EBj08vrqMb1YhKCUerqJRx-qULL7126amSisDuLbY25TZ06tnmxtrE\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "//www.scordark.dk/\"}"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "\"><svg viewbox=\"0 0 512 512\"><path d=\"M241 87.1l15 20.7 15-20.7C296 52.5 336.2 32 378.9 32 452.4 32 512 91.6 512 165.1l0 2.6c0 112.2-139.9 242.5-212.9 298.2-12.4 9.4-27.6 14.1-43.1 14.1s-30.8-4.6-43.1-14.1C139.9 410.2 0 279.9 0 167.7l0-2.6C0 91.6 59.6 32 133.1 32 175.8 32 216 52.5 241 87.1z\" fill=\"currentColor\"></path></svg></i> Flest frække sexdating profiler på nettet</h2><div data-v-d35bfba7=\"\">På Scor.dk har voksne singler og par kunne finde hinanden og mødes for at udleve deres sexdating fantasier online eller IRL. Der er begrænset censur på Scor.dk, og der er derfor en stor rummelighed på Scor.dk i forhold til hvad du viser og skriver."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M96 96c0-35.3 28.7-64 64-64l320 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-320 0c-35.3 0-64-28.7-64-64L96 96zM24 128c13.3 0 24 10.7 24 24l0 296c0 8.8 7.2 16 16 16l360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L64 512c-35.3 0-64-28.7-64-64L0 152c0-13.3 10.7-24 24-24zm168 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm196.5 11.5c-4.4-7.1-12.1-11.5-20.5-11.5s-16.1 4.4-20.5 11.5l-56.3 92.1-24.5-30.6c-4.6-5.7-11.4-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4S174.8 352 184 352l272 0c8.7 0 16.7-4.7 20.9-12.3s4.1-16.8-.5-24.3l-88-144z\" fill=\"currentColor\"></path></svg></i> Billeder af Danmarks frækkeste</h2><div data-v-d35bfba7=\"\">Du finder på Scor.dk langt over 100.000 albums med brugernes egne billeder. Scor.dk har Danmarks største samling af billeder når man ser på sexdating profiler."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html",
+            "Secret": "\"><svg viewbox=\"0 0 576 512\"><path d=\"M312-32c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-104 0-83.4 75.8c-2.9 2.7-6.8 4.2-10.8 4.2l-1.8 0c-8.8 0-16-7.2-16-16l0-64-24 0c-39.8 0-72-32.2-72-72L0 40C0 .2 32.2-32 72-32l240 0zM192 392l0-8.6 34.6-31.4 85.4 0c66.3 0 120-53.7 120-120l0-104 72 0c39.8 0 72 32.2 72 72l0 192c0 39.8-32.2 72-72 72l-24 0 0 64c0 8.8-7.2 16-16 16l-1.8 0c-4 0-7.8-1.5-10.8-4.2L368 464 264 464c-39.8 0-72-32.2-72-72z\" fill=\"currentColor\"></path></svg></i> Chat</h2><div data-v-d35bfba7=\"\">På Scor.dk er der en offentlig chat hvor der på tværs af de forskellige chatrooms er mange hundreder på. I chatten kan du enten skrive med de mange andre i offentligt rum eller gå i en privat chat – evt med webcam på."
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/Support.html-<script src=\"https",
+            "Secret": "features=es2023%2Ces2022\" type=\"text/javascript\"></script>"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json",
+            "Secret": "//www.scor.dk/api/LogOn/GetAssertionOptions\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-      \"timeout\"",
+            "Secret": "60000,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json",
+            "Secret": "\"www.scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/9b9f2e5f2e90445337d67b4fa857b5cc.json-      \"allowCredentials\"",
+            "Secret": "[],"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/ebe0ac553f0d14bf5d8c3330407bbee2.json",
+            "Secret": "//www.scor.dk/api/Seo/OnlineProfilesCount\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/ebe0ac553f0d14bf5d8c3330407bbee2.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/84a07f536d68225e732f46843e89cb12.json",
+            "Secret": "//stats.scor.dk/api/site/tracking-config/7fece9bbc7a9\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/84a07f536d68225e732f46843e89cb12.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "//www.scor.dk/api/Seo/FrontpageLandingPages\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-  \"status\"",
+            "Secret": "200,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\"",
+            "Secret": "\"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Blogger på Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\"",
+            "Secret": "613,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"keywords\"",
+            "Secret": "\"sex\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Sex er for mange danskere en stor del af deres liv. Det er vigtigt at være tilfreds med sit eget sexliv - både for krop, sjæl og sind. På Scor har vi samlet alt om sex, som du kan bruge til at udforske dine frække fantasier og lyster - uanset om du er mand eller kvinde, single, i et fast forhold eller alt derimellem.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"pageTitle\"",
+            "Secret": "\"Alt om sex - Sådan krydrer du dit sexliv\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageHeight\"",
+            "Secret": "700,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Singler der bruger Scor til at finde sex og dating i Danmark\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"url\"",
+            "Secret": "\"/sex-og-dating-i-danmark\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\"",
+            "Secret": "\"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Blogger på Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\"",
+            "Secret": "613,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"id\"",
+            "Secret": "324,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"scor rabatkode\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Er du på udkig efter rabatkoder til Scor.dk, må vi desværre skuffe. På Scor.dk har vi ikke rabatkoder, da vi i forvejen tilbyder vores service til en yderst god pris.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Scor rabatkoder og værdikuponer findes ikke\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"scor-rabatkoder-og-vaerdikuponer\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageWidth\"",
+            "Secret": "1022,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImageHeight\"",
+            "Secret": "700,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Find rabatkoder og værdikuponer til Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"/scor-rabatkode\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"author\"",
+            "Secret": "{"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\"",
+            "Secret": "\"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Blogger på Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\"",
+            "Secret": "613,"
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"keywords\"",
+            "Secret": "\"etik\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Vi er Danmarks ældste voksen-datingsite og har siden 1998 arbejdet for at levere en social platform til voksne, hvor der er højt til loftet og frirum til at finde ligesindede at udveksle erfaringer med. På Scor.dk er det tilladt at stå ved sin seksualitet og nyde den sjove del af voksenlivet. Vi stræber efter at nedbryde fordomme og tabuer omkring erotik og sex som en naturlig del af livet.\\n\\nVi mener, det er vigtigt, at vi i dagens samfund kan være åbne og ærlige omkring vores individuelle seksualiteter, og vi vil gerne være med til at sætte sex på dagsordenen og gøre det i en sikker kontekst.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Etisk regelsæt for Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-      \"coverImage\"",
+            "Secret": "\"dejting-app\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"description\"",
+            "Secret": "\"Susie er vores faste blogger som skriver om alt mellem himmel og jord.\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json",
+            "Secret": "\"Blogger på Scor.dk\","
+        },
+        {
+            "Konto": "workspaces/standard_sag/22_SITERIP/scor.dk_scor.dk_202605d_0253/network_captures/5750ecbce539d4d77c6df2c839ed7850.json-        \"imageId\"",
+            "Secret": "613,"
+        }
+    ],
+    "Hashes": [
+        "9e6b5f02dfe494603f49e860e8d81600",
+        "fc9139f4b166fd02c8836dccb729e8c3",
+        "9b07f2aa8515152de96356a7d0b4f624",
+        "9b9f2e5f2e90445337d67b4fa857b5cc",
+        "ebe0ac553f0d14bf5d8c3330407bbee2",
+        "84a07f536d68225e732f46843e89cb12",
+        "5750ecbce539d4d77c6df2c839ed7850"
+    ],
+    "Cracked_Hashes": [],
+    "Tokens": [],
+    "Timestamp": "2026-05-01T02:54:10.992892"
+}

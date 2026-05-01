@@ -1,3 +1,41 @@
-requests>=2.31
-beautifulsoup4>=4.12
-0securitytrails>=1.0.0
+# ==============================================================
+# 🚀 GOLIATH OMNI_HUNTER V45 - MASTER DEPENDENCY MATRIX
+# Fusion af OSINT-værktøjer og Reprohack Django Web Stack
+# ==============================================================
+
+# --- CORE OSINT & WEB DRIVERS ---
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+fake-useragent>=1.4.0
+playwright>=1.41.0
+undetected-chromedriver>=3.5.4
+selenium>=4.16.0
+cryptography>=41.0.7
+structlog>=23.2.0
+python-dotenv>=1.0.0
+pydantic>=2.5.2
+
+# --- TERMINAL USER INTERFACE (TUI) ---
+rich>=13.7.0
+prompt_toolkit>=3.0.43
+psutil>=5.9.6
+
+# --- FORENSICS, NETWORK & AI ---
+scapy>=2.5.0
+python-nmap>=0.7.1
+shodan>=1.30.0
+censys>=2.2.1
+dnspython>=2.4.2
+python-whois>=0.8.0
+pillow>=10.1.0
+pytesseract>=0.3.10
+opencv-python>=4.8.1.78
+pymupdf>=1.23.8
+python-magic>=0.4.27
+
+# --- BATCH 1: REPROHACK WEB ARCHITECTURE (Nyt fundament) ---
+Django>=4.2.8
+django-crispy-forms>=2.1
+django-allauth>=0.58.2
+celery>=5.3.6
+redis>=5.0.1

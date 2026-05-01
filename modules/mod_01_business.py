@@ -2,15 +2,17 @@
 import json
 import os
 import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import time
 import urllib.parse
 import requests
 import re
 from datetime import datetime
-from pathlib import Path
 
-from core.utils import C, session, REGEX_EMAIL, extract_danish_phones
-from core.utils import REGEX_BTC, REGEX_ETH, REGEX_IBAN, REGEX_IPV4
+from core.utils import C, session, REGEX_EMAIL, extract_danish_phones, datalake
+from core.utils import REGEX_BTC, REGEX_ETH, REGEX_IBAN, REGEX_IPV4, sanitize_filename
 from core.network import http, CONFIG, omni_dork_search, safe_get_with_retry
 from selenium.webdriver.common.by import By 
 from selenium.webdriver.support.ui import WebDriverWait
@@ -531,7 +533,7 @@ class BusinessIntelligenceAnalyst:
 
     def save(self):
         os.makedirs(session.get("loot_folder", "loot_evidence"), exist_ok=True)
-        clean_name = self.input_query.replace(' ', '_').replace('.', '_')
+        clean_name = sanitize_filename(self.input_query)
         filename = f"{session.get('loot_folder', 'loot_evidence')}/02_BUSINESS_{clean_name}.json"
         
         if os.path.exists(filename):
@@ -539,4 +541,5 @@ class BusinessIntelligenceAnalyst:
             except: pass
 
         Path(filename).write_text(json.dumps(self.results, indent=4, ensure_ascii=False), encoding="utf-8")
+        datalake.ingest("BusinessIntelligenceAnalyst", self.input_query, self.results)
         print(f"\n{C.GREEN}    [✓] Master Corporate Report gemt lokalt: {filename}{C.RESET}")

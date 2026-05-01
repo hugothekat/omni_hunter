@@ -38,7 +38,7 @@ class BaseModule(ABC):
         sys.stdout.write(f"\r\033[2m[{ts}]\033[0m {color}{message}\033[0m\n")
 
     @abstractmethod
-    def run(self, driver: Optional[Any] = None, target: str = "") -> Dict[str, Any]:
+    def run(self, driver: Any = None, target: str = "") -> Dict[str, Any]:
         """Selve eksekverings-motoren. SKAL overskrives af child-klassen."""
         pass
 

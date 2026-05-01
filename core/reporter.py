@@ -31,10 +31,13 @@ class AutomatedCaseReporter:
         self.all_emails: Set[str] = set()
         self.all_phones: Set[str] = set()
         self.all_usernames: Set[str] = set()
+        self.all_domains: Set[str] = set()
+        self.all_ips: Set[str] = set()
         self.all_cpr: Set[str] = set()
         self.geopoints: List[Dict[str, Any]] = []
         self.threat_intel: List[Dict[str, Any]] = []
         self.ai_summaries: List[str] = []
+        self.cracked_credentials: List[Dict[str, str]] = []
         self.master_score = "Ikke beregnet"
 
     def _parse_loot_files(self, files: List[Path]):
@@ -43,13 +46,15 @@ class AutomatedCaseReporter:
             try:
                 data = json.loads(f.read_text(encoding='utf-8'))
                 
-                # Modul 30 (Orchestrator) Extraction
+                # Modul 15 (Orchestrator) Extraction
                 if "Confidence_Score" in data:
                     self.master_score = f"{data['Confidence_Score']}/100"
                     self.all_emails.update(data.get("Fundne_Emails", []))
                     self.all_usernames.update(data.get("Fundne_Brugernavne", []))
                     self.all_phones.update(data.get("Telefonnumre", []))
                     self.all_cpr.update(data.get("CPR_Fragments", []))
+                    self.all_domains.update(data.get("Domæner", []))
+                    self.all_ips.update(data.get("IP_Adresser", []))
                     
                 # Modul 16 (Titan) Extraction
                 if "Case_Intelligence" in data:
@@ -81,6 +86,27 @@ class AutomatedCaseReporter:
                         "desc": f"WIFI MAC: {data.get('BSSID')} ({data.get('Netværksnavn_SSID')})"
                     })
 
+                # Udtrækker Lækkede Credentials og Knækkede Hashes (Modul 36, 05, 03, 05_Darkweb)
+                if "Knækkede_Passwords_Klartekst" in data:
+                    for cred in data["Knækkede_Passwords_Klartekst"]:
+                        self.cracked_credentials.append({"source": "De-Hash Engine", "target": cred.get("Hash", "")[:12]+"...", "secret": cred.get("Cleartext", "")})
+                
+                if "Rå_Kredentialer" in data:
+                    for cred in data["Rå_Kredentialer"]:
+                        if ":" in cred:
+                            t, s = cred.split(":", 1)
+                            self.cracked_credentials.append({"source": "Pastebin Leak", "target": t, "secret": s})
+                            
+                if "Credentials" in data:
+                    for cred in data["Credentials"]:
+                        self.cracked_credentials.append({"source": "Offline DB", "target": cred.get("Konto", "Unknown"), "secret": cred.get("Secret", "")})
+                        
+                if "Lækkede_Kredentialer" in data:
+                    for cred in data["Lækkede_Kredentialer"]:
+                        if ":" in cred:
+                            t, s = cred.split(":", 1)
+                            self.cracked_credentials.append({"source": "Darknet Spider", "target": t, "secret": s})
+
             except Exception as e:
                 print(f"{C.DIM}[-] Fejl ved parsing af {f.name}: {e}{C.RESET}")
 
@@ -93,14 +119,21 @@ class AutomatedCaseReporter:
         def add_node(n_id, label, group):
             if n_id and n_id not in node_ids:
                 nodes.append({"id": n_id, "label": label, "group": group})
-                node_ids.add(n_id)
+                node_ids.add(str(n_id).lower())
 
         target_node = session.get('name', 'Hovedmål')
         add_node(target_node, target_node, "Target")
 
-        if nexus and nexus.graph:
+        if nexus and (nexus.graph or nexus.edges):
             for node_val, meta in nexus.graph.items():
                 add_node(node_val, str(node_val), meta['type'])
+            
+            for edge in nexus.edges:
+                # Sikrer at noderne i kanten findes
+                add_node(edge['source'], edge['source'], "linked")
+                add_node(edge['target'], edge['target'], "linked")
+                edges.append({"from": edge['source'], "to": edge['target'], "label": edge['label']})
+                
                 for link_val, relation in meta['linked_entities']:
                     add_node(link_val, str(link_val), "linked")
                     edges.append({"from": node_val, "to": link_val, "label": relation})
@@ -115,6 +148,12 @@ class AutomatedCaseReporter:
             for u in self.all_usernames:
                 add_node(u, u, "Alias")
                 edges.append({"from": target_node, "to": u, "label": "Alias"})
+            for d in self.all_domains:
+                add_node(d, d, "DOMAIN")
+                edges.append({"from": target_node, "to": d, "label": "Ejer"})
+            for i in self.all_ips:
+                add_node(i, i, "IP")
+                edges.append({"from": target_node, "to": i, "label": "Host"})
 
         return json.dumps({"nodes": nodes, "edges": edges})
 
@@ -188,6 +227,12 @@ class AutomatedCaseReporter:
                         
                         <p style="margin-top: 15px;"><strong>Telefoner</strong> <span class="badge">{len(self.all_phones)}</span></p>
                         <ul class="list-group">{''.join([f"<li>+45 {p}</li>" for p in self.all_phones]) if self.all_phones else "<li>Ingen data</li>"}</ul>
+
+                        <p style="margin-top: 15px;"><strong>Domæner & IP</strong> <span class="badge">{len(self.all_domains) + len(self.all_ips)}</span></p>
+                        <ul class="list-group">
+                            {''.join([f"<li>{d} (Domæne)</li>" for d in self.all_domains])}
+                            {''.join([f"<li>{i} (IP)</li>" for i in self.all_ips])}
+                        </ul>
                     </div>
 
                     <div class="box danger" style="border-left: 4px solid #f1c40f;">
@@ -200,6 +245,13 @@ class AutomatedCaseReporter:
                         <div class="ai-text">
                             {'<br><br>'.join(self.ai_summaries) if self.ai_summaries else 'Ingen MistralAI threat intelligence genereret.'}
                         </div>
+                    </div>
+
+                    <div class="box danger" style="border-left: 4px solid #ff007f;">
+                        <h2 style="color: #ff007f;">🚨 Compromised Credentials & Hashes</h2>
+                        <ul class="list-group">
+                            {''.join([f"<li><span class='badge' style='float:left; margin-right:10px; background:#3b3b54; color:#fff;'>{c['source']}</span> <span style='color:#a5b1c2;'>{c['target']}</span> <br><strong style='color:#ff007f; letter-spacing: 1px; font-family: monospace; font-size: 1.1rem;'>{c['secret']}</strong></li>" for c in self.cracked_credentials]) if self.cracked_credentials else "<li style='color:#a5b1c2;'>Ingen lækkede passwords identificeret.</li>"}
+                        </ul>
                     </div>
 
                     <div class="box accent">
